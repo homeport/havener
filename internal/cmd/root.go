@@ -80,8 +80,7 @@ func initConfig() {
 		// Find home directory.
 		home, err := homedir.Dir()
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			exitWithError("unable to get home directory", err)
 		}
 
 		// Search config in home directory with name ".havener" (without extension).
@@ -100,9 +99,13 @@ func initConfig() {
 	if kubeCfgFile == "" {
 		home, err := homedir.Dir()
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			exitWithError("unable to get home directory", err)
 		}
 		viper.SetDefault("kubeconfig", home+"/.kube/config")
 	}
+}
+
+func exitWithError(msg string, err error) {
+	fmt.Printf("Message: %s, Error: %s\n", msg, err.Error())
+	os.Exit(1)
 }
