@@ -24,6 +24,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/HeavyWombat/dyff/pkg/v1/bunt"
@@ -61,10 +64,17 @@ var topCmd = &cobra.Command{
 			exitWithError("unable to get cluster usage data", err)
 		}
 
-		for nodeName, usage := range usageData {
-			fmt.Printf("Node %-16s  CPU %s   Memory %s\n",
+		for _, nodeName := range sortedKeyList(usageData) {
+			usage := usageData[nodeName]
+
+			fmt.Printf("%s %-16s  %s %s  %s %s\n",
+				bunt.Style("Node", bunt.Bold),
 				nodeName,
+
+				bunt.Style("CPU", bunt.Bold),
 				displayProcessorUsage(usage.CPU),
+
+				bunt.Style("Memory", bunt.Bold),
 				displayMemoryUsage(usage.Memory))
 		}
 	},
@@ -107,20 +117,8 @@ func GetUsageData(clientSet *kubernetes.Clientset) (map[string]UsageData, error)
 
 	// ---
 
-	maxCPUValues := map[string]int64{}
-	maxMemValues := map[string]int64{}
-
-	nodeList, err := api.Nodes().List(v1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	for _, node := range nodeList.Items {
-		maxCPUValues[node.Name] = int64(node.Status.Capacity.Cpu().MilliValue())
-		maxMemValues[node.Name] = int64(node.Status.Capacity.Memory().MilliValue())
-	}
-
-	// ---
+	currentCPUValues := map[string]int64{}
+	currentMemValues := map[string]int64{}
 
 	// TODO Refactor into one or two lines to make it more readable
 	prefix := "/apis"
@@ -147,17 +145,42 @@ func GetUsageData(clientSet *kubernetes.Clientset) (map[string]UsageData, error)
 
 	for _, node := range metrics.Items {
 		nodeName := node.Metadata.Name
+
+		currentCPUValues[nodeName] = parseQuantity(node.Usage.CPU)
+		currentMemValues[nodeName] = parseQuantity(node.Usage.Memory)
+	}
+
+	// ---
+
+	nodeList, err := api.Nodes().List(v1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, node := range nodeList.Items {
+		nodeName := node.Name
+
 		result[nodeName] = UsageData{
 			CPU: UsageEntry{
-				Used: parseQuantity(node.Usage.CPU),
-				Max:  maxCPUValues[nodeName]},
+				Used: lookupValue(currentCPUValues, nodeName),
+				Max:  int64(node.Status.Capacity.Cpu().MilliValue()),
+			},
 			Memory: UsageEntry{
-				Used: parseQuantity(node.Usage.Memory),
-				Max:  maxMemValues[nodeName]},
+				Used: lookupValue(currentMemValues, nodeName),
+				Max:  int64(node.Status.Capacity.Memory().MilliValue()),
+			},
 		}
 	}
 
 	return result, nil
+}
+
+func lookupValue(data map[string]int64, key string) int64 {
+	if value, ok := data[key]; ok {
+		return value
+	}
+
+	return -1
 }
 
 func parseQuantity(input string) int64 {
@@ -167,14 +190,26 @@ func parseQuantity(input string) int64 {
 
 func displayProcessorUsage(input UsageEntry) string {
 	textLength := 64
+
+	if input.Used > input.Max {
+		input.Used = input.Max
+	}
+
 	usage := float64(input.Used) / float64(input.Max)
 
 	var buf bytes.Buffer
 	buf.WriteString("[")
 
-	buf.WriteString(printProgressBar(textLength, usage))
+	if input.Used > 0 {
+		infoText := fmt.Sprintf("%5.1f%%", usage*100.0)
 
-	buf.WriteString(fmt.Sprintf("%5.1f%%", usage*100.0))
+		buf.WriteString(printProgressBar(textLength-len(infoText), usage))
+		buf.WriteString(infoText)
+
+	} else {
+		buf.WriteString(centerText("no data points", textLength))
+	}
+
 	buf.WriteString("]")
 
 	return buf.String()
@@ -182,14 +217,28 @@ func displayProcessorUsage(input UsageEntry) string {
 
 func displayMemoryUsage(input UsageEntry) string {
 	textLength := 64
+
+	if input.Used > input.Max {
+		input.Used = input.Max
+	}
+
 	usage := float64(input.Used) / float64(input.Max)
 
 	var buf bytes.Buffer
 	buf.WriteString("[")
 
-	buf.WriteString(printProgressBar(textLength, usage))
+	if input.Used > 0 {
+		infoText := fmt.Sprintf(" %s/%s",
+			havener.HumanReadableSize(input.Used/1000),
+			havener.HumanReadableSize(input.Max/1000))
 
-	buf.WriteString(fmt.Sprintf(" %s/%s", havener.HumanReadableSize(input.Used/1000), havener.HumanReadableSize(input.Max/1000)))
+		buf.WriteString(printProgressBar(textLength-len(infoText), usage))
+		buf.WriteString(infoText)
+
+	} else {
+		buf.WriteString(centerText("no data points", textLength))
+	}
+
 	buf.WriteString("]")
 
 	return buf.String()
@@ -202,8 +251,14 @@ func printProgressBar(width int, usage float64) string {
 
 	marks := int(usage * float64(width))
 	for i := 0; i < width; i++ {
-		if i <= marks {
-			buf.WriteString(symbol)
+		if i < marks {
+			switch bunt.UseColors() {
+			case true:
+				buf.WriteString(bunt.Colorize(symbol, bunt.LimeGreen.BlendLab(bunt.OrangeRed, float64(i)/float64(width))))
+
+			default:
+				buf.WriteString(symbol)
+			}
 
 		} else {
 			switch bunt.UseColors() {
@@ -217,4 +272,31 @@ func printProgressBar(width int, usage float64) string {
 	}
 
 	return buf.String()
+}
+
+func centerText(text string, length int) string {
+	strLen := len(text)
+	if strLen > length {
+		return text
+	}
+
+	remainder := length - strLen
+	left := int(math.Ceil(float64(remainder) / 2.0))
+	right := int(math.Floor(float64(remainder) / 2.0))
+
+	return strings.Repeat(" ", left) + text + strings.Repeat(" ", right)
+}
+
+func sortedKeyList(data map[string]UsageData) []string {
+	result := make([]string, len(data), len(data))
+
+	i := 0
+	for key := range data {
+		result[i] = key
+		i++
+	}
+
+	sort.Strings(result)
+
+	return result
 }
