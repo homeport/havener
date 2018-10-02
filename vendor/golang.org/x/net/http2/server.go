@@ -46,7 +46,6 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/net/http/httpguts"
 	"golang.org/x/net/http2/hpack"
 )
 
@@ -663,7 +662,6 @@ func (sc *serverConn) condlogf(err error, format string, args ...interface{}) {
 
 func (sc *serverConn) canonicalHeader(v string) string {
 	sc.serveG.check()
-	buildCommonHeaderMapsOnce()
 	cv, ok := commonCanonHeader[v]
 	if ok {
 		return cv
@@ -1488,12 +1486,6 @@ func (sc *serverConn) processSettings(f *SettingsFrame) error {
 		}
 		return nil
 	}
-	if f.NumSettings() > 100 || f.HasDuplicates() {
-		// This isn't actually in the spec, but hang up on
-		// suspiciously large settings frames or those with
-		// duplicate entries.
-		return ConnectionError(ErrCodeProtocol)
-	}
 	if err := f.ForeachSetting(sc.processSetting); err != nil {
 		return err
 	}
@@ -1582,12 +1574,6 @@ func (sc *serverConn) processData(f *DataFrame) error {
 		// type PROTOCOL_ERROR."
 		return ConnectionError(ErrCodeProtocol)
 	}
-	// RFC 7540, sec 6.1: If a DATA frame is received whose stream is not in
-	// "open" or "half-closed (local)" state, the recipient MUST respond with a
-	// stream error (Section 5.4.2) of type STREAM_CLOSED.
-	if state == stateClosed {
-		return streamError(id, ErrCodeStreamClosed)
-	}
 	if st == nil || state != stateOpen || st.gotTrailerHeader || st.resetQueued {
 		// This includes sending a RST_STREAM if the stream is
 		// in stateHalfClosedLocal (which currently means that
@@ -1621,10 +1607,7 @@ func (sc *serverConn) processData(f *DataFrame) error {
 	// Sender sending more than they'd declared?
 	if st.declBodyBytes != -1 && st.bodyBytes+int64(len(data)) > st.declBodyBytes {
 		st.body.CloseWithError(fmt.Errorf("sender tried to send more than declared Content-Length of %d bytes", st.declBodyBytes))
-		// RFC 7540, sec 8.1.2.6: A request or response is also malformed if the
-		// value of a content-length header field does not equal the sum of the
-		// DATA frame payload lengths that form the body.
-		return streamError(id, ErrCodeProtocol)
+		return streamError(id, ErrCodeStreamClosed)
 	}
 	if f.Length > 0 {
 		// Check whether the client has flow control quota.
@@ -1734,13 +1717,6 @@ func (sc *serverConn) processHeaders(f *MetaHeadersFrame) error {
 			// processing this frame.
 			return nil
 		}
-		// RFC 7540, sec 5.1: If an endpoint receives additional frames, other than
-		// WINDOW_UPDATE, PRIORITY, or RST_STREAM, for a stream that is in
-		// this state, it MUST respond with a stream error (Section 5.4.2) of
-		// type STREAM_CLOSED.
-		if st.state == stateHalfClosedRemote {
-			return streamError(id, ErrCodeStreamClosed)
-		}
 		return st.processTrailerHeaders(f)
 	}
 
@@ -1841,7 +1817,7 @@ func (st *stream) processTrailerHeaders(f *MetaHeadersFrame) error {
 	if st.trailer != nil {
 		for _, hf := range f.RegularFields() {
 			key := sc.canonicalHeader(hf.Name)
-			if !httpguts.ValidTrailerHeader(key) {
+			if !ValidTrailerHeader(key) {
 				// TODO: send more details to the peer somehow. But http2 has
 				// no way to send debug data at a stream level. Discuss with
 				// HTTP folk.
@@ -2308,7 +2284,7 @@ func (rws *responseWriterState) hasTrailers() bool { return len(rws.trailers) !=
 // written in the trailers at the end of the response.
 func (rws *responseWriterState) declareTrailer(k string) {
 	k = http.CanonicalHeaderKey(k)
-	if !httpguts.ValidTrailerHeader(k) {
+	if !ValidTrailerHeader(k) {
 		// Forbidden by RFC 7230, section 4.1.2.
 		rws.conn.logf("ignoring invalid trailer %q", k)
 		return
@@ -2357,19 +2333,6 @@ func (rws *responseWriterState) writeChunk(p []byte) (n int, err error) {
 
 		for _, v := range rws.snapHeader["Trailer"] {
 			foreachHeaderElement(v, rws.declareTrailer)
-		}
-
-		// "Connection" headers aren't allowed in HTTP/2 (RFC 7540, 8.1.2.2),
-		// but respect "Connection" == "close" to mean sending a GOAWAY and tearing
-		// down the TCP connection when idle, like we do for HTTP/1.
-		// TODO: remove more Connection-specific header fields here, in addition
-		// to "Connection".
-		if _, ok := rws.snapHeader["Connection"]; ok {
-			v := rws.snapHeader.Get("Connection")
-			delete(rws.snapHeader, "Connection")
-			if v == "close" {
-				rws.conn.startGracefulShutdown()
-			}
 		}
 
 		endStream := (rws.handlerDone && !rws.hasTrailers() && len(p) == 0) || isHeadResp
@@ -2873,6 +2836,41 @@ func new400Handler(err error) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
+}
+
+// ValidTrailerHeader reports whether name is a valid header field name to appear
+// in trailers.
+// See: http://tools.ietf.org/html/rfc7230#section-4.1.2
+func ValidTrailerHeader(name string) bool {
+	name = http.CanonicalHeaderKey(name)
+	if strings.HasPrefix(name, "If-") || badTrailer[name] {
+		return false
+	}
+	return true
+}
+
+var badTrailer = map[string]bool{
+	"Authorization":       true,
+	"Cache-Control":       true,
+	"Connection":          true,
+	"Content-Encoding":    true,
+	"Content-Length":      true,
+	"Content-Range":       true,
+	"Content-Type":        true,
+	"Expect":              true,
+	"Host":                true,
+	"Keep-Alive":          true,
+	"Max-Forwards":        true,
+	"Pragma":              true,
+	"Proxy-Authenticate":  true,
+	"Proxy-Authorization": true,
+	"Proxy-Connection":    true,
+	"Range":               true,
+	"Realm":               true,
+	"Te":                  true,
+	"Trailer":             true,
+	"Transfer-Encoding":   true,
+	"Www-Authenticate":    true,
 }
 
 // h1ServerKeepAlivesDisabled reports whether hs has its keep-alives

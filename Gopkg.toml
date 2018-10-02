@@ -16,14 +16,15 @@
 #   source = "github.com/myfork/project2"
 #
 # [[override]]
-#  name = "github.com/x/y"
-#  version = "2.4.0"
+#   name = "github.com/x/y"
+#   version = "2.4.0"
+#
+# [prune]
+#   non-go = false
+#   go-tests = true
+#   unused-packages = true
 
-
-# [[constraint]]
-#   branch = "v2"
-#   name = "gopkg.in/yaml.v2"
-
+#ignored = ["github.com/kubicorn/kubicorn*"]
 required = ["gopkg.in/fsnotify.v1"]
 
 [[constraint]]
@@ -31,41 +32,249 @@ required = ["gopkg.in/fsnotify.v1"]
   source = "https://github.com/fsnotify/fsnotify.git"
 
 [[override]]
+  branch = "master"
+  name = "github.com/rackspace/gophercloud"
+
+[[override]]
+  branch = "master"
+  name = "github.com/docker/distribution"
+
+[[override]]
   name = "k8s.io/kubernetes"
   version = "=v1.10.0"
 
+[[override]]
+  name = "github.com/docker/docker"
+  revision = "4f3616fb1c112e206b88cb7a9922bf49067a7756"
+
+[[override]]
+  name = "google.golang.org/grpc"
+  version = "=v1.11.2"
+
+[[override]]
+  name = "github.com/Azure/go-autorest"
+  version = "=v10.6.0"
+
+[[override]]
+  name = "github.com/Azure/azure-sdk-for-go"
+  version = "=v15.0.0"
+
+[[override]]
+  name = "github.com/gin-gonic/gin"
+  branch = "master"
+
 [[constraint]]
-  name = "k8s.io/apimachinery"
+  name = "github.com/kubicorn/kubicorn"
+  branch = "master"
+  source = "github.com/banzaicloud/kubicorn"
+
+[[constraint]]
+  name = "github.com/Masterminds/sprig"
+  version = "2.14.1"
+
+[[constraint]]
+  name = "github.com/aws/aws-sdk-go"
+  version = "=1.15.*"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/banzaicloud/azure-aks-client"
+
+[[constraint]]
+  name = "github.com/banzaicloud/bank-vaults"
+  branch = "master"
+
+[[constraint]]
+  name = "github.com/dgrijalva/jwt-go"
+  version = "3.2.0"
+
+[[constraint]]
+  name = "github.com/ghodss/yaml"
+  version = "1.0.0"
+
+[[constraint]]
+  name = "github.com/gin-contrib/cors"
+  version = "1.2.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/gin-gonic/gin"
+
+[[constraint]]
+  name = "github.com/go-errors/errors"
+  version = "1.0.1"
+
+[[constraint]]
+  name = "github.com/google/go-github"
+  version = "15.0.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/jinzhu/copier"
+
+[[constraint]]
+  name = "github.com/jinzhu/gorm"
+  version = "1.9.1"
+
+[[constraint]]
+  name = "github.com/pkg/errors"
+  version = "0.8.0"
+
+[[constraint]]
+  name = "github.com/pkg/sftp"
+  version = "1.5.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/prometheus/common"
+
+[[constraint]]
+  name = "github.com/prometheus/prometheus"
+  version = "2.0.0"
+
+[[constraint]]
+  branch = "master"
+  source = "github.com/banzaicloud/auth"
+  name = "github.com/qor/auth"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/qor/qor"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/qor/redirect_back"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/qor/session"
+
+[[constraint]]
+  name = "github.com/satori/go.uuid"
+  version = "1.2.0"
+
+[[constraint]]
+  name = "github.com/sirupsen/logrus"
+  version = "1.0.5"
+
+[[constraint]]
+  name = "github.com/spf13/viper"
+  version = "1.0.2"
+
+[[constraint]]
+  name = "github.com/spf13/cast"
+  version = "1.2.0"
+
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/crypto"
+
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/net"
+
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/oauth2"
+
+[[constraint]]
+  branch = "master"
+  name = "google.golang.org/api"
+
+[[constraint]]
+  name = "gopkg.in/yaml.v2"
+  version = "2.2.0"
+
+[[constraint]]
+  name = "k8s.io/api"
   branch = "release-1.10"
+
+[[constraint]]
+  branch = "release-1.10"
+  name = "k8s.io/apimachinery"
 
 [[constraint]]
   name = "k8s.io/client-go"
   version = "=v7.0.0"
 
 [[constraint]]
-  name = "k8s.io/helm"
   branch = "release-2.10"
+  name = "k8s.io/helm"
 
+[[override]]
+  name = "github.com/russross/blackfriday"
+  version = "=v1.5.1"
 
-# ignored = [
-#    "git.apache.org/thrift.git/lib/go/thrift",
-#    "golang.org/x/sys/unix",
-# ]
-#
-# required = ["gopkg.in/fsnotify.v1"]
-#
-# [[constraint]]
-#   name = "k8s.io/helm"
-#   version = "2.10.7"
-#
-# [[constraint]]
-#   name = "gopkg.in/fsnotify.v1"
-#   source = "https://github.com/fsnotify/fsnotify.git"
-#
-# [[constraint]]
-#   branch = "master"
-#   name = "k8s.io/apimachinery"
-#
-# [[constraint]]
-#   name = "k8s.io/client-go"
-#   version = "6.0.0"
+[prune]
+  go-tests = true
+  unused-packages = true
+  non-go = true
+
+[[override]]
+  branch = "master"
+  name = "github.com/banzaicloud/kubicorn"
+
+[[constraint]]
+  name = "github.com/casbin/casbin"
+  version = "1.4.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/casbin/gorm-adapter"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/banzaicloud/logrus-runtime-formatter"
+
+[[constraint]]
+  name = "cloud.google.com/go"
+  version = "0.20.0"
+
+[[constraint]]
+  name = "github.com/Azure/azure-storage-blob-go"
+  version = "0.1.4"
+
+[[constraint]]
+  name = "github.com/technosophos/moniker"
+  version = "0.2.0"
+
+[[constraint]]
+  name = "github.com/oracle/oci-go-sdk"
+  version = "2.0.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/banzaicloud/go-gin-prometheus"
+
+[[constraint]]
+  name = "github.com/aliyun/alibaba-cloud-sdk-go"
+  version = "1.26.1"
+
+[[constraint]]
+  name = "github.com/aliyun/aliyun-oss-go-sdk"
+  version = "1.9.0"
+
+# master: Could not introduce github.com/aliyun/alibaba-cloud-sdk-go@master,
+# as it has a dependency on github.com/jmespath/go-jmespath with constraint ^0.2.2,
+# which has no overlap with the following existing constraints:
+#	0b12d6b5 from github.com/aws/aws-sdk-go@v1.13.9
+[[override]]
+  revision = "0b12d6b5"
+  name = "github.com/jmespath/go-jmespath"
+
+[[constraint]]
+  name = "github.com/drone/drone-go"
+  source = "github.com/banzaicloud/drone-go"
+  branch = "banzaidrone"
+
+[[constraint]]
+  name = "github.com/goph/emperror"
+  version = "0.11.0"
+
+[[constraint]]
+  name = "github.com/docker/libcompose"
+  version = "0.4.0"
+
+[[constraint]]
+  name = "github.com/modern-go/concurrent"
+  version = "1.0.3"
