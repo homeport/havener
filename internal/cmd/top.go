@@ -56,12 +56,12 @@ var topCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		clientSet, err := havener.OutOfClusterAuthentication()
 		if err != nil {
-			exitWithError("unable to get access to cluster", err)
+			havener.ExitWithError("unable to get access to cluster", err)
 		}
 
 		usageData, err := GetUsageData(clientSet)
 		if err != nil {
-			exitWithError("unable to get cluster usage data", err)
+			havener.ExitWithError("unable to get cluster usage data", err)
 		}
 
 		for _, nodeName := range sortedKeyList(usageData) {
