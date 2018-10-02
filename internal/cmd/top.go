@@ -51,9 +51,14 @@ var (
 // topCmd represents the top command
 var topCmd = &cobra.Command{
 	Use:   "top",
-	Short: "TBD",
+	Short: "Shows CPU and Memory usage",
 	Long:  `TBD`,
 	Run: func(cmd *cobra.Command, args []string) {
+		const nodeCaption = "Node "
+		const processorCaption = "CPU "
+		const memoryCaption = "Memory "
+		const delimiter = "  "
+
 		clientSet, err := havener.OutOfClusterAuthentication()
 		if err != nil {
 			havener.ExitWithError("unable to get access to cluster", err)
@@ -64,18 +69,42 @@ var topCmd = &cobra.Command{
 			havener.ExitWithError("unable to get cluster usage data", err)
 		}
 
+		maxLength := 0
+		for nodeName, _ := range usageData {
+			if length := len(nodeName); length > maxLength {
+				maxLength = length
+			}
+		}
+
+		barLength := (havener.GetTerminalWidth() -
+			len(nodeCaption) -
+			maxLength -
+			len(delimiter) -
+			len(processorCaption) -
+			len(delimiter) -
+			len(memoryCaption)) / 2
+
 		for _, nodeName := range sortedKeyList(usageData) {
 			usage := usageData[nodeName]
 
-			fmt.Printf("%s %-16s  %s %s  %s %s\n",
-				bunt.Style("Node", bunt.Bold),
-				nodeName,
+			fmt.Print(bunt.Style(nodeCaption, bunt.Bold))
+			fmt.Print(padRight(nodeName, maxLength))
+			fmt.Print(delimiter)
 
-				bunt.Style("CPU", bunt.Bold),
-				displayProcessorUsage(usage.CPU),
+			fmt.Print(bunt.Style(processorCaption, bunt.Bold))
+			fmt.Print(progresBar(barLength, usage.CPU, func(used, max int64) string {
+				return fmt.Sprintf(" %5.1f%%", float64(used)/float64(max)*100.0)
 
-				bunt.Style("Memory", bunt.Bold),
-				displayMemoryUsage(usage.Memory))
+			}))
+			fmt.Print(delimiter)
+
+			fmt.Print(bunt.Style(memoryCaption, bunt.Bold))
+			fmt.Print(progresBar(barLength, usage.Memory, func(used, max int64) string {
+				return fmt.Sprintf(" %s/%s",
+					havener.HumanReadableSize(used/1000),
+					havener.HumanReadableSize(max/1000))
+			}))
+			fmt.Print("\n")
 		}
 	},
 }
@@ -188,73 +217,65 @@ func parseQuantity(input string) int64 {
 	return quantity.MilliValue()
 }
 
-func displayProcessorUsage(input UsageEntry) string {
-	textLength := 64
-
-	if input.Used > input.Max {
-		input.Used = input.Max
+func centerText(text string, length int) string {
+	strLen := len(text)
+	if strLen > length {
+		return text
 	}
 
-	usage := float64(input.Used) / float64(input.Max)
+	remainder := length - strLen
+	left := int(math.Floor(float64(remainder) / 2.0))
+	right := int(math.Ceil(float64(remainder) / 2.0))
 
-	var buf bytes.Buffer
-	buf.WriteString("[")
-
-	if input.Used > 0 {
-		infoText := fmt.Sprintf("%5.1f%%", usage*100.0)
-
-		buf.WriteString(printProgressBar(textLength-len(infoText), usage))
-		buf.WriteString(infoText)
-
-	} else {
-		buf.WriteString(centerText("no data points", textLength))
-	}
-
-	buf.WriteString("]")
-
-	return buf.String()
+	return strings.Repeat(" ", left) + text + strings.Repeat(" ", right)
 }
 
-func displayMemoryUsage(input UsageEntry) string {
-	textLength := 64
+func padRight(text string, length int) string {
+	strLen := len(text)
 
-	if input.Used > input.Max {
-		input.Used = input.Max
+	if strLen > length {
+		return text
 	}
 
-	usage := float64(input.Used) / float64(input.Max)
-
-	var buf bytes.Buffer
-	buf.WriteString("[")
-
-	if input.Used > 0 {
-		infoText := fmt.Sprintf(" %s/%s",
-			havener.HumanReadableSize(input.Used/1000),
-			havener.HumanReadableSize(input.Max/1000))
-
-		buf.WriteString(printProgressBar(textLength-len(infoText), usage))
-		buf.WriteString(infoText)
-
-	} else {
-		buf.WriteString(centerText("no data points", textLength))
-	}
-
-	buf.WriteString("]")
-
-	return buf.String()
+	return text + strings.Repeat(" ", length-strLen)
 }
 
-func printProgressBar(width int, usage float64) string {
-	symbol := "■"
+func sortedKeyList(data map[string]UsageData) []string {
+	result := make([]string, len(data), len(data))
 
+	i := 0
+	for key := range data {
+		result[i] = key
+		i++
+	}
+
+	sort.Strings(result)
+
+	return result
+}
+
+func progresBar(length int, usageEntry UsageEntry, textDetails func(used, max int64) string) string {
+	if usageEntry.Used < 0 {
+		return "[" + centerText("no data points", length-2) + "]"
+	}
+
+	const symbol = "■"
 	var buf bytes.Buffer
 
+	details := textDetails(usageEntry.Used, usageEntry.Max)
+	width := length - 2 - len(details)
+	usage := float64(usageEntry.Used) / float64(usageEntry.Max)
 	marks := int(usage * float64(width))
+
+	buf.WriteString("[")
 	for i := 0; i < width; i++ {
 		if i < marks {
 			switch bunt.UseColors() {
 			case true:
-				buf.WriteString(bunt.Colorize(symbol, bunt.LimeGreen.BlendLab(bunt.OrangeRed, float64(i)/float64(width))))
+				// Use smooth curved gradient:
+				// http://fooplot.com/?lang=en#W3sidHlwZSI6MCwiZXEiOiIoMS1jb3MoeF4yKjMuMTQxNSkpLzIiLCJjb2xvciI6IiMwMDAwMDAifSx7InR5cGUiOjEwMDAsIndpbmRvdyI6WyIwIiwiMSIsIjAiLCIxIl19XQ--
+				blendFactor := 0.5 * (1.0 - math.Cos(math.Pow(float64(i)/float64(length), 2)*math.Pi))
+				buf.WriteString(bunt.Colorize(symbol, bunt.LimeGreen.BlendLab(bunt.Red, blendFactor)))
 
 			default:
 				buf.WriteString(symbol)
@@ -271,32 +292,11 @@ func printProgressBar(width int, usage float64) string {
 		}
 	}
 
+	if len(details) > 0 {
+		buf.WriteString(bunt.Colorize(details, bunt.Gray))
+	}
+
+	buf.WriteString("]")
+
 	return buf.String()
-}
-
-func centerText(text string, length int) string {
-	strLen := len(text)
-	if strLen > length {
-		return text
-	}
-
-	remainder := length - strLen
-	left := int(math.Ceil(float64(remainder) / 2.0))
-	right := int(math.Floor(float64(remainder) / 2.0))
-
-	return strings.Repeat(" ", left) + text + strings.Repeat(" ", right)
-}
-
-func sortedKeyList(data map[string]UsageData) []string {
-	result := make([]string, len(data), len(data))
-
-	i := 0
-	for key := range data {
-		result[i] = key
-		i++
-	}
-
-	sort.Strings(result)
-
-	return result
 }
