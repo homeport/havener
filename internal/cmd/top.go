@@ -28,17 +28,19 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/HeavyWombat/dyff/pkg/v1/bunt"
+	colorful "github.com/lucasb-eyer/go-colorful"
 
 	"github.com/spf13/cobra"
 	"github.ibm.com/hatch/havener/pkg/havener"
 
 	"k8s.io/client-go/kubernetes"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 var (
@@ -64,13 +66,15 @@ var topCmd = &cobra.Command{
 			havener.ExitWithError("unable to get access to cluster", err)
 		}
 
-		usageData, err := GetUsageData(clientSet)
+		// --- --- ---
+
+		usageData, err := GetNodeUsageData(clientSet)
 		if err != nil {
-			havener.ExitWithError("unable to get cluster usage data", err)
+			havener.ExitWithError("unable to get node usage metrics", err)
 		}
 
 		maxLength := 0
-		for nodeName, _ := range usageData {
+		for nodeName := range usageData {
 			if length := len(nodeName); length > maxLength {
 				maxLength = length
 			}
@@ -84,6 +88,7 @@ var topCmd = &cobra.Command{
 			len(delimiter) -
 			len(memoryCaption)) / 2
 
+		fmt.Print(bunt.Style("CPU and Memory usage by Node\n", bunt.Bold, bunt.Italic))
 		for _, nodeName := range sortedKeyList(usageData) {
 			usage := usageData[nodeName]
 
@@ -106,6 +111,41 @@ var topCmd = &cobra.Command{
 			}))
 			fmt.Print("\n")
 		}
+
+		// --- --- ---
+
+		podUsage, err := GetPodUsageData(clientSet)
+		if err != nil {
+			havener.ExitWithError("unable to get pod usage metrics", err)
+		}
+
+		splitKey := func(key string) (string, string, string) {
+			split := strings.Split(key, "/")
+			return split[0], split[1], split[2]
+		}
+
+		usedCPUOfNamespace := map[string]int64{}
+		usedMemOfNamespace := map[string]int64{}
+		for key, value := range podUsage {
+			namespace, _, _ := splitKey(key)
+			if _, ok := usedCPUOfNamespace[namespace]; !ok {
+				usedCPUOfNamespace[namespace] = 0
+				usedMemOfNamespace[namespace] = 0
+			}
+
+			usedCPUOfNamespace[namespace] += value.CPU.Used
+			usedMemOfNamespace[namespace] += value.Memory.Used
+		}
+
+		names := []string{}
+		for key := range usedCPUOfNamespace {
+			names = append(names, key)
+		}
+		sort.Strings(names)
+
+		fmt.Print("\n")
+		fmt.Print(bunt.Style("CPU and Memory usage by Namespace\n", bunt.Bold, bunt.Italic))
+		fmt.Print(usageChart(names, usedCPUOfNamespace, usedMemOfNamespace))
 	},
 }
 
@@ -113,7 +153,7 @@ func init() {
 	rootCmd.AddCommand(topCmd)
 }
 
-type RawHeapsterMetrics struct {
+type NodeMetrics struct {
 	Items []struct {
 		Metadata struct {
 			Name              string    `json:"name"`
@@ -128,6 +168,25 @@ type RawHeapsterMetrics struct {
 	} `json:"items"`
 }
 
+type PodMetrics struct {
+	Items []struct {
+		Metadata struct {
+			Name              string    `json:"name"`
+			Namespace         string    `json:"namespace"`
+			CreationTimestamp time.Time `json:"creationTimestamp"`
+		} `json:"metadata"`
+		Timestamp  time.Time `json:"timestamp"`
+		Window     string    `json:"window"`
+		Containers []struct {
+			Name  string `json:"name"`
+			Usage struct {
+				CPU    string `json:"cpu"`
+				Memory string `json:"memory"`
+			} `json:"usage"`
+		} `json:"containers"`
+	} `json:"items"`
+}
+
 type UsageEntry struct {
 	Used int64
 	Max  int64
@@ -138,9 +197,9 @@ type UsageData struct {
 	Memory UsageEntry
 }
 
-// GetUsageData ...
+// GetNodeUsageData ...
 // https://github.com/kubernetes/community/blob/master/contributors/design-proposals/instrumentation/resource-metrics-api.md
-func GetUsageData(clientSet *kubernetes.Clientset) (map[string]UsageData, error) {
+func GetNodeUsageData(clientSet *kubernetes.Clientset) (map[string]UsageData, error) {
 	result := map[string]UsageData{}
 	api := clientSet.CoreV1()
 
@@ -149,32 +208,13 @@ func GetUsageData(clientSet *kubernetes.Clientset) (map[string]UsageData, error)
 	currentCPUValues := map[string]int64{}
 	currentMemValues := map[string]int64{}
 
-	// TODO Refactor into one or two lines to make it more readable
-	prefix := "/apis"
-	metricsGv := schema.GroupVersion{Group: "metrics", Version: "v1alpha1"}
-	groupVersion := fmt.Sprintf("%s/%s", metricsGv.Group, metricsGv.Version)
-	metricsRoot := fmt.Sprintf("%s/%s", prefix, groupVersion)
-
-	path := fmt.Sprintf("%s/nodes/", metricsRoot)
-	params := map[string]string{}
-
-	data, err := api.
-		Services(heapsterNamespace).
-		ProxyGet(heapsterScheme, heapsterService, heapsterPort, path, params).
-		DoRaw()
+	nodeMetrics, err := getNodeMetrics(api)
 	if err != nil {
 		return nil, err
 	}
 
-	var metrics RawHeapsterMetrics
-	err = json.Unmarshal(data, &metrics)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, node := range metrics.Items {
+	for _, node := range nodeMetrics.Items {
 		nodeName := node.Metadata.Name
-
 		currentCPUValues[nodeName] = parseQuantity(node.Usage.CPU)
 		currentMemValues[nodeName] = parseQuantity(node.Usage.Memory)
 	}
@@ -204,6 +244,79 @@ func GetUsageData(clientSet *kubernetes.Clientset) (map[string]UsageData, error)
 	return result, nil
 }
 
+func GetPodUsageData(clientSet *kubernetes.Clientset) (map[string]UsageData, error) {
+	result := map[string]UsageData{}
+
+	podmetrics, err := getPodMetrics(clientSet.CoreV1())
+	if err != nil {
+		return nil, err
+	}
+
+	for _, podmetric := range podmetrics.Items {
+		namespace := podmetric.Metadata.Namespace
+		podname := podmetric.Metadata.Name
+
+		for _, container := range podmetric.Containers {
+			containerName := container.Name
+			result[strings.Join([]string{namespace, podname, containerName}, "/")] = UsageData{
+				CPU: UsageEntry{
+					Used: parseQuantity(container.Usage.CPU),
+				},
+				Memory: UsageEntry{
+					Used: parseQuantity(container.Usage.Memory),
+				},
+			}
+		}
+	}
+
+	return result, nil
+}
+
+func getRawHeapsterMetrics(api corev1.CoreV1Interface, path string, params map[string]string) ([]byte, error) {
+	return api.Services(heapsterNamespace).
+		ProxyGet(heapsterScheme, heapsterService, heapsterPort, path, params).
+		DoRaw()
+}
+
+func getNodeMetrics(api corev1.CoreV1Interface) (*NodeMetrics, error) {
+	data, err := getRawHeapsterMetrics(api, "/apis/metrics/v1alpha1/nodes/", map[string]string{})
+	if err != nil {
+		return nil, err
+	}
+
+	var metrics NodeMetrics
+	if err = json.Unmarshal(data, &metrics); err != nil {
+		return nil, err
+	}
+
+	return &metrics, nil
+}
+
+func getPodMetrics(api corev1.CoreV1Interface) (*PodMetrics, error) {
+	var result PodMetrics
+
+	namespaceList, err := api.Namespaces().List(v1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, namespace := range namespaceList.Items {
+		data, err := getRawHeapsterMetrics(api, fmt.Sprintf("/apis/metrics/v1alpha1/namespaces/%s/pods", namespace.Name), map[string]string{})
+		if err != nil {
+			return nil, err
+		}
+
+		var metrics PodMetrics
+		if err = json.Unmarshal(data, &metrics); err != nil {
+			return nil, err
+		}
+
+		result.Items = append(result.Items, metrics.Items...)
+	}
+
+	return &result, nil
+}
+
 func lookupValue(data map[string]int64, key string) int64 {
 	if value, ok := data[key]; ok {
 		return value
@@ -217,8 +330,12 @@ func parseQuantity(input string) int64 {
 	return quantity.MilliValue()
 }
 
+func plainTextLength(text string) int {
+	return utf8.RuneCountInString(bunt.RemoveAllEscapeSequences(text))
+}
+
 func centerText(text string, length int) string {
-	strLen := len(text)
+	strLen := plainTextLength(text)
 	if strLen > length {
 		return text
 	}
@@ -297,6 +414,71 @@ func progresBar(length int, usageEntry UsageEntry, textDetails func(used, max in
 	}
 
 	buf.WriteString("]")
+
+	return buf.String()
+}
+
+func usageChart(names []string, cpu map[string]int64, memory map[string]int64) string {
+	var cpuSum int64
+	for _, used := range cpu {
+		cpuSum += used
+	}
+
+	var memSum int64
+	for _, used := range memory {
+		memSum += used
+	}
+
+	colors := []colorful.Color{
+		bunt.OrangeRed,
+		bunt.Aqua,
+		bunt.Moccasin,
+		bunt.DeepPink,
+		bunt.DarkSlateGray,
+		bunt.PaleGreen,
+		bunt.SeaGreen,
+		bunt.Olive,
+		bunt.PaleGreen,
+		bunt.Purple,
+	}
+
+	const symbol = "■"
+	var buf bytes.Buffer
+
+	possibleRunes := havener.GetTerminalWidth() - 2
+
+	chart := func(input map[string]int64, totalSum int64) {
+		var chartBuf bytes.Buffer
+		for idx, namespace := range names {
+			if idx > len(colors) {
+				panic("ran out of colors")
+			}
+
+			count := int(math.Floor(float64(input[namespace]) / float64(totalSum) * float64(possibleRunes)))
+			chartBuf.WriteString(bunt.Colorize(strings.Repeat(symbol, count), colors[idx]))
+		}
+
+		buf.WriteString(centerText(chartBuf.String(), possibleRunes))
+	}
+
+	buf.WriteString("[")
+	chart(cpu, cpuSum)
+	buf.WriteString("]")
+	buf.WriteString("\n")
+
+	buf.WriteString("[")
+	chart(memory, memSum)
+	buf.WriteString("]")
+	buf.WriteString("\n")
+
+	for idx, namespace := range names {
+		buf.WriteString(fmt.Sprintf("  %s %-16s  CPU %s, Memory %s\n",
+			bunt.Colorize(symbol, colors[idx]),
+			namespace,
+			fmt.Sprintf("%.1f cores (%.1f%%)", float64(cpu[namespace])/1000.0, float64(cpu[namespace])/float64(cpuSum)*100.0),
+			fmt.Sprintf("%s (%.1f%%)", havener.HumanReadableSize(memory[namespace]/1000), float64(memory[namespace])/float64(memSum)*100.0),
+		))
+	}
 
 	return buf.String()
 }
