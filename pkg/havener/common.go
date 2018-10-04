@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc" //from https://github.com/kubernetes/client-go/issues/345
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/helm/pkg/helm"
 	"k8s.io/helm/pkg/helm/portforwarder"
@@ -22,28 +23,29 @@ func StandIn() string {
 	return "standin"
 }
 
-//OutOfClusterAuthentication ...
-func OutOfClusterAuthentication() (*kubernetes.Clientset, error) {
+//OutOfClusterAuthentication for kube authentication from the outside
+func OutOfClusterAuthentication() (*kubernetes.Clientset, *rest.Config, error) {
 	var kubeconfig *string
-	// var clientset *kubernetes.Clientset
+
 	if home := HomeDir(); home != "" {
 		kubeconfig = flag.String("kubeconfig", viper.GetString("kubeconfig"), "(optional) absolute path to the kubeconfig file")
 	}
 	flag.Parse()
 
-	// use the current context in kubeconfig
+	// BuildConfigFromFlags is a helper function that builds configs from a master
+	// url or a kubeconfig filepath.
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	if err != nil {
-		return nil, err
+		ExitWithError("Unable to build the config from kubeconfig file", err)
 	}
 
 	// create the clientset
 	clientset, err := kubernetes.NewForConfig(config)
 
-	return clientset, err
+	return clientset, config, err
 }
 
-// HomeDir ...
+// HomeDir returns the HOME env key
 func HomeDir() string {
 	if h := os.Getenv("HOME"); h != "" {
 		return h
@@ -51,20 +53,13 @@ func HomeDir() string {
 	return os.Getenv("USERPROFILE") // windows
 }
 
-// GetHelmClient ...
+// GetHelmClient creates a new client for the Helm-Tiller protocol
 func GetHelmClient(kubeConfig []byte) (*helm.Client, error) {
 	var tillerTunnel *kube.Tunnel
 
-	// Create a client config that can rely on the KUBECONFIG var path, and that allow us to override the config
-	// TODO atm this requires to always set KUBECONFIG, the --kubeconfig will not work here
-	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(clientcmd.NewDefaultClientConfigLoadingRules(), &clientcmd.ConfigOverrides{CurrentContext: ""}).ClientConfig()
+	clientSet, config, err := OutOfClusterAuthentication()
 	if err != nil {
-		panic(err.Error())
-	}
-
-	clientSet, err := OutOfClusterAuthentication()
-	if err != nil {
-		ExitWithError("Unable to authenticate to the cluster", err)
+		ExitWithError("Unable to authenticate to the cluster from the outside", err)
 	}
 
 	tillerTunnel, err = portforwarder.New("kube-system", clientSet, config)
@@ -77,9 +72,9 @@ func GetHelmClient(kubeConfig []byte) (*helm.Client, error) {
 	return hClient, nil
 }
 
-// ListHelmReleases ...
+// ListHelmReleases returns a list of releases
 // Based on https://github.com/helm/helm/blob/7cad59091a9451b2aa4f95aa882ea27e6b195f98/pkg/proto/hapi/services/tiller.pb.go
-func ListHelmReleases(kubeConfig []byte) (*rls.ListReleasesResponse, error) {
+func ListHelmReleases() (*rls.ListReleasesResponse, error) {
 	cfg, err := ioutil.ReadFile(viper.GetString("kubeconfig"))
 	if err != nil {
 		ExitWithError("Unable to read the kube config file", err)
@@ -107,7 +102,7 @@ func ListHelmReleases(kubeConfig []byte) (*rls.ListReleasesResponse, error) {
 	return resp, nil
 }
 
-// ExitWithError ...
+// ExitWithError defines a common exit log and exit code
 func ExitWithError(msg string, err error) {
 	fmt.Printf("Message: %s, Error: %s\n", msg, err.Error())
 	os.Exit(1)

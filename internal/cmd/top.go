@@ -59,7 +59,7 @@ var topCmd = &cobra.Command{
 		const memoryCaption = "Memory "
 		const delimiter = "  "
 
-		clientSet, err := havener.OutOfClusterAuthentication()
+		clientSet, _, err := havener.OutOfClusterAuthentication()
 		if err != nil {
 			havener.ExitWithError("unable to get access to cluster", err)
 		}
