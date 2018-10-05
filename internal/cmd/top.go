@@ -80,15 +80,17 @@ var topCmd = &cobra.Command{
 			}
 		}
 
-		barLength := (havener.GetTerminalWidth() -
-			len(nodeCaption) -
-			maxLength -
-			len(delimiter) -
-			len(processorCaption) -
-			len(delimiter) -
-			len(memoryCaption)) / 2
+		barLength := float64(havener.GetTerminalWidth()-
+			len(nodeCaption)-
+			maxLength-
+			len(delimiter)-
+			len(processorCaption)-
+			len(delimiter)-
+			len(memoryCaption)) / 2.0
 
-		fmt.Print(bunt.Style("CPU and Memory usage by Node\n", bunt.Bold, bunt.Italic))
+		firstBarLength, secondBarLength := int(math.Ceil(barLength)), int(math.Floor(barLength))
+
+		fmt.Print(bunt.Style("Usage by Node\n", bunt.Bold, bunt.Italic))
 		for _, nodeName := range sortedKeyList(usageData) {
 			usage := usageData[nodeName]
 
@@ -97,14 +99,14 @@ var topCmd = &cobra.Command{
 			fmt.Print(delimiter)
 
 			fmt.Print(bunt.Style(processorCaption, bunt.Bold))
-			fmt.Print(progresBar(barLength, usage.CPU, func(used, max int64) string {
+			fmt.Print(progresBar(firstBarLength, usage.CPU, func(used, max int64) string {
 				return fmt.Sprintf(" %5.1f%%", float64(used)/float64(max)*100.0)
 
 			}))
 			fmt.Print(delimiter)
 
 			fmt.Print(bunt.Style(memoryCaption, bunt.Bold))
-			fmt.Print(progresBar(barLength, usage.Memory, func(used, max int64) string {
+			fmt.Print(progresBar(secondBarLength, usage.Memory, func(used, max int64) string {
 				return fmt.Sprintf(" %s/%s",
 					havener.HumanReadableSize(used/1000),
 					havener.HumanReadableSize(max/1000))
@@ -144,7 +146,7 @@ var topCmd = &cobra.Command{
 		sort.Strings(names)
 
 		fmt.Print("\n")
-		fmt.Print(bunt.Style("CPU and Memory usage by Namespace\n", bunt.Bold, bunt.Italic))
+		fmt.Print(bunt.Style("Usage by Namespace\n", bunt.Bold, bunt.Italic))
 		fmt.Print(usageChart(names, usedCPUOfNamespace, usedMemOfNamespace))
 	},
 }
@@ -445,7 +447,7 @@ func usageChart(names []string, cpu map[string]int64, memory map[string]int64) s
 	const symbol = "■"
 	var buf bytes.Buffer
 
-	possibleRunes := havener.GetTerminalWidth() - 2
+	possibleRunes := havener.GetTerminalWidth() - 2 - 4
 
 	chart := func(input map[string]int64, totalSum int64) {
 		var chartBuf bytes.Buffer
@@ -461,12 +463,14 @@ func usageChart(names []string, cpu map[string]int64, memory map[string]int64) s
 		buf.WriteString(centerText(chartBuf.String(), possibleRunes))
 	}
 
-	buf.WriteString("[")
+	buf.WriteString(bunt.Style("CPU", bunt.Bold))
+	buf.WriteString(" [")
 	chart(cpu, cpuSum)
 	buf.WriteString("]")
 	buf.WriteString("\n")
 
-	buf.WriteString("[")
+	buf.WriteString(bunt.Style("Mem", bunt.Bold))
+	buf.WriteString(" [")
 	chart(memory, memSum)
 	buf.WriteString("]")
 	buf.WriteString("\n")
