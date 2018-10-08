@@ -61,7 +61,7 @@ func GetHelmChart(path string) (requestedChart *chart.Chart, err error) {
 }
 
 //DeployHelmRelease will initialize a helm in both client and server
-func DeployHelmRelease(namespace string, chartPath string, valueOverrides []byte) (*rls.InstallReleaseResponse, error) {
+func DeployHelmRelease(chartname string, namespace string, chartPath string, valueOverrides []byte) (*rls.InstallReleaseResponse, error) {
 	cfg, err := ioutil.ReadFile(viper.GetString("kubeconfig"))
 	if err != nil {
 		ExitWithError("Unable to read the kube config file", err)
@@ -81,7 +81,7 @@ func DeployHelmRelease(namespace string, chartPath string, valueOverrides []byte
 		chartRequested,
 		namespace,
 		helm.ValueOverrides(valueOverrides), // ValueOverrides specifies a list of values to include when installing.
-		helm.ReleaseName("fakechart"),
+		helm.ReleaseName(chartname),
 		helm.InstallDryRun(false),
 		helm.InstallReuseName(false),
 		helm.InstallDisableHooks(false),
