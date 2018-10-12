@@ -30,12 +30,24 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+// cfgFile holds the related configuration of havener
+var cfgFile string
+
 // deployCmd represents the deploy command
 var deployCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "Deploy Helm Charts to Kubernetes",
 	Long:  `TODO please do this later`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if cfgFile == "" && viper.GetString("havenerconfig") == "" {
+			havener.ExitWithError("please provide configuration via --config or environment variable HAVENERCONFIG", fmt.Errorf("no havener configuration file set"))
+		}
+
+		// If a config file is found, read it in.
+		if err := viper.ReadInConfig(); err == nil {
+			fmt.Println("Using config file:", viper.ConfigFileUsed())
+		}
+
 		source, err := ioutil.ReadFile(viper.GetString("havenerconfig"))
 		if err != nil {
 			panic(err)
@@ -62,13 +74,10 @@ var deployCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(deployCmd)
 
-	// Here you will define your flags and configuration settings.
+	deployCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (Mandatory argument)")
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// deployCmd.PersistentFlags().String("foo", "", "A help for foo")
+	viper.AutomaticEnv() // read in environment variables that match
 
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// deployCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// Bind kubeconfig flag with viper, so that the contents can be accessible later
+	viper.BindPFlag("havenerconfig", deployCmd.PersistentFlags().Lookup("config"))
 }

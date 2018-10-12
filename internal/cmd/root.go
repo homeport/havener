@@ -30,9 +30,6 @@ import (
 	"github.ibm.com/hatch/havener/pkg/havener"
 )
 
-// cfgFile holds the related configuration of havener
-var cfgFile string
-
 // kubeCfgFile is the path to the KUBECONFIG yaml
 var kubeCfgFile string
 
@@ -60,32 +57,15 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (Mandatory argument)")
-
 	// Add kubeconfig persistent flag with default value
 	rootCmd.PersistentFlags().StringVar(&kubeCfgFile, "kubeconfig", "", "kubeconfig file (default is $HOME/.kube/config)")
 
 	// Bind kubeconfig flag with viper, so that the contents can be accessible later
 	viper.BindPFlag("kubeconfig", rootCmd.PersistentFlags().Lookup("kubeconfig"))
-	viper.BindPFlag("havenerconfig", rootCmd.PersistentFlags().Lookup("config"))
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	viper.AutomaticEnv() // read in environment variables that match
-
-	if cfgFile == "" && viper.GetString("havenerconfig") == "" {
-		havener.ExitWithError("please provide configuration via --config or environment variable HAVENERCONFIG", fmt.Errorf("no havener configuration file set"))
-	}
-
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
-	}
-
 	// If the kube config path flag is empty, set it to default
 	if kubeCfgFile == "" {
 		home, err := homedir.Dir()
