@@ -58,12 +58,12 @@ var deployCmd = &cobra.Command{
 			panic(err)
 		}
 
-		for name, release := range config.Releases {
+		for _, release := range config.Releases {
 			overrides, err := yaml.Marshal(release.Overrides)
 			if err != nil {
 				panic(err)
 			}
-			fmt.Printf("Going to create new helm chart for %s\n", name)
+			fmt.Printf("Going to create new helm chart for %s\n", release.ChartName)
 			if _, err := havener.DeployHelmRelease(release.ChartName, release.ChartNamespace, release.ChartLocation, overrides); err != nil {
 				havener.ExitWithError("Error deploying chart", err)
 			}

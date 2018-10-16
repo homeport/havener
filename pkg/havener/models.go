@@ -1,8 +1,8 @@
 package havener
 
 type Config struct {
-	Name     string             `yaml:"name"`
-	Releases map[string]Release `yaml:"releases"`
+	Name     string    `yaml:"name"`
+	Releases []Release `yaml:"releases"`
 }
 
 type Release struct {

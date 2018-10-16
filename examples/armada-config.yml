@@ -1,0 +1,37 @@
+name: armada
+releases:
+- chart_name: uaa
+  chart_namespace: uaa
+  chart_version: 0
+  chart_location: <please define the location of your charts>
+  overrides:
+   secrets:
+     UAA_ADMIN_CLIENT_SECRET: foobar
+   env:
+     DOMAIN: something.eu-de.containers.appdomain.cloud
+   kube:
+     external_ips:
+     - <please define the external ip of your cluster>
+     storage_class:
+       persistent: "ibmc-file-gold"
+- chart_name: cf
+  chart_namespace: cf
+  chart_version: 0
+  chart_location: <please define the location of your charts>
+  overrides:
+    secrets:
+      CLUSTER_ADMIN_PASSWORD: <please define the cluster admin pwd>
+      UAA_ADMIN_CLIENT_SECRET: <please define the uaa admin client secret>
+      UAA_CA_CERT: <please define the UAA ca cert>
+    env:
+      DOMAIN: something.eu-de.containers.appdomain.cloud
+      TCP_DOMAIN: tcp.something.eu-de.containers.appdomain.cloud
+      UAA_HOST: uaa.something.eu-de.containers.appdomain.cloud
+      UAA_PORT: 2793
+      INSECURE_DOCKER_REGISTRIES: "\"insecure-registry.something.eu-de.containers.appdomain.cloud:20005\""
+    kube:
+      external_ips:
+      - 192.0.2.42
+      - <please define the external ip of your cluster>
+      storage_class:
+        persistent: "ibmc-file-gold"

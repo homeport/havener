@@ -12,23 +12,29 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+var kubeconfig *string
+
 // StandIn is just a stand in
 func StandIn() string {
 	return "standin"
 }
 
+func getKubeConfig() string {
+	if kubeconfig == nil {
+		if home := HomeDir(); home != "" {
+			kubeconfig = flag.String("kubeconfig", viper.GetString("kubeconfig"), "(optional) absolute path to the kubeconfig file")
+		}
+		flag.Parse()
+	}
+
+	return *kubeconfig
+}
+
 //OutOfClusterAuthentication for kube authentication from the outside
 func OutOfClusterAuthentication() (*kubernetes.Clientset, *rest.Config, error) {
-	var kubeconfig *string
-
-	if home := HomeDir(); home != "" {
-		kubeconfig = flag.String("kubeconfig", viper.GetString("kubeconfig"), "(optional) absolute path to the kubeconfig file")
-	}
-	flag.Parse()
-
 	// BuildConfigFromFlags is a helper function that builds configs from a master
 	// url or a kubeconfig filepath.
-	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	config, err := clientcmd.BuildConfigFromFlags("", getKubeConfig())
 	if err != nil {
 		ExitWithError("Unable to build the config from kubeconfig file", err)
 	}
