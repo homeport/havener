@@ -1,0 +1,23 @@
+# You can initialize minikube "minikube start --cpus 4 --disk-size 100g --memory 8192"
+# Make sure helm is up and running, by doing a "helm init --upgrade --force-upgrade"
+# The 192.168.99.100 comes from doing a $(minikube ip) from the cmd line
+name: minikube
+version: 1.0.0
+releases:
+- chart_name: uaa
+  chart_namespace: uaa
+  chart_version: 0
+  chart_location: <please define the location of your charts, full path>
+  overrides:
+    secrets:
+      UAA_ADMIN_CLIENT_SECRET: foobar
+    env:
+      DOMAIN: 192.168.99.100.xip.io
+    image:
+      pullPolicy: "Always"
+    kube:
+      hostpath_available: true
+      external_ips:
+      - 192.168.99.100
+      storage_class:
+        persistent: "standard"
