@@ -26,38 +26,56 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
+// DefaultTerminalWidth is the default fallback terminal width.
+const DefaultTerminalWidth = 80
+
+// DefaultTerminalHeight is the default fallback terminal height.
+const DefaultTerminalHeight = 25
+
+// FixedTerminalWidth allows a manual fixed override of the terminal width.
 var FixedTerminalWidth = -1
+
+// FixedTerminalHeight allows a manual fixed override of the terminal height.
 var FixedTerminalHeight = -1
 
-var DefaultTerminalWidth = 80
-var DefaultTerminalHeight = 25
-
+// GetTerminalWidth return the terminal width (available characters per line)
 func GetTerminalWidth() int {
 	width, _ := GetTerminalSize()
 	return width
 }
 
+// GetTerminalHeight return the terminal height (available lines).
 func GetTerminalHeight() int {
 	_, height := GetTerminalSize()
 	return height
 }
 
+// GetTerminalSize return the terminal size as a width and height tuple. In
+// case the terminal size cannot be determined, a reasonable default is
+// used: 80x25. A manual override is possible using FixedTerminalWidth
+// and FixedTerminalHeight.
 func GetTerminalSize() (int, int) {
+	// Return user preference (explicit overwrite) of both width and height
+	if FixedTerminalWidth > 0 && FixedTerminalHeight > 0 {
+		return FixedTerminalWidth, FixedTerminalHeight
+	}
+
 	width, height, err := terminal.GetSize(int(os.Stdout.Fd()))
 
 	switch {
-	case err != nil: // Return default fall-back value
+	// Return default fallback value
+	case err != nil:
 		return DefaultTerminalWidth, DefaultTerminalHeight
 
-	case FixedTerminalWidth > 0 && FixedTerminalHeight > 0: // Return user preference (explicit overwrite)
-		return FixedTerminalWidth, FixedTerminalHeight
-
+	// Return user preference of width, actual value for height
 	case FixedTerminalWidth > 0:
 		return FixedTerminalWidth, height
 
+	// Return user preference of height, actual value for width
 	case FixedTerminalHeight > 0:
 		return width, FixedTerminalHeight
 
+	// Return actual determined values
 	default:
 		return width, height
 	}

@@ -22,13 +22,13 @@ package havener
 
 import (
 	"fmt"
-
-	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc" //from https://github.com/kubernetes/client-go/issues/345
 )
 
-func HumanReadableSize(bytes int64) string {
-	mods := []string{"Byte", "KiB", "MiB", "GiB", "TiB"}
+var mods = []string{"Byte", "KiB", "MiB", "GiB", "TiB"}
 
+// HumanReadableSize returns the human readable version of a byte value. Values
+// over 1024 TiB are currently not supported.
+func HumanReadableSize(bytes int64) string {
 	value := float64(bytes)
 	i := 0
 	for value > 1023.99999 {
