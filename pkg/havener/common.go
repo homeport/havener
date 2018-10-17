@@ -14,11 +14,6 @@ import (
 
 var kubeconfig *string
 
-// StandIn is just a stand in
-func StandIn() string {
-	return "standin"
-}
-
 func getKubeConfig() string {
 	if kubeconfig == nil {
 		if home := HomeDir(); home != "" {
