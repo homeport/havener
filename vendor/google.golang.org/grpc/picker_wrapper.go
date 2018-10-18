@@ -36,28 +36,11 @@ type pickerWrapper struct {
 	done       bool
 	blockingCh chan struct{}
 	picker     balancer.Picker
-
-	// The latest connection happened.
-	connErrMu sync.Mutex
-	connErr   error
 }
 
 func newPickerWrapper() *pickerWrapper {
 	bp := &pickerWrapper{blockingCh: make(chan struct{})}
 	return bp
-}
-
-func (bp *pickerWrapper) updateConnectionError(err error) {
-	bp.connErrMu.Lock()
-	bp.connErr = err
-	bp.connErrMu.Unlock()
-}
-
-func (bp *pickerWrapper) connectionError() error {
-	bp.connErrMu.Lock()
-	err := bp.connErr
-	bp.connErrMu.Unlock()
-	return err
 }
 
 // updatePicker is called by UpdateBalancerState. It unblocks all blocked pick.
@@ -114,7 +97,7 @@ func (bp *pickerWrapper) pick(ctx context.Context, failfast bool, opts balancer.
 		p = bp.picker
 		bp.mu.Unlock()
 
-		subConn, done, err := p.Pick(ctx, opts)
+		subConn, put, err := p.Pick(ctx, opts)
 
 		if err != nil {
 			switch err {
@@ -124,7 +107,7 @@ func (bp *pickerWrapper) pick(ctx context.Context, failfast bool, opts balancer.
 				if !failfast {
 					continue
 				}
-				return nil, nil, status.Errorf(codes.Unavailable, "%v, latest connection error: %v", err, bp.connectionError())
+				return nil, nil, status.Errorf(codes.Unavailable, "%v", err)
 			default:
 				// err is some other error.
 				return nil, nil, toRPCErr(err)
@@ -137,7 +120,7 @@ func (bp *pickerWrapper) pick(ctx context.Context, failfast bool, opts balancer.
 			continue
 		}
 		if t, ok := acw.getAddrConn().getReadyTransport(); ok {
-			return t, done, nil
+			return t, put, nil
 		}
 		grpclog.Infof("blockingPicker: the picked transport is not ready, loop back to repick")
 		// If ok == false, ac.state is not READY.

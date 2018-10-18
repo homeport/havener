@@ -1,0 +1,14 @@
+required = ["gopkg.in/fsnotify.v1"]
+
+[prune]
+  go-tests = true
+  unused-packages = true
+  non-go = true
+
+[[constraint]]
+  name = "gopkg.in/fsnotify.v1"
+  source = "https://github.com/fsnotify/fsnotify.git"
+
+[[constraint]]
+  name = "k8s.io/helm"
+  branch = "release-2.10"

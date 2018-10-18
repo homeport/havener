@@ -14,6 +14,7 @@
 package prometheus
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"sort"
@@ -35,6 +36,8 @@ const (
 	GaugeValue
 	UntypedValue
 )
+
+var errInconsistentCardinality = errors.New("inconsistent label cardinality")
 
 // value is a generic metric for simple values. It implements Metric, Collector,
 // Counter, Gauge, and Untyped. Its effective type is determined by
@@ -155,8 +158,8 @@ func (v *valueFunc) Write(out *dto.Metric) error {
 // the Collect method. NewConstMetric returns an error if the length of
 // labelValues is not consistent with the variable labels in Desc.
 func NewConstMetric(desc *Desc, valueType ValueType, value float64, labelValues ...string) (Metric, error) {
-	if err := validateLabelValues(labelValues, len(desc.variableLabels)); err != nil {
-		return nil, err
+	if len(desc.variableLabels) != len(labelValues) {
+		return nil, errInconsistentCardinality
 	}
 	return &constMetric{
 		desc:       desc,
