@@ -22,8 +22,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.ibm.com/hatch/havener/pkg/havener"
@@ -48,13 +46,8 @@ var deployCmd = &cobra.Command{
 			fmt.Println("Using config file:", viper.ConfigFileUsed())
 		}
 
-		source, err := ioutil.ReadFile(viper.GetString("havenerconfig"))
+		config, err := havener.ProcessConfigFile(viper.GetString("havenerconfig"));
 		if err != nil {
-			panic(err)
-		}
-
-		var config havener.Config
-		if err = yaml.Unmarshal(source, &config); err != nil {
 			panic(err)
 		}
 
