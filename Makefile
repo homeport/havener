@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-.PHONY: clean test build
+.PHONY: clean sanity test build
 
 version := $(shell git describe --tags --abbrev=0 2>/dev/null || ( git rev-parse HEAD | cut -c1-8 ))
 
@@ -28,7 +28,10 @@ clean:
 	@go clean -r -cache
 	@rm -rf binaries
 
-test:
+sanity:
+	test -z $$(gofmt -l ./pkg ./internal ./cmd)
+
+test: sanity
 	ginkgo -r --nodes 4 --randomizeAllSpecs --randomizeSuites --race --trace
 
 binaries:
