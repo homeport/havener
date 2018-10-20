@@ -1,12 +1,13 @@
 package havener
 
 import (
-	"regexp"
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os/exec"
+	"regexp"
 	"strings"
-	"fmt"
+
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -39,12 +40,12 @@ func ProcessConfigFile(path string) (*Config, error) {
 
 // traverseStructureAndProcessShellOperators traverses the provided generic structure
 // and processes all string leafs.
-func traverseStructureAndProcessShellOperators(input interface {}) (interface {}, error) {
+func traverseStructureAndProcessShellOperators(input interface{}) (interface{}, error) {
 	var err error
 
 	switch input.(type) {
-	case map[interface {}] interface {}:
-		newmap := input.(map[interface {}] interface {})
+	case map[interface{}]interface{}:
+		newmap := input.(map[interface{}]interface{})
 		for key, value := range newmap {
 			newmap[key], err = traverseStructureAndProcessShellOperators(value)
 			if err != nil {
@@ -52,8 +53,8 @@ func traverseStructureAndProcessShellOperators(input interface {}) (interface {}
 			}
 		}
 
-	case []interface {}:
-		newarr := input.(map[interface {}] interface {})
+	case []interface{}:
+		newarr := input.(map[interface{}]interface{})
 		for idx, value := range newarr {
 			newarr[idx], err = traverseStructureAndProcessShellOperators(value)
 			if err != nil {
@@ -94,6 +95,6 @@ func processShellOperator(s string) (string, error) {
 			s = strings.Replace(s, match[0], result, -1)
 		}
 	}
-	
+
 	return s, nil
 }

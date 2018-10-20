@@ -46,7 +46,7 @@ var deployCmd = &cobra.Command{
 			fmt.Println("Using config file:", viper.ConfigFileUsed())
 		}
 
-		config, err := havener.ProcessConfigFile(viper.GetString("havenerconfig"));
+		config, err := havener.ProcessConfigFile(viper.GetString("havenerconfig"))
 		if err != nil {
 			panic(err)
 		}
