@@ -74,7 +74,7 @@ func traverseStructureAndProcessShellOperators(input interface{}) (interface{}, 
 		}
 
 	case []interface{}:
-		newarr := input.(map[interface{}]interface{})
+		newarr := input.([]interface{})
 		for idx, value := range newarr {
 			newarr[idx], err = traverseStructureAndProcessShellOperators(value)
 			if err != nil {
