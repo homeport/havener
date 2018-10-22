@@ -20,16 +20,26 @@
 
 package havener
 
-import "fmt"
+import "math/rand"
 
-// NoHelmChartFoundError means that no Helm Charts were found at a given location
-type NoHelmChartFoundError struct {
-	Location string
+const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+// RandomString creates a string with random content and a given length
+func RandomString(length int) string {
+	tmp := make([]byte, length, length)
+	for i := range tmp {
+		tmp[i] = chars[rand.Intn(len(chars))]
+	}
+
+	return string(tmp)
 }
 
-func (e *NoHelmChartFoundError) Error() string {
-	return fmt.Sprintf("unable to determine Helm Chart location of '%s', it is not a local path, nor is it defined in %s or %s",
-		e.Location,
-		chartRoomURL,
-		helmChartsURL)
+// RandomStringWithPrefix creates a string with the provided prefix and
+// additional random content so that the whole string has the given length.
+func RandomStringWithPrefix(prefix string, length int) string {
+	if len(prefix) > length {
+		return prefix
+	}
+
+	return prefix + RandomString(length-len(prefix))
 }
