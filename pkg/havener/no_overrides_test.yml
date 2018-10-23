@@ -1,0 +1,7 @@
+name: minikube
+releases:
+- chart_name: thgh
+  chart_namespace: abcd
+  chart_location: abcd
+  chart_version: 1
+  overrides:

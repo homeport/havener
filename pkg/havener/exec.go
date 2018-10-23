@@ -53,7 +53,7 @@ func traverseStructureAndProcessShellOperators(input interface {}) (interface {}
 		}
 
 	case []interface {}:
-		newarr := input.(map[interface {}] interface {})
+		newarr := input.([]interface {})
 		for idx, value := range newarr {
 			newarr[idx], err = traverseStructureAndProcessShellOperators(value)
 			if err != nil {
@@ -94,6 +94,6 @@ func processShellOperator(s string) (string, error) {
 			s = strings.Replace(s, match[0], result, -1)
 		}
 	}
-	
+
 	return s, nil
 }

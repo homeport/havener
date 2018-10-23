@@ -1,0 +1,19 @@
+name: minikube
+releases:
+- chart_name: uaa
+  chart_namespace: uaa
+  chart_location: abcd
+  chart_version: 1
+  overrides:
+    env:
+      DOMAIN: 192.168.99.100.xip.io
+    image:
+      pullPolicy: "Always"
+    kube:
+      hostpath_available: true
+      external_ips:
+      - 192.168.99.100
+      storage_class:
+        persistent: "standard"
+    secrets:
+      UAA_ADMIN_CLIENT_SECRET: havener
