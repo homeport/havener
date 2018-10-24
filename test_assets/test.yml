@@ -1,0 +1,30 @@
+# ---
+# name: lucine
+# releases:
+# - chart_name: uaa
+#   chart_namespace: uaa
+#   chart_version: 0
+#   chart_location: s
+
+
+name: minikube
+
+version: 1.0.0
+releases:
+- chart_name: uaa
+  chart_namespace: uaa
+  chart_version: 0
+  chart_location: <please define the location of your charts, full path>
+  overrides:
+    secrets:
+      UAA_ADMIN_CLIENT_SECRET: foobar
+    env:
+      DOMAIN: 192.168.99.100.xip.io
+    image:
+      pullPolicy: "Always"
+    kube:
+      hostpath_available: true
+      external_ips:
+      - 192.168.99.100
+      storage_class:
+        persistent: "standard"
