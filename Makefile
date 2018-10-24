@@ -29,7 +29,7 @@ clean:
 	@rm -rf binaries
 
 sanity:
-	test -z $$(gofmt -l ./pkg ./internal ./cmd)
+	test -z $(gofmt -l ./pkg ./internal ./cmd)
 
 test: sanity
 	ginkgo -r --nodes 4 --randomizeAllSpecs --randomizeSuites --race --trace

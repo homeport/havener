@@ -3,8 +3,8 @@ package havener
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"os"
 	"gopkg.in/yaml.v2"
+	"os"
 )
 
 var _ = Describe("Exec", func() {
@@ -40,7 +40,6 @@ releases:
 
 	})
 
-
 	It("should replace correct inline shell statements with commands; with no override section", func() {
 		input, err := ProcessConfigFile(pwDir + "/../../test_assets/no_overrides_test.yml")
 		if err != nil {
@@ -60,8 +59,6 @@ releases:
 
 	})
 
-
-
 	It("should return an error when there's a false inline shell statement", func() {
 		input := pwDir + "/../../test_assets/incorrect_commands_test.yml"
 		_, err := ProcessConfigFile(input)
@@ -72,9 +69,6 @@ error message: exit status 127`
 		Expect(err.Error()).To(BeEquivalentTo(expected))
 
 	})
-
-
-
 
 	It("should leave the program unchanged in case there's no inline shell statements", func() {
 		input, err := ProcessConfigFile(pwDir + "/../../test_assets/no_commands_test.yml")
