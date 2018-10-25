@@ -7,17 +7,17 @@ releases:
 - chart_name: uaa
   chart_namespace: uaa
   chart_version: 0
-  chart_location: <please define the location of your charts, full path>
+  chart_location: "/Users/encalada/Documents/Bluemix/go/src/github.ibm.com/hatch/havener/new-charts/uaa"
   overrides:
     secrets:
       UAA_ADMIN_CLIENT_SECRET: foobar
     env:
-      DOMAIN: 192.168.99.100.xip.io
+      DOMAIN: ((shell minikube ip)).xip.io
     image:
       pullPolicy: "Always"
     kube:
       hostpath_available: true
       external_ips:
-      - 192.168.99.100
+      - ((shell dig +short $(minikube ip).xip.io))
       storage_class:
         persistent: "standard"

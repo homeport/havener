@@ -7,18 +7,18 @@ releases:
 - chart_name: cf
   chart_namespace: cf
   chart_version: 0
-  chart_location: <please define the location of your charts, full path>
+  chart_location: "/Users/encalada/Documents/Bluemix/go/src/github.ibm.com/hatch/havener/new-charts/cf"
   overrides:
     secrets:
       CLUSTER_ADMIN_PASSWORD: changeme
       UAA_ADMIN_CLIENT_SECRET: foobar
-      UAA_CA_CERT: <please define the UAA ca cert> #see https://gist.github.ibm.com/matthias-diester/01efeca78fb622a6c9ac2b40a27486f9
+      UAA_CA_CERT: (( shell kubectl --namespace uaa get pods --output json | jq --raw-output ".items[].spec.containers[] | select(.name == \"uaa\") | .env[] | select(.name == \"INTERNAL_CA_CERT\") | [ .valueFrom.secretKeyRef.name, .valueFrom.secretKeyRef.key ] | @tsv" | while read -r SECRET_NAME SECRET_KEY; do kubectl --namespace uaa get secret "${SECRET_NAME}" --output json | jq --raw-output ".data[\"${SECRET_KEY}\"]" | base64 --decode; done))
     env:
-      DOMAIN: 192.168.99.100.xip.io
-      TCP_DOMAIN: tcp.192.168.99.100.xip.io
-      UAA_HOST: uaa.192.168.99.100.xip.io
+      DOMAIN: ((shell minikube ip)).xip.io
+      TCP_DOMAIN: tcp.((shell minikube ip)).xip.io
+      UAA_HOST: uaa.((shell minikube ip)).xip.io
       UAA_PORT: 2793
-      INSECURE_DOCKER_REGISTRIES: "\"insecure-registry.192.168.99.100.xip.io:20005\""
+      INSECURE_DOCKER_REGISTRIES: insecure-registry.((shell minikube ip)).xip.io:20005
       GARDEN_APPARMOR_PROFILE: ""
     image:
       pullPolicy: "Always"
@@ -26,6 +26,6 @@ releases:
       hostpath_available: true
       external_ips:
       - 192.0.2.42
-      - 192.168.99.100
+      - ((shell dig +short $(minikube ip).xip.io))
       storage_class:
         persistent: "standard"
