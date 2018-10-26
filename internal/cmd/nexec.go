@@ -21,7 +21,7 @@
 package cmd
 
 import (
-	"fmt"
+	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -40,22 +40,18 @@ command on the pod that is executed in the root namespace. Technically, this
 is like running the command as you would run it on the node itself. The job
 and respective pod will be deleted after the command was executed.
 
-The provided command to be executed is wrapped into a '/bin/sh -c "command"'
-construct. Keep this in mind when you want to use pipes, logical operators,
-and parentheses.
-
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		stdout, stderr, err := havener.NodeExec(args[0], strings.Join(args[1:], " "))
+		nodeName, command := args[0], strings.Join(args[1:], " ")
+
+		client, restconfig, err := havener.OutOfClusterAuthentication()
 		if err != nil {
+			havener.ExitWithError("failed to connect to Kubernetes cluster", err)
+		}
+
+		if err := havener.NodeExec(client, restconfig, nodeName, command, os.Stdin, os.Stdout, os.Stderr); err != nil {
 			havener.ExitWithError("failed to execute command on node", err)
 		}
-
-		if len(stderr) > 0 {
-			fmt.Print(stderr)
-		}
-
-		fmt.Print(stdout)
 	},
 }
 

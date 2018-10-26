@@ -25,8 +25,8 @@ package havener
 // metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 import (
-	"bytes"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -65,10 +65,7 @@ import (
 const defaultTimeoutForGetPod = 5
 
 // PodExec executes the provided command in the referenced pod.
-func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.Pod, command string) (string, string, error) {
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-
+func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.Pod, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
 	req := client.CoreV1().RESTClient().Post().
 		Resource("pods").
 		Name(pod.Name).
@@ -77,40 +74,36 @@ func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.P
 		VersionedParams(&corev1.PodExecOptions{
 			Container: pod.Spec.Containers[0].Name,
 			Command:   []string{"/bin/sh", "-c", command},
+			Stdin:     true,
 			Stdout:    true,
 			Stderr:    true,
 		}, scheme.ParameterCodec)
 
 	executor, err := remotecommand.NewSPDYExecutor(restconfig, "POST", req.URL())
 	if err != nil {
-		return "", "", fmt.Errorf("failed to initialize remote executor: %v", err)
+		return fmt.Errorf("failed to initialize remote executor: %v", err)
 	}
 
-	if err = executor.Stream(remotecommand.StreamOptions{Stdout: &stdout, Stderr: &stderr, Tty: false}); err != nil {
+	if err = executor.Stream(remotecommand.StreamOptions{Stdin: stdin, Stdout: stdout, Stderr: stderr, Tty: false}); err != nil {
 		switch err.(type) {
 		case exec.CodeExitError:
 			// In case this needs to be refactored in a way where the exit code of the remote command is interesting
-			return "", "", fmt.Errorf("remote command failed with exit code %d", err.(exec.CodeExitError).Code)
+			return fmt.Errorf("remote command failed with exit code %d", err.(exec.CodeExitError).Code)
 
 		default:
-			return "", "", fmt.Errorf("could not execute: %v", err)
+			return fmt.Errorf("could not execute: %v", err)
 		}
 	}
 
-	return stdout.String(), stderr.String(), nil
+	return nil
 }
 
 // NodeExec executes the provided command on the given node.
-func NodeExec(node string, command string) (string, string, error) {
+func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
 	// TODO These fields should be made customizable using a configuration file
 	namespace := "kube-system"
 	containerName := "runon"
 	containerImage := "debian:jessie"
-
-	client, restconfig, err := OutOfClusterAuthentication()
-	if err != nil {
-		return "", "", err
-	}
 
 	jobName := strings.ToLower(RandomStringWithPrefix("node-runner-", 24))
 	trueThat := true
@@ -142,7 +135,7 @@ func NodeExec(node string, command string) (string, string, error) {
 
 	job, err := client.BatchV1().Jobs(namespace).Create(jobDef)
 	if err != nil {
-		return "", "", err
+		return err
 	}
 
 	// Make sure that both the job and the pod it spawned are removed
@@ -158,13 +151,13 @@ func NodeExec(node string, command string) (string, string, error) {
 
 	pod, err := getPodUsingListOptions(client, namespace, metav1.ListOptions{LabelSelector: fmt.Sprintf("controller-uid=%s,job-name=%s", job.ObjectMeta.UID, jobName)})
 	if err != nil {
-		return "", "", err
+		return err
 	}
 
 	// The reference to the pod that was spawned for the job.
 	watcher, err := client.CoreV1().Pods(namespace).Watch(metav1.SingleObject(pod.ObjectMeta))
 	if err != nil {
-		return "", "", err
+		return err
 	}
 
 	// Wait until the pod reports Ready state
@@ -179,11 +172,19 @@ func NodeExec(node string, command string) (string, string, error) {
 			}
 
 		default:
-			return "", "", fmt.Errorf("unknown event type occurred: %v", event.Type)
+			return fmt.Errorf("unknown event type occurred: %v", event.Type)
 		}
 	}
 
-	return PodExec(client, restconfig, pod, fmt.Sprintf("nsenter --target 1 --mount --uts --ipc --net --pid -- /bin/sh -c '%s'", command))
+	return PodExec(
+		client,
+		restconfig,
+		pod,
+		fmt.Sprintf("nsenter --target 1 --mount --uts --ipc --net --pid -- %s", command),
+		stdin,
+		stdout,
+		stderr,
+	)
 }
 
 func getPodUsingListOptions(client kubernetes.Interface, namespace string, listOptions metav1.ListOptions) (*corev1.Pod, error) {
