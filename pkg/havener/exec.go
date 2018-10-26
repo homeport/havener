@@ -95,8 +95,8 @@ func traverseStructureAndProcessShellOperators(input interface{}) (interface{}, 
 // processShellOperator processes the input string and evaluates any shell
 // operator in it.
 func processShellOperator(s string) (string, error) {
-	// https://regex101.com/r/dvdiTp/1
-	shellRegexp := regexp.MustCompile(`\(\(\s*shell\s+(.+)\s*\)\)`)
+	// https://regex101.com/r/dvdiTp/2
+	shellRegexp := regexp.MustCompile(`\({2}\s*shell\s*(.+?)\s*\B\){2}`)
 	if matches := shellRegexp.FindAllStringSubmatch(s, -1); len(matches) > 0 {
 		for _, match := range matches {
 			/* #0 is the whole string,
