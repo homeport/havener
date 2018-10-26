@@ -28,6 +28,7 @@ import (
 	"bytes"
 	"fmt"
 	"strings"
+	"time"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -60,6 +61,8 @@ import (
    STDERR, but maybe only one output stream that has both streams combined.
    However, this should not be simply a 2>&1, but should still come with the
    possible distinction between the different outputs if required. */
+
+const defaultTimeoutForGetPod = 5
 
 // PodExec executes the provided command in the referenced pod.
 func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.Pod, command string) (string, string, error) {
@@ -153,17 +156,12 @@ func NodeExec(node string, command string) (string, string, error) {
 		})
 	}()
 
-	pods, err := client.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: fmt.Sprintf("controller-uid=%s,job-name=%s", job.ObjectMeta.UID, jobName)})
+	pod, err := getPodUsingListOptions(client, namespace, metav1.ListOptions{LabelSelector: fmt.Sprintf("controller-uid=%s,job-name=%s", job.ObjectMeta.UID, jobName)})
 	if err != nil {
 		return "", "", err
 	}
 
-	if len(pods.Items) != 1 {
-		return "", "", fmt.Errorf("unable to get pod for job")
-	}
-
 	// The reference to the pod that was spawned for the job.
-	pod := &pods.Items[0]
 	watcher, err := client.CoreV1().Pods(namespace).Watch(metav1.SingleObject(pod.ObjectMeta))
 	if err != nil {
 		return "", "", err
@@ -186,4 +184,26 @@ func NodeExec(node string, command string) (string, string, error) {
 	}
 
 	return PodExec(client, restconfig, pod, fmt.Sprintf("nsenter --target 1 --mount --uts --ipc --net --pid -- /bin/sh -c '%s'", command))
+}
+
+func getPodUsingListOptions(client kubernetes.Interface, namespace string, listOptions metav1.ListOptions) (*corev1.Pod, error) {
+	timeout := time.After(defaultTimeoutForGetPod * time.Second)
+	tick := time.Tick(250 * time.Millisecond)
+
+	for {
+		select {
+		case <-tick:
+			pods, err := client.CoreV1().Pods(namespace).List(listOptions)
+			if err != nil {
+				return nil, err
+			}
+
+			if len(pods.Items) == 1 {
+				return &pods.Items[0], nil
+			}
+
+		case <-timeout:
+			return nil, fmt.Errorf("failed to get pod after %d seconds", defaultTimeoutForGetPod)
+		}
+	}
 }
