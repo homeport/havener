@@ -28,6 +28,8 @@ import (
 	"github.ibm.com/hatch/havener/pkg/havener"
 )
 
+var nodeExecTty bool
+
 // nodeExecCmd represents the node-exec command
 var nodeExecCmd = &cobra.Command{
 	Use:   "node-exec [flags] <node> <command>",
@@ -49,7 +51,7 @@ and respective pod will be deleted after the command was executed.
 			havener.ExitWithError("failed to connect to Kubernetes cluster", err)
 		}
 
-		if err := havener.NodeExec(client, restconfig, nodeName, command, os.Stdin, os.Stdout, os.Stderr); err != nil {
+		if err := havener.NodeExec(client, restconfig, nodeName, command, os.Stdin, os.Stdout, os.Stderr, nodeExecTty); err != nil {
 			havener.ExitWithError("failed to execute command on node", err)
 		}
 	},
@@ -57,4 +59,6 @@ and respective pod will be deleted after the command was executed.
 
 func init() {
 	rootCmd.AddCommand(nodeExecCmd)
+
+	nodeExecCmd.PersistentFlags().BoolVar(&nodeExecTty, "tty", false, "allocate pseudo-terminal for command execution")
 }

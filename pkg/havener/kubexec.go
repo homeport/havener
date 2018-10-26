@@ -30,6 +30,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/crypto/ssh/terminal"
+
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -57,15 +59,11 @@ import (
    becomes ready. Idea would be like an addional check if N seconds elapsed
    and no result was return to abort the execution completely. */
 
-/* TODO Rework result types, so that we do not have a seperate STDOUT and
-   STDERR, but maybe only one output stream that has both streams combined.
-   However, this should not be simply a 2>&1, but should still come with the
-   possible distinction between the different outputs if required. */
-
+// defaultTimeoutForGetPod is the timeout in seconds to wait until a newly created job spawned the actual pod
 const defaultTimeoutForGetPod = 5
 
 // PodExec executes the provided command in the referenced pod.
-func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.Pod, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.Pod, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
 	req := client.CoreV1().RESTClient().Post().
 		Resource("pods").
 		Name(pod.Name).
@@ -74,9 +72,10 @@ func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.P
 		VersionedParams(&corev1.PodExecOptions{
 			Container: pod.Spec.Containers[0].Name,
 			Command:   []string{"/bin/sh", "-c", command},
-			Stdin:     true,
-			Stdout:    true,
-			Stderr:    true,
+			Stdin:     stdin != nil,
+			Stdout:    stdout != nil,
+			Stderr:    stderr != nil,
+			TTY:       tty,
 		}, scheme.ParameterCodec)
 
 	executor, err := remotecommand.NewSPDYExecutor(restconfig, "POST", req.URL())
@@ -84,7 +83,16 @@ func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.P
 		return fmt.Errorf("failed to initialize remote executor: %v", err)
 	}
 
-	if err = executor.Stream(remotecommand.StreamOptions{Stdin: stdin, Stdout: stdout, Stderr: stderr, Tty: false}); err != nil {
+	// Terminal needs to run in raw mode for the actual command execution when TTY is enabled.
+	// The raw mode is the one where characters are not printed twice in the terminal. See
+	// https://en.wikipedia.org/wiki/POSIX_terminal_interface#History for a bit more details.
+	if tty {
+		if stateToBeRestored, err := terminal.MakeRaw(0); err == nil {
+			defer terminal.Restore(0, stateToBeRestored)
+		}
+	}
+
+	if err = executor.Stream(remotecommand.StreamOptions{Stdin: stdin, Stdout: stdout, Stderr: stderr, Tty: tty}); err != nil {
 		switch err.(type) {
 		case exec.CodeExitError:
 			// In case this needs to be refactored in a way where the exit code of the remote command is interesting
@@ -99,7 +107,7 @@ func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.P
 }
 
 // NodeExec executes the provided command on the given node.
-func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
 	// TODO These fields should be made customizable using a configuration file
 	namespace := "kube-system"
 	containerName := "runon"
@@ -184,6 +192,7 @@ func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string,
 		stdin,
 		stdout,
 		stderr,
+		tty,
 	)
 }
 
