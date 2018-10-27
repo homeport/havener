@@ -3,35 +3,35 @@ releases:
 - chart_name: uaa
   chart_namespace: uaa
   chart_version: 0
-  chart_location: <please define the location of your charts>
+  chart_location: charts/uaa
   overrides:
    secrets:
      UAA_ADMIN_CLIENT_SECRET: foobar
    env:
-     DOMAIN: something.eu-de.containers.appdomain.cloud
+     DOMAIN: (( shell bx cs cluster-get --cluster scf-fabric --json | jq --raw-output .ingressHostname ))
    kube:
      external_ips:
-     - <please define the external ip of your cluster>
+     - (( shell dig +short $(bx cs cluster-get --cluster scf-fabric --json | jq --raw-output .ingressHostname) ))
      storage_class:
        persistent: "ibmc-file-gold"
 - chart_name: cf
   chart_namespace: cf
   chart_version: 0
-  chart_location: <please define the location of your charts>
+  chart_location: charts/cf
   overrides:
     secrets:
-      CLUSTER_ADMIN_PASSWORD: <please define the cluster admin pwd>
-      UAA_ADMIN_CLIENT_SECRET: <please define the uaa admin client secret>
-      UAA_CA_CERT: <please define the UAA ca cert>
+      CLUSTER_ADMIN_PASSWORD: changeme
+      UAA_ADMIN_CLIENT_SECRET: foobar
+      UAA_CA_CERT: (( shell kubectl --namespace uaa get pods --output json | jq --raw-output ".items[].spec.containers[] | select(.name == \"uaa\") | .env[] | select(.name == \"INTERNAL_CA_CERT\") | [ .valueFrom.secretKeyRef.name, .valueFrom.secretKeyRef.key ] | @tsv" | while read -r SECRET_NAME SECRET_KEY; do kubectl --namespace uaa get secret "${SECRET_NAME}" --output json | jq --raw-output ".data[\"${SECRET_KEY}\"]" | base64 --decode; done ))
     env:
-      DOMAIN: something.eu-de.containers.appdomain.cloud
-      TCP_DOMAIN: tcp.something.eu-de.containers.appdomain.cloud
-      UAA_HOST: uaa.something.eu-de.containers.appdomain.cloud
+      DOMAIN: (( shell bx cs cluster-get --cluster scf-fabric --json | jq --raw-output .ingressHostname ))
+      TCP_DOMAIN: tcp.(( shell bx cs cluster-get --cluster scf-fabric --json | jq --raw-output .ingressHostname ))
+      UAA_HOST: uaa.(( shell bx cs cluster-get --cluster scf-fabric --json | jq --raw-output .ingressHostname ))
       UAA_PORT: 2793
-      INSECURE_DOCKER_REGISTRIES: "\"insecure-registry.something.eu-de.containers.appdomain.cloud:20005\""
+      INSECURE_DOCKER_REGISTRIES: "\"insecure-registry.(( shell bx cs cluster-get --cluster scf-fabric --json | jq --raw-output .ingressHostname )):20005\""
     kube:
       external_ips:
       - 192.0.2.42
-      - <please define the external ip of your cluster>
+      - (( shell dig +short $(bx cs cluster-get --cluster scf-fabric --json | jq --raw-output .ingressHostname) ))
       storage_class:
         persistent: "ibmc-file-gold"
