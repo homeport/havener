@@ -21,16 +21,15 @@
 package havener
 
 import (
+	"fmt"
 	"strings"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/helm/pkg/helm"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
 )
-
-/* TODO Add code to purge functions to wait until the resources
-   are no longer there. */
 
 var defaultPropagationPolicy = metav1.DeletePropagationForeground
 
@@ -124,7 +123,29 @@ func PurgeStatefulSetsInNamespace(kubeClient kubernetes.Interface, namespace str
 
 // PurgeNamespace removes the namespace from the cluster.
 func PurgeNamespace(kubeClient kubernetes.Interface, namespace string) error {
-	return kubeClient.CoreV1().Namespaces().Delete(namespace, &metav1.DeleteOptions{
-		PropagationPolicy: &defaultPropagationPolicy,
-	})
+	ns, err := kubeClient.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	watcher, err := kubeClient.CoreV1().Namespaces().Watch(metav1.SingleObject(ns.ObjectMeta))
+	if err != nil {
+		return err
+	}
+
+	if err := kubeClient.CoreV1().Namespaces().Delete(namespace, &metav1.DeleteOptions{PropagationPolicy: &defaultPropagationPolicy}); err != nil {
+		return err
+	}
+
+	for event := range watcher.ResultChan() {
+		switch event.Type {
+		case watch.Deleted:
+			watcher.Stop()
+
+		case watch.Error:
+			return fmt.Errorf("failed to delete namespace %s", namespace)
+		}
+	}
+
+	return nil
 }

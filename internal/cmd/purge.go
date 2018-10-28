@@ -62,4 +62,6 @@ func getConfiguredHelmClient() *helm.Client {
 
 func init() {
 	rootCmd.AddCommand(purgeCmd)
+
+	purgeCmd.PersistentFlags().BoolVar(&havener.NoUserPrompt, "non-interactive", false, "delete without asking for confirmation")
 }
