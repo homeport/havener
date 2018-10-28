@@ -21,6 +21,7 @@
 .PHONY: clean sanity test build
 
 version := $(shell git describe --tags --abbrev=0 2>/dev/null || ( git rev-parse HEAD | cut -c1-8 ))
+gofiles := $(wildcard cmd/havener/*.go internal/cmd/*.go pkg/havener/*.go)
 
 all: test build
 
@@ -34,16 +35,13 @@ sanity:
 test: sanity
 	ginkgo -r --nodes 4 --randomizeAllSpecs --randomizeSuites --race --trace
 
-binaries:
-	@mkdir -p binaries
-
 build: binaries/havener-windows-amd64 binaries/havener-darwin-amd64 binaries/havener-linux-amd64
 
-binaries/havener-windows-amd64: binaries
+binaries/havener-windows-amd64: $(gofiles)
 	GOOS=windows GOARCH=amd64 go build -ldflags '-s -w -X github.ibm.com/hatch/havener/internal/cmd.version=$(version) -extldflags "-static"' -o binaries/havener-windows-amd64 cmd/havener/main.go
 
-binaries/havener-darwin-amd64: binaries
+binaries/havener-darwin-amd64: $(gofiles)
 	GOOS=darwin GOARCH=amd64 go build -ldflags '-s -w -X github.ibm.com/hatch/havener/internal/cmd.version=$(version) -extldflags "-static"' -o binaries/havener-darwin-amd64 cmd/havener/main.go
 
-binaries/havener-linux-amd64: binaries
+binaries/havener-linux-amd64: $(gofiles)
 	GOOS=linux GOARCH=amd64 go build -ldflags '-s -w -X github.ibm.com/hatch/havener/internal/cmd.version=$(version) -extldflags "-static"' -o binaries/havener-linux-amd64 cmd/havener/main.go
