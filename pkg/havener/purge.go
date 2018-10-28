@@ -21,6 +21,8 @@
 package havener
 
 import (
+	"strings"
+
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/helm/pkg/helm"
 
@@ -36,6 +38,10 @@ var defaultHelmDeleteTimeout = int64(15 * 60)
 
 // PurgeHelmReleases removes all helm releases including their respective resources.
 func PurgeHelmReleases(kubeClient kubernetes.Interface, helmClient *helm.Client, helmReleases ...string) error {
+	if ok := PromptUser("Are you sure you want to delete the Helm Releases " + strings.Join(helmReleases, ", ") + "? (yes/no): "); !ok {
+		return nil
+	}
+
 	errors := make(chan error, len(helmReleases))
 
 	for _, name := range helmReleases {
