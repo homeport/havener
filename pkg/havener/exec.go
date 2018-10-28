@@ -49,7 +49,7 @@ func ProcessConfigFile(path string) (*Config, error) {
 			continue
 		}
 
-		config.Releases[idx].Overrides, err = traverseStructureAndProcessShellOperators(release.Overrides)
+		config.Releases[idx].Overrides, err = TraverseStructureAndProcessShellOperators(release.Overrides)
 		if err != nil {
 			return nil, err
 		}
@@ -58,16 +58,16 @@ func ProcessConfigFile(path string) (*Config, error) {
 	return &config, nil
 }
 
-// traverseStructureAndProcessShellOperators traverses the provided generic structure
+// TraverseStructureAndProcessShellOperators traverses the provided generic structure
 // and processes all string leafs.
-func traverseStructureAndProcessShellOperators(input interface{}) (interface{}, error) {
+func TraverseStructureAndProcessShellOperators(input interface{}) (interface{}, error) {
 	var err error
 
 	switch input.(type) {
 	case map[interface{}]interface{}:
 		newmap := input.(map[interface{}]interface{})
 		for key, value := range newmap {
-			newmap[key], err = traverseStructureAndProcessShellOperators(value)
+			newmap[key], err = TraverseStructureAndProcessShellOperators(value)
 			if err != nil {
 				return nil, err
 			}
@@ -76,7 +76,7 @@ func traverseStructureAndProcessShellOperators(input interface{}) (interface{}, 
 	case []interface{}:
 		newarr := input.([]interface{})
 		for idx, value := range newarr {
-			newarr[idx], err = traverseStructureAndProcessShellOperators(value)
+			newarr[idx], err = TraverseStructureAndProcessShellOperators(value)
 			if err != nil {
 				return nil, err
 			}

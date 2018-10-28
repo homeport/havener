@@ -22,9 +22,13 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
 	"github.ibm.com/hatch/havener/pkg/havener"
+
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -46,18 +50,29 @@ var deployCmd = &cobra.Command{
 			fmt.Println("Using config file:", viper.ConfigFileUsed())
 		}
 
-		config, err := havener.ProcessConfigFile(viper.GetString("havenerconfig"))
+		cfgdata, err := ioutil.ReadFile(viper.GetString("havenerconfig"))
 		if err != nil {
-			panic(err)
+			havener.ExitWithError("unable to read file", err)
+		}
+
+		var config havener.Config
+		if err := yaml.Unmarshal(cfgdata, &config); err != nil {
+			havener.ExitWithError("failed to unmarshal config file", err)
 		}
 
 		for _, release := range config.Releases {
-			overrides, err := yaml.Marshal(release.Overrides)
+			overrides, err := havener.TraverseStructureAndProcessShellOperators(release.Overrides)
 			if err != nil {
-				panic(err)
+				havener.ExitWithError("failed to process overrides section", err)
 			}
+
+			overridesData, err := yaml.Marshal(overrides)
+			if err != nil {
+				havener.ExitWithError("failed to marshal overrides structure into bytes", err)
+			}
+
 			fmt.Printf("Going to create new helm chart for %s\n", release.ChartName)
-			if _, err := havener.DeployHelmRelease(release.ChartName, release.ChartNamespace, release.ChartLocation, overrides); err != nil {
+			if _, err := havener.DeployHelmRelease(release.ChartName, release.ChartNamespace, release.ChartLocation, overridesData); err != nil {
 				havener.ExitWithError("Error deploying chart", err)
 			}
 		}
