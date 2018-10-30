@@ -41,7 +41,9 @@ var purgeCmd = &cobra.Command{
 			havener.ExitWithError("unable to get access to cluster", err)
 		}
 
-		havener.PurgeHelmReleases(client, getConfiguredHelmClient(), args...)
+		if err := havener.PurgeHelmReleases(client, getConfiguredHelmClient(), args...); err != nil {
+			havener.ExitWithError("failed to purge helm releases", err)
+		}
 	},
 }
 
