@@ -22,7 +22,6 @@ package havener
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -51,6 +50,36 @@ func ListDeploymentsInNamespace(client kubernetes.Interface, namespace string) (
 	result := make([]string, len(list.Items))
 	for idx, item := range list.Items {
 		result[idx] = item.Name
+	}
+
+	return result, nil
+}
+
+// ListNamespaces lists all namespaces
+func ListNamespaces(client kubernetes.Interface) ([]string, error) {
+	namespaceList, err := client.CoreV1().Namespaces().List(metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]string, len(namespaceList.Items))
+	for i, namespace := range namespaceList.Items {
+		result[i] = namespace.Name
+	}
+
+	return result, nil
+}
+
+// ListSecretsInNamespace lists all secrets in a given namespace
+func ListSecretsInNamespace(client kubernetes.Interface, namespace string) ([]string, error) {
+	secretList, err := client.CoreV1().Secrets(namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]string, len(secretList.Items))
+	for i, secret := range secretList.Items {
+		result[i] = secret.Name
 	}
 
 	return result, nil

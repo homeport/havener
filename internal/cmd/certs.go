@@ -22,22 +22,26 @@ package cmd
 
 import (
 	"fmt"
-
 	"github.com/spf13/cobra"
+	"github.ibm.com/hatch/havener/pkg/havener"
 )
 
-// logsCmd represents the logs command
-var logsCmd = &cobra.Command{
-	Use:   "logs",
-	Short: "Retrieve logs from all pods",
-	Long:  `Retrieve logs from all pods for specific namespaces`,
+// certCmd represents the cert command
+var certsCmd = &cobra.Command{
+	Use:   "certs",
+	Short: "Check certificates",
+	Long:  `Verify certificates from all secrets in all namespaces`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("logs called")
+		err := havener.VerifyCertExpirations()
+		if err != nil {
+			fmt.Println(err)
+		}
+
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(logsCmd)
+	rootCmd.AddCommand(certsCmd)
 
 	// Here you will define your flags and configuration settings.
 

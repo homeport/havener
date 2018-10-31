@@ -10,7 +10,7 @@ import (
 var _ = Describe("Exec", func() {
 	pwDir, _ := os.Getwd()
 	It("should replace correct inline shell statements with commands", func() {
-		input, err := ProcessConfigFile(pwDir + "/../../test_assets/correct_commands_test.yml")
+		input, err := ProcessConfigFile(pwDir + "/../../test/correct_commands_test.yml")
 		if err != nil {
 			panic(err)
 		}
@@ -41,7 +41,7 @@ releases:
 	})
 
 	It("should replace correct inline shell statements with commands; with no override section", func() {
-		input, err := ProcessConfigFile(pwDir + "/../../test_assets/no_overrides_test.yml")
+		input, err := ProcessConfigFile(pwDir + "/../../test/no_overrides_test.yml")
 		if err != nil {
 			panic(err)
 		}
@@ -60,7 +60,7 @@ releases:
 	})
 
 	It("should return an error when there's a false inline shell statement", func() {
-		input := pwDir + "/../../test_assets/incorrect_commands_test.yml"
+		input := pwDir + "/../../test/incorrect_commands_test.yml"
 		_, err := ProcessConfigFile(input)
 
 		expected := `failed to run command: abcd
@@ -71,7 +71,7 @@ error message: exit status 127`
 	})
 
 	It("should leave the program unchanged in case there's no inline shell statements", func() {
-		input, err := ProcessConfigFile(pwDir + "/../../test_assets/no_commands_test.yml")
+		input, err := ProcessConfigFile(pwDir + "/../../test/no_commands_test.yml")
 		if err != nil {
 			panic(err)
 		}
