@@ -23,9 +23,7 @@ package havener
 import (
 	"fmt"
 	"strings"
-	"time"
 
-	"github.com/briandowns/spinner"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/helm/pkg/helm"
 
@@ -58,12 +56,6 @@ func PurgeHelmReleases(kubeClient kubernetes.Interface, helmClient *helm.Client,
 	if ok := PromptUser("Are you sure you want to delete the Helm Releases " + strings.Join(toBeDeleted, ", ") + "? (yes/no): "); !ok {
 		return nil
 	}
-
-	// Add some visual feedback that things are being done
-	spin := spinner.New(spinner.CharSets[11], 100*time.Millisecond)
-	spin.Suffix = " Purging helm releases " + strings.Join(toBeDeleted, ", ")
-	spin.Start()
-	defer spin.Stop()
 
 	// Start to purge the helm releaes in parallel
 	errors := make(chan error, len(toBeDeleted))
