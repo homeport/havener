@@ -90,12 +90,16 @@ func PurgeHelmRelease(kubeClient kubernetes.Interface, helmClient *helm.Client, 
 		return err
 	}
 
-	errors := make(chan error, 4)
+	if err := PurgeDeploymentsInNamespace(kubeClient, statusResp.Namespace); err != nil {
+		return err
+	}
 
-	go func(namespace string) { errors <- PurgeDeploymentsInNamespace(kubeClient, namespace) }(statusResp.Namespace)
-	go func(namespace string) { errors <- PurgeStatefulSetsInNamespace(kubeClient, namespace) }(statusResp.Namespace)
+	if err := PurgeStatefulSetsInNamespace(kubeClient, statusResp.Namespace); err != nil {
+		return err
+	}
+
+	errors := make(chan error, 2)
 	go func(namespace string) { errors <- PurgeNamespace(kubeClient, namespace) }(statusResp.Namespace)
-
 	go func(helmRelease string) {
 		_, err := helmClient.DeleteRelease(helmRelease,
 			helm.DeletePurge(true),
