@@ -30,7 +30,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/HeavyWombat/dyff/pkg/v1/bunt"
+	"github.com/HeavyWombat/gonvenience/pkg/v1/bunt"
 	colorful "github.com/lucasb-eyer/go-colorful"
 
 	"k8s.io/client-go/kubernetes"
