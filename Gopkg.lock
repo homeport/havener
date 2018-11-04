@@ -21,11 +21,11 @@
 
 [[projects]]
   digest = "1:b2011d989dee40ec66b8d8d627ed7b10408ad044dc21f2e478afd6437cb06f71"
-  name = "github.com/HeavyWombat/dyff"
+  name = "github.com/HeavyWombat/gonvenience"
   packages = ["pkg/v1/bunt"]
   pruneopts = "NUT"
-  revision = "8ff397437cedf562e3173a55051b429058108f2d"
-  version = "v0.5-beta.17"
+  revision = "3905975288526a3a1c355f8f433e701e3e29a122"
+  version = "v1.0"
 
 [[projects]]
   digest = "1:79783ea658e83efedef1da04cd98ec1440ad191a4835cfb868de0ed37144f16d"
@@ -1438,7 +1438,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/HeavyWombat/dyff/pkg/v1/bunt",
+    "github.com/HeavyWombat/gonvenience/pkg/v1/bunt",
     "github.com/lucasb-eyer/go-colorful",
     "github.com/mitchellh/go-homedir",
     "github.com/onsi/ginkgo",
