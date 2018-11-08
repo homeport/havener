@@ -51,12 +51,12 @@ import (
    but keep it running so that we have the pod around. Then, subsequent execs
    can be done to this pod. */
 
-/* TODO The functions in here lack a common style and symetry. One needs the
+/* TODO The functions in here lack a common style and symmetry. One needs the
    the Kubernetes client and a POD reference, the other just a name. Think
    about ideas on whether it makes sense to harmonize this a little bit. */
 
 /* TODO Introduce a timeout to the wait loop that checks whether the pod
-   becomes ready. Idea would be like an addional check if N seconds elapsed
+   becomes ready. Idea would be like an additional check if N seconds elapsed
    and no result was return to abort the execution completely. */
 
 // defaultTimeoutForGetPod is the timeout in seconds to wait until a newly created job spawned the actual pod
