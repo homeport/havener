@@ -1,5 +1,5 @@
 # havener
-Proof of concept tool to help you manage Kubernetes releases
+Proof of concept tool to help you manage helm releases
 
 ## Development
 ### Vendoring
