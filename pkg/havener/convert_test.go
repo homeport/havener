@@ -24,7 +24,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.ibm.com/hatch/havener/pkg/havener"
+	. "github.com/homeport/havener/pkg/havener"
 )
 
 var _ = Describe("Convert", func() {

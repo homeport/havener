@@ -20,7 +20,7 @@
 
 package main
 
-import "github.ibm.com/hatch/havener/internal/cmd"
+import "github.com/homeport/havener/internal/cmd"
 
 func main() {
 	cmd.Execute()

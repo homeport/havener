@@ -23,7 +23,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/spf13/cobra"
-	"github.ibm.com/hatch/havener/pkg/havener"
+	"github.com/homeport/havener/pkg/havener"
 )
 
 // certCmd represents the cert command

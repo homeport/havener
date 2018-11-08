@@ -20,7 +20,7 @@ The `sed` command in there is required to fix a weird `dep` error message about 
 make all
 ```
 ### Installing your helm charts
-For deploying one or more helm charts, we have friendly [configuration files](https://github.ibm.com/hatch/havener/tree/develop/examples) for different IaaS. The idea behind is mainly to reduce the pain when deploying multiple charts via helm. [Current way of doing it in SCF example](https://github.com/SUSE/scf/wiki/How-to-Install-SCF#deploy-using-helm)
+For deploying one or more helm charts, we have friendly [configuration files](https://github.com/homeport/havener/tree/develop/examples) for different IaaS. The idea behind is mainly to reduce the pain when deploying multiple charts via helm. [Current way of doing it in SCF example](https://github.com/SUSE/scf/wiki/How-to-Install-SCF#deploy-using-helm)
 
 We have a nice feature to support the execution of `shell` commands inside all keys of the
 `releases[].overrides` , this deletes the need of making extra operations before or after triggering a helm `install`.

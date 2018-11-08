@@ -38,10 +38,10 @@ test: sanity
 build: binaries/havener-windows-amd64 binaries/havener-darwin-amd64 binaries/havener-linux-amd64
 
 binaries/havener-windows-amd64: $(gofiles)
-	GOOS=windows GOARCH=amd64 go build -ldflags '-s -w -X github.ibm.com/hatch/havener/internal/cmd.version=$(version) -extldflags "-static"' -o binaries/havener-windows-amd64 cmd/havener/main.go
+	GOOS=windows GOARCH=amd64 go build -ldflags '-s -w -X github.com/homeport/havener/internal/cmd.version=$(version) -extldflags "-static"' -o binaries/havener-windows-amd64 cmd/havener/main.go
 
 binaries/havener-darwin-amd64: $(gofiles)
-	GOOS=darwin GOARCH=amd64 go build -ldflags '-s -w -X github.ibm.com/hatch/havener/internal/cmd.version=$(version) -extldflags "-static"' -o binaries/havener-darwin-amd64 cmd/havener/main.go
+	GOOS=darwin GOARCH=amd64 go build -ldflags '-s -w -X github.com/homeport/havener/internal/cmd.version=$(version) -extldflags "-static"' -o binaries/havener-darwin-amd64 cmd/havener/main.go
 
 binaries/havener-linux-amd64: $(gofiles)
-	GOOS=linux GOARCH=amd64 go build -ldflags '-s -w -X github.ibm.com/hatch/havener/internal/cmd.version=$(version) -extldflags "-static"' -o binaries/havener-linux-amd64 cmd/havener/main.go
+	GOOS=linux GOARCH=amd64 go build -ldflags '-s -w -X github.com/homeport/havener/internal/cmd.version=$(version) -extldflags "-static"' -o binaries/havener-linux-amd64 cmd/havener/main.go

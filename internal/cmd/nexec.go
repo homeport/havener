@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.ibm.com/hatch/havener/pkg/havener"
+	"github.com/homeport/havener/pkg/havener"
 )
 
 var nodeExecTty bool

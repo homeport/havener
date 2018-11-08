@@ -27,7 +27,7 @@ import (
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.ibm.com/hatch/havener/pkg/havener"
+	"github.com/homeport/havener/pkg/havener"
 )
 
 // kubeCfgFile is the path to the KUBECONFIG yaml

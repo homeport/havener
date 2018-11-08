@@ -27,7 +27,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.ibm.com/hatch/havener/pkg/havener"
+	"github.com/homeport/havener/pkg/havener"
 
 	yaml "gopkg.in/yaml.v2"
 )

@@ -27,7 +27,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.ibm.com/hatch/havener/pkg/havener"
+	. "github.com/homeport/havener/pkg/havener"
 )
 
 func errorCount(certMap map[string]*VerifiedCert) (count int) {
