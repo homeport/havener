@@ -38,7 +38,7 @@ minikube start --cpus 4 --disk-size 100g --memory 819
 havener deploy --config examples/minikube-config.yml
 ```
 
-**Installing SCF on minikube**
+**Installing SCF on IBM Armada**
 ```
 havener deploy --config examples/armada-config.yml
 ```
