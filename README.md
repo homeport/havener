@@ -1,3 +1,9 @@
+[![License](https://img.shields.io/github/license/homeport/havener.svg)](https://github.com/homeport/havener/blob/master/LICENSE)
+[![Go Report Card](https://goreportcard.com/badge/github.com/homeport/havener)](https://goreportcard.com/report/github.com/homeport/havener)
+[![Build Status](https://travis-ci.org/homeport/havener.svg?branch=develop)](https://travis-ci.org/homeport/havener)
+[![GoDoc](https://godoc.org/github.com/homeport/havener/pkg?status.svg)](https://godoc.org/github.com/homeport/havener/pkg)
+[![Release](https://img.shields.io/github/release/homeport/havener.svg)](https://github.com/homeport/havener/releases/latest)
+
 # havener
 Proof of concept tool to help you manage helm releases
 
@@ -22,7 +28,6 @@ make all
 
 
 ## Commands
-
 
 If called without subcommands, this is the base command. The Kubeconfig is provided with `--kubeconfig`, which takes the path to the yaml file (for example `$HOME/.kube/config`). If `--kubeconfig` is not set, it will look for the `KUBECONFIG` environment variable.
 

@@ -34,7 +34,7 @@ import (
 
 /* TODO Currently, purge will ignore all non-existing helm releases that were
    provided by the user. Think about making the behaviour configurable: For
-   example by introducing a flagg like `--ignore-non-existent` or similiar. */
+   example by introducing a flag like `--ignore-non-existent` or similar. */
 
 /* TODO Make the spinner configurable. */
 

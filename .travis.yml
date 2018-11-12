@@ -1,0 +1,27 @@
+---
+language: go
+go:
+- 1.8.x
+- 1.9.x
+- 1.10.x
+- 1.11.x
+
+install:
+- curl -sL https://goo.gl/g1CpPX | bash -s v1.0.2 # Golang dev tools including pre-compiled Ginkgo and other useful tools
+
+script:
+- make test
+
+before_deploy:
+- make build
+
+deploy:
+  provider: releases
+  skip_cleanup: true
+  api_key:
+    secure: dzZV5y3/PoZe8Z2YeJWhNBa16XXh1w6E2FkBXKVVB7PWpHajND6iBat87fkW8BgfSz29wMxYQd8UpBjiDzAuxTN+MdNcCkKejxrt0N75/W9aMkb52jRVxl/AkXuDluHayeR2MnjhgWAdrx8ll3SKmwr+HUiOr2MtRLJxGAVI1SdBbjV+j64OyX+3wu3zljAWJNunjGIOuOH84QI4/LIUPUQEACtSBihrQLnVYmecC7t8peSsHYK1uBaPhlgCAjT9hWO3UJzC5aew7ErRs1btvMAQ3BY2/JmI4ZZm1ONf5npKK3fRqZHZKDao/AdztLwYw4hEcklheaEDgaflZcXVr/xuF/uYCD4A62PYSoul3TKxLlUoRu4vWM1okex08leXZgptU+x5Ss5egRFAHe+L+WnAe+4fXGmhj70Ea4lhojHtXNIPm77F3YONcghrrWnGFhc/qGp+hTrymqO8h2vrCCItBhvrD/jlg4H1LeYIzXc1ovQDStmmr3loZCAcbMPer9L1TK1Gtju66QfF7FF3msO2kQuGBXye1Th8fcHRi/3lpJGLfkKE2vQC1Ak27mZO7FWoVi9vAHH5TPtpL9cxwZTaRCulHH6apyS9S+xipvrWwvHdidnenTjPQZgaLXaPOXjzRsxDsk50w+HzGEQRP0/KZjGwHgXljMwlz8B6q+Q=
+  file_glob: true
+  file: binaries/*
+  on:
+    condition: $TRAVIS_GO_VERSION =~ ^1\.11
+    tags: true
