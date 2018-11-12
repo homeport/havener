@@ -25,9 +25,9 @@ import (
 	"io/ioutil"
 	"os"
 
+	. "github.com/homeport/havener/pkg/havener"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/homeport/havener/pkg/havener"
 )
 
 func errorCount(certMap map[string]*VerifiedCert) (count int) {
@@ -162,6 +162,18 @@ E+FdDynG49hiV4MhWpmLdY5xzOWqb7+xmPdo3947SoHe9ZO2Mg==
 			var datamap map[string][]uint8
 			err = json.Unmarshal(fileContent, &datamap)
 			Expect(err.Error()).To(BeEquivalentTo("illegal base64 data at input byte 0"))
+		})
+		It("should return no errors when empty certificates  -- from file", func() {
+			fileContent, err := ioutil.ReadFile(pwDir + "/../../test/valid_cert_with_empty_keys.json")
+			Expect(err).NotTo(HaveOccurred())
+
+			var datamap map[string][]uint8
+			err = json.Unmarshal(fileContent, &datamap)
+			Expect(err).NotTo(HaveOccurred())
+
+			certMap := GetCertificateFromSecret(datamap, "namespace", "secret")
+			Expect(errorCount(certMap)).To(BeEquivalentTo(0))
+
 		})
 
 	})

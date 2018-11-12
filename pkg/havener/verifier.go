@@ -91,6 +91,9 @@ func GetCertificateFromSecret(datamap map[string][]uint8, namespace string, secr
 
 	shellRegexp := regexp.MustCompile(`.*(-cert|-crt)$`)
 	for key, value := range datamap {
+		if len(string(value)) == 0 {
+			return result
+		}
 		if matches := shellRegexp.FindAllStringSubmatch(key, -1); len(matches) > 0 {
 			cert, err := GetCert(string(value))
 			result[key] = &VerifiedCert{
@@ -105,10 +108,6 @@ func GetCertificateFromSecret(datamap map[string][]uint8, namespace string, secr
 
 // GetCert gets a certificate and checks if it's valid
 func GetCert(certificate string) (*x509.Certificate, error) {
-
-	if certificate == "" {
-		return nil, fmt.Errorf("empty certificate")
-	}
 
 	roots := x509.NewCertPool()
 	ok := roots.AppendCertsFromPEM([]byte(certificate))
