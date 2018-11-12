@@ -23,9 +23,9 @@ package cmd
 import (
 	"io/ioutil"
 
+	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/homeport/havener/pkg/havener"
 	"k8s.io/helm/pkg/helm"
 )
 
@@ -33,8 +33,15 @@ import (
 var purgeCmd = &cobra.Command{
 	Use:   "purge <helm-release> [<helm-release>] [...]",
 	Args:  cobra.MinimumNArgs(1),
-	Short: "TBD",
-	Long:  `TBD`,
+	Short: "Deletes Helm Releases",
+	Long: `Deletes all specified Helm Releases as quickly as possible.
+
+It first deletes all stateful sets and deployments at the same time. Afterwards
+the deletion of the namespace associated with the Helm Release will be triggered
+in parallel to the deletion of the Helm Release itself.
+
+If multiple Helm Releases are specified, then they will deleted concurrently.
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		client, _, err := havener.OutOfClusterAuthentication()
 		if err != nil {

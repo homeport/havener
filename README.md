@@ -42,7 +42,7 @@ Available Commands:
   deploy      Deploy Helm Charts to Kubernetes
   help        Help about any command
   node-exec   Execute command on Kubernetes node
-  purge       TBD
+  purge       Deletes Helm Releases
   top         Shows CPU and Memory usage
   upgrade     Upgrade Kubernetes with new Helm Charts
   version     Shows the version
@@ -52,7 +52,6 @@ Flags:
       --kubeconfig string   kubeconfig file (default is $HOME/.kube/config)
 
 Use "havener [command] --help" for more information about a command.
-
 ```
 
 The `cert` command checks whether certificates are valid or not. It automatically searches all secrets in all namespaces, so it doesn't need any flags to specify where to look.

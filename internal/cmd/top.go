@@ -21,8 +21,8 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
 	"github.com/homeport/havener/pkg/havener"
+	"github.com/spf13/cobra"
 )
 
 // topCmd represents the top command
