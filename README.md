@@ -19,13 +19,10 @@ dep ensure -v -update && make clean test build
 
 The `sed` command in there is required to fix a weird `dep` error message about the name. The `dep` command will run for quite some time before it finishes. Grab a cup of coffee. The make targets `test` and `build` are both required to make absolutely sure we have all the dependencies we need.
 
-## Usage
-### Running test cases and binaries generation
+## Running test cases and binaries generation
 ```
 make all
 ```
-### Installing your helm charts
-
 
 ## Commands
 
