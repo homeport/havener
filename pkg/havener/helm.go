@@ -80,6 +80,36 @@ func GetHelmChart(path string) (requestedChart *chart.Chart, err error) {
 	return requestedChart, nil
 }
 
+//UpdateHelmRelease will upgrade an existing release with provided override values
+func UpdateHelmRelease(chartname string, chartPath string, valueOverrides []byte) (*rls.UpdateReleaseResponse, error) {
+	cfg, err := ioutil.ReadFile(viper.GetString("kubeconfig"))
+	if err != nil {
+		ExitWithError("Unable to read the kube config file", err)
+	}
+
+	chartRequested, err := GetHelmChart(chartPath)
+	if err != nil {
+		return nil, fmt.Errorf("error loading chart: %v", err)
+	}
+
+	helmClient, _ := GetHelmClient(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	upgradeRelease, err := helmClient.UpdateReleaseFromChart(
+		chartname,
+		chartRequested,
+		helm.UpdateValueOverrides(valueOverrides),
+		helm.UpgradeDryRun(false),
+		helm.UpgradeTimeout(30*60))
+
+	if err != nil {
+		ExitWithError("Error upgrading chart", err)
+	}
+	return upgradeRelease, err
+}
+
 //DeployHelmRelease will initialize a helm in both client and server
 func DeployHelmRelease(chartname string, namespace string, chartPath string, valueOverrides []byte) (*rls.InstallReleaseResponse, error) {
 	cfg, err := ioutil.ReadFile(viper.GetString("kubeconfig"))
