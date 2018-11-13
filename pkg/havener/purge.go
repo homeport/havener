@@ -99,7 +99,7 @@ func PurgeHelmRelease(kubeClient kubernetes.Interface, helmClient *helm.Client, 
 		errors <- err
 	}(helmRelease)
 
-	for i := 0; i < 4; i++ {
+	for i := 0; i < 2; i++ {
 		if err := <-errors; err != nil {
 			return err
 		}
