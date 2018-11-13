@@ -30,6 +30,9 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+// reuseValues holds the bool of --reuse-values
+var reuseValues bool
+
 // upgradeCmd represents the upgrade command
 var upgradeCmd = &cobra.Command{
 	Use:   "upgrade",
@@ -67,7 +70,8 @@ var upgradeCmd = &cobra.Command{
 			}
 
 			fmt.Printf("Going to upgrade existing %s chart\n", release.ChartName)
-			if _, err := havener.UpdateHelmRelease(release.ChartName, release.ChartLocation, overridesData); err != nil {
+
+			if _, err := havener.UpdateHelmRelease(release.ChartName, release.ChartLocation, overridesData, reuseValues); err != nil {
 				havener.ExitWithError("Error updating chart", err)
 			}
 		}
@@ -79,6 +83,7 @@ func init() {
 	rootCmd.AddCommand(upgradeCmd)
 
 	upgradeCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (Mandatory argument)")
+	upgradeCmd.PersistentFlags().BoolVar(&reuseValues, "reuse-values", false, "reuse the last release's values and merge in any overrides")
 
 	viper.AutomaticEnv() // read in environment variables that match
 
