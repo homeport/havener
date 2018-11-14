@@ -1,0 +1,5 @@
+name: tomcat deployment
+releases:
+- chart_name: tomcat-release
+  chart_namespace: tomcat
+  chart_location: tomcat/stable
