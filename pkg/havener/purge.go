@@ -22,7 +22,6 @@ package havener
 
 import (
 	"fmt"
-	"strings"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/helm/pkg/helm"
@@ -32,48 +31,9 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 )
 
-/* TODO Currently, purge will ignore all non-existing helm releases that were
-   provided by the user. Think about making the behaviour configurable: For
-   example by introducing a flag like `--ignore-non-existent` or similar. */
-
-/* TODO Make the spinner configurable. */
-
 var defaultPropagationPolicy = metav1.DeletePropagationForeground
 
 var defaultHelmDeleteTimeout = int64(15 * 60)
-
-// PurgeHelmReleases removes all helm releases including their respective resources.
-func PurgeHelmReleases(kubeClient kubernetes.Interface, helmClient *helm.Client, helmReleaseNames ...string) error {
-	// Go through the list of actual helm releases to filter our non-existing releases.
-	toBeDeleted := []string{}
-	for _, helmReleaseName := range helmReleaseNames {
-		if statusResp, err := helmClient.ReleaseStatus(helmReleaseName); err == nil {
-			toBeDeleted = append(toBeDeleted, statusResp.Name)
-		}
-	}
-
-	// Ask for confirmation about the releases to be deleted.
-	if ok := PromptUser("Are you sure you want to delete the Helm Releases " + strings.Join(toBeDeleted, ", ") + "? (yes/no): "); !ok {
-		return nil
-	}
-
-	// Start to purge the helm releaes in parallel
-	errors := make(chan error, len(toBeDeleted))
-	for _, name := range toBeDeleted {
-		go func(helmRelease string) {
-			errors <- PurgeHelmRelease(kubeClient, helmClient, helmRelease)
-		}(name)
-	}
-
-	// Wait for the go-routines to finish before leaving this function
-	for i := 0; i < len(toBeDeleted); i++ {
-		if err := <-errors; err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
 
 // PurgeHelmRelease removes the given helm release including all its resources.
 func PurgeHelmRelease(kubeClient kubernetes.Interface, helmClient *helm.Client, helmRelease string) error {

@@ -27,6 +27,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/caarlos0/spin"
 	"github.com/homeport/havener/pkg/havener"
 
 	yaml "gopkg.in/yaml.v2"
@@ -71,10 +72,13 @@ var deployCmd = &cobra.Command{
 				havener.ExitWithError("failed to marshal overrides structure into bytes", err)
 			}
 
-			fmt.Printf("Going to create new helm chart for %s\n", release.ChartName)
+			// Show a wait indicator ...
+			s := spin.New("%s " + fmt.Sprintf("Creating Helm Release for %s", release.ChartName))
+			s.Start()
 			if _, err := havener.DeployHelmRelease(release.ChartName, release.ChartNamespace, release.ChartLocation, overridesData); err != nil {
 				havener.ExitWithError("Error deploying chart", err)
 			}
+			s.Stop()
 		}
 	},
 }

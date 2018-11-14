@@ -22,12 +22,21 @@ package cmd
 
 import (
 	"io/ioutil"
+	"strings"
 
+	"github.com/caarlos0/spin"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/helm/pkg/helm"
 )
+
+/* TODO Currently, purge will ignore all non-existing helm releases that were
+   provided by the user. Think about making the behaviour configurable: For
+   example by introducing a flag like `--ignore-non-existent` or similar. */
+
+/* TODO Should we make getConfiguredHelmClient a havener package function? */
 
 // purgeCmd represents the purge command
 var purgeCmd = &cobra.Command{
@@ -48,13 +57,12 @@ If multiple Helm Releases are specified, then they will deleted concurrently.
 			havener.ExitWithError("unable to get access to cluster", err)
 		}
 
-		if err := havener.PurgeHelmReleases(client, getConfiguredHelmClient(), args...); err != nil {
+		if err := purgeHelmReleases(client, getConfiguredHelmClient(), args...); err != nil {
 			havener.ExitWithError("failed to purge helm releases", err)
 		}
 	},
 }
 
-// TODO Make this a hevener package function?
 func getConfiguredHelmClient() *helm.Client {
 	cfg, err := ioutil.ReadFile(viper.GetString("kubeconfig"))
 	if err != nil {
@@ -69,8 +77,45 @@ func getConfiguredHelmClient() *helm.Client {
 	return helmClient
 }
 
+func purgeHelmReleases(kubeClient kubernetes.Interface, helmClient *helm.Client, helmReleaseNames ...string) error {
+	// Go through the list of actual helm releases to filter our non-existing releases.
+	toBeDeleted := []string{}
+	for _, helmReleaseName := range helmReleaseNames {
+		if statusResp, err := helmClient.ReleaseStatus(helmReleaseName); err == nil {
+			toBeDeleted = append(toBeDeleted, statusResp.Name)
+		}
+	}
+
+	// Ask for confirmation about the releases to be deleted.
+	if ok := PromptUser("Are you sure you want to delete the Helm Releases " + strings.Join(toBeDeleted, ", ") + "? (yes/no): "); !ok {
+		return nil
+	}
+
+	// Show a wait indicator ...
+	s := spin.New("%s Deleting Helm Releases: " + strings.Join(toBeDeleted, ","))
+	s.Start()
+	defer s.Stop()
+
+	// Start to purge the helm releaes in parallel
+	errors := make(chan error, len(toBeDeleted))
+	for _, name := range toBeDeleted {
+		go func(helmRelease string) {
+			errors <- havener.PurgeHelmRelease(kubeClient, helmClient, helmRelease)
+		}(name)
+	}
+
+	// Wait for the go-routines to finish before leaving this function
+	for i := 0; i < len(toBeDeleted); i++ {
+		if err := <-errors; err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func init() {
 	rootCmd.AddCommand(purgeCmd)
 
-	purgeCmd.PersistentFlags().BoolVar(&havener.NoUserPrompt, "non-interactive", false, "delete without asking for confirmation")
+	purgeCmd.PersistentFlags().BoolVar(&NoUserPrompt, "non-interactive", false, "delete without asking for confirmation")
 }
