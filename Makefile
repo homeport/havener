@@ -20,7 +20,7 @@
 
 .PHONY: clean sanity test build
 
-version := $(shell git describe --tags --abbrev=0 2>/dev/null || ( git rev-parse HEAD | cut -c1-8 ))
+version := $(shell git describe --tags 2>/dev/null || ( git rev-parse HEAD | cut -c-8 ))
 gofiles := $(wildcard cmd/havener/*.go internal/cmd/*.go pkg/havener/*.go)
 
 all: test build
@@ -29,11 +29,11 @@ clean:
 	@go clean -r -cache
 	@rm -rf binaries
 
-sanity:
-	test -z $(shell gofmt -l ./pkg ./internal ./cmd)
+sanity: $(gofiles)
+	@test -z $(shell gofmt -l ./pkg ./internal ./cmd)
 
 test: sanity
-	ginkgo -r --nodes 4 --randomizeAllSpecs --randomizeSuites --race --trace
+	ginkgo -r --randomizeAllSpecs --randomizeSuites --failOnPending --nodes=4 --compilers=2 --race --trace
 
 build: binaries/havener-windows-amd64 binaries/havener-darwin-amd64 binaries/havener-linux-amd64
 
