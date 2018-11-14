@@ -54,6 +54,7 @@ RUN apt-get update > /dev/null && \
     git-core \
     jq \
     vim \
+    wget \
     >/dev/null && \
     rm -rf /var/lib/apt/lists/*
 
