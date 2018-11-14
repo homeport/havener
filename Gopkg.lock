@@ -64,6 +64,14 @@
   revision = "3ac7bf7a47d159a033b107610db8a1b6575507a4"
 
 [[projects]]
+  digest = "1:9a1625b7268c729add4906ecf983f1be7ebbe39c0b9d82a97888157ea9949c67"
+  name = "github.com/caarlos0/spin"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "ac25467273ecdf236d2d83a25c5329d5863d375f"
+  version = "v1.1.0"
+
+[[projects]]
   digest = "1:6b21090f60571b20b3ddc2c8e48547dffcf409498ed6002c2cada023725ed377"
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
@@ -1417,8 +1425,8 @@
     "pkg/volume/util/types",
   ]
   pruneopts = "NUT"
-  revision = "e6ab4ee54f71e7a403cc733534bab86fd959ecb7"
-  version = "v1.10.9"
+  revision = "be1a908c6aa47e0ae1b1dc861a1de6ccfe963aa2"
+  version = "v1.10.10"
 
 [[projects]]
   digest = "1:5271b4ee2724d8c2ad7df650a5f9db46d01ce558769469713feba0e3e6079292"
@@ -1439,6 +1447,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/HeavyWombat/gonvenience/pkg/v1/bunt",
+    "github.com/caarlos0/spin",
     "github.com/lucasb-eyer/go-colorful",
     "github.com/mitchellh/go-homedir",
     "github.com/onsi/ginkgo",
