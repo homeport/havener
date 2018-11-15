@@ -23,13 +23,18 @@ package havener
 import (
 	"fmt"
 
+	"github.com/spf13/viper"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/helm/pkg/helm"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"k8s.io/apimachinery/pkg/watch"
 )
+
+/* TODO Currently, purge will ignore all non-existing helm releases that were
+   provided by the user. Think about making the behaviour configurable: For
+   example by introducing a flag like `--ignore-non-existent` or similiar. */
+
+/* TODO Make the spinner configurable. */
 
 var defaultPropagationPolicy = metav1.DeletePropagationForeground
 
@@ -42,13 +47,19 @@ func PurgeHelmRelease(kubeClient kubernetes.Interface, helmClient *helm.Client, 
 		return err
 	}
 
+	VerboseMessage(viper.GetBool("verbose"), "Purging deployments in namespace...")
+
 	if err := PurgeDeploymentsInNamespace(kubeClient, statusResp.Namespace); err != nil {
 		return err
 	}
 
+	VerboseMessage(viper.GetBool("verbose"), "Purging stateful sets in namespace...")
+
 	if err := PurgeStatefulSetsInNamespace(kubeClient, statusResp.Namespace); err != nil {
 		return err
 	}
+
+	VerboseMessage(viper.GetBool("verbose"), "Purging namespaces and helm releases...")
 
 	errors := make(chan error, 2)
 	go func(namespace string) { errors <- PurgeNamespace(kubeClient, namespace) }(statusResp.Namespace)

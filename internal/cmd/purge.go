@@ -24,6 +24,7 @@ import (
 	"io/ioutil"
 	"strings"
 
+	"github.com/HeavyWombat/gonvenience/pkg/v1/bunt"
 	"github.com/caarlos0/spin"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
@@ -52,6 +53,9 @@ in parallel to the deletion of the Helm Release itself.
 If multiple Helm Releases are specified, then they will deleted concurrently.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		havener.VerboseMessage(verbose, "Accessing cluster...")
+
 		client, _, err := havener.OutOfClusterAuthentication()
 		if err != nil {
 			havener.ExitWithError("unable to get access to cluster", err)
@@ -60,14 +64,22 @@ If multiple Helm Releases are specified, then they will deleted concurrently.
 		if err := purgeHelmReleases(client, getConfiguredHelmClient(), args...); err != nil {
 			havener.ExitWithError("failed to purge helm releases", err)
 		}
+
+		havener.InfoMessage("Successfully purged helm release(s).")
+
 	},
 }
 
 func getConfiguredHelmClient() *helm.Client {
+
+	havener.VerboseMessage(verbose, "Reading kube config file...")
+
 	cfg, err := ioutil.ReadFile(viper.GetString("kubeconfig"))
 	if err != nil {
 		havener.ExitWithError("unable to read the kube config file", err)
 	}
+
+	havener.VerboseMessage(verbose, "Getting helm client...")
 
 	helmClient, err := havener.GetHelmClient(cfg)
 	if err != nil {
@@ -92,7 +104,7 @@ func purgeHelmReleases(kubeClient kubernetes.Interface, helmClient *helm.Client,
 	}
 
 	// Show a wait indicator ...
-	s := spin.New("%s Deleting Helm Releases: " + strings.Join(toBeDeleted, ","))
+	s := spin.New(bunt.BoldText("%s Deleting Helm Releases: " + strings.Join(toBeDeleted, ","+"\n")))
 	s.Start()
 	defer s.Stop()
 

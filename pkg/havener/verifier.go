@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/spf13/viper"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -37,14 +38,19 @@ type VerifiedCert struct {
 
 // VerifyCertExpirations checks all certificates in all secrets in all namespaces
 func VerifyCertExpirations() (err error) {
-	fmt.Println("Going to check certificates")
+	InfoMessage("Going to check certificates...")
 
 	var count int
+	var countEmpty int
+
+	VerboseMessage(viper.GetBool("verbose"), "Accessing cluster...")
 
 	client, _, err := OutOfClusterAuthentication()
 	if err != nil {
 		ExitWithError("unable to get access to cluster", err)
 	}
+
+	VerboseMessage(viper.GetBool("verbose"), "Getting namespaces...")
 
 	list, err := ListNamespaces(client)
 	if err != nil {
@@ -52,29 +58,55 @@ func VerifyCertExpirations() (err error) {
 	}
 
 	for _, namespace := range list {
+		VerboseMessage(viper.GetBool("verbose"), fmt.Sprintf("Getting secrets of namespace %s...", namespace))
+
 		secretList, err := ListSecretsInNamespace(client, namespace)
 		if err != nil {
 			ExitWithError("unable to get a list of secrets", err)
 		}
 
+		if len(list) == 0 {
+			VerboseMessage(viper.GetBool("verbose"), fmt.Sprintf("No secrets in namespace %s", namespace))
+		}
+
 		for _, secret := range secretList {
+			VerboseMessage(viper.GetBool("verbose"), fmt.Sprintf("Accessing secret %s of namespace %s...", secret, namespace))
+
 			nodeList, err := client.CoreV1().Secrets(namespace).Get(secret, v1.GetOptions{})
 			if err != nil {
 				ExitWithError("unable to access secrets", err)
 			}
 
-			for key, cert := range GetCertificateFromSecret(nodeList.Data, namespace, secret) {
+			results := GetCertificateFromSecret(nodeList.Data, namespace, secret)
+			count = 0
+			countEmpty = 0
+			for key, cert := range results {
 				var message string
 				if cert.Error != nil {
 					message = cert.Error.Error()
 					count++
-
+				} else if cert.Cert == nil {
+					message = "empty certificate"
+					countEmpty++
 				} else {
 					message = "valid"
 				}
 
-				fmt.Printf("%-30s %-30s %-30s %s\n", namespace, secret, key, message)
+				line := fmt.Sprintf("%-18s %-26s %-39s %s", namespace, secret, key, message)
+
+				if len(line) > GetTerminalWidth() {
+					line = line[:GetTerminalWidth()-5] + "[...]"
+				}
+
+				fmt.Println(line)
 			}
+			if len(results) == 0 {
+				VerboseMessage(viper.GetBool("verbose"), fmt.Sprintf("No certificates in secret %s", secret))
+			} else {
+				VerboseMessage(viper.GetBool("verbose"), fmt.Sprintf("Total nr. of certs in secret %s in namespace %s: %v; valid: %v; invalid: %v; empty: %v", secret, namespace, len(results), len(results)-count-countEmpty, count, countEmpty))
+				//newline
+			}
+
 		}
 	}
 
@@ -91,14 +123,18 @@ func GetCertificateFromSecret(datamap map[string][]uint8, namespace string, secr
 
 	shellRegexp := regexp.MustCompile(`.*(-cert|-crt)$`)
 	for key, value := range datamap {
-		if len(string(value)) == 0 {
-			return result
-		}
 		if matches := shellRegexp.FindAllStringSubmatch(key, -1); len(matches) > 0 {
-			cert, err := GetCert(string(value))
-			result[key] = &VerifiedCert{
-				Cert:  cert,
-				Error: err,
+			if len(string(value)) == 0 {
+				result[key] = &VerifiedCert{
+					Cert:  nil,
+					Error: nil,
+				}
+			} else {
+				cert, err := GetCert(string(value))
+				result[key] = &VerifiedCert{
+					Cert:  cert,
+					Error: err,
+				}
 			}
 		}
 	}
