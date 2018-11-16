@@ -27,9 +27,28 @@ type NoHelmChartFoundError struct {
 	Location string
 }
 
+// invalidPathInsideZip means that the path does not exists in the zip file
+type invalidPathInsideZip struct {
+	fileName string
+	path     string
+}
+
+// invalidZipFileName means that the file is not of the form <file-name>.zip
+type invalidZipFileName struct {
+	fileName string
+}
+
 func (e *NoHelmChartFoundError) Error() string {
 	return fmt.Sprintf("unable to determine Helm Chart location of '%s', it is not a local path, nor is it defined in %s or %s",
 		e.Location,
 		chartRoomURL,
 		helmChartsURL)
+}
+
+func (e *invalidPathInsideZip) Error() string {
+	return fmt.Sprintf("Error: The provided path: %v, does not exist under the %v file", e.fileName, e.path)
+}
+
+func (e *invalidZipFileName) Error() string {
+	return fmt.Sprintf("Error: The provided file under the %v URL, is not a valid zip file.", e.fileName)
 }
