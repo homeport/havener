@@ -60,7 +60,6 @@ var _ = Describe("Charts Locations", func() {
 				Expect(err).Should(BeNil())
 				absolutePath, _ := filepath.Abs(fakeChartLocation)
 				Expect(helmChartPath).Should(Equal(absolutePath))
-				os.RemoveAll(os.Getenv("HOME") + "/.fake-chart")
 			})
 		})
 		Context("when the Helm Chart exists remotely", func() {
@@ -72,7 +71,6 @@ var _ = Describe("Charts Locations", func() {
 				Expect(err).Should(BeNil())
 				absoluteChartPath, _ := filepath.Abs(os.Getenv("HOME") + helmChartTempLocation)
 				Expect(remoteHelmChartPath).Should(Equal(absoluteChartPath))
-				os.RemoveAll(os.Getenv("HOME") + "/.havener")
 			})
 		})
 		Context("when the Helm Chart does not exists", func() {

@@ -99,7 +99,11 @@ func PathToHelmChart(input string) (string, error) {
 	if isHelmChartLocation(input) {
 		return filepath.Abs(input)
 	}
-	shellRegexp := regexp.MustCompile(`^[A-Za-z]*\/stable$`)
+
+	// Only try to git clone a chart that follows the correct syntax.
+	// example valid paths: "tomcat/stable", "scf/2.14.1"
+	// example invalid paths: "/tomcat/stable", "tomcat/stable/", "tomcat/stable/dev"
+	shellRegexp := regexp.MustCompile(`^[\w\d-]+\/[\w\d._-]+$`)
 	if matches := shellRegexp.FindAllStringSubmatch(input, -1); len(matches) > 0 {
 		// Update Git repos with curated applications for Kubernetes
 		if err := updateLocalChartStore(); err != nil {
