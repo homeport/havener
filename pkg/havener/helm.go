@@ -118,7 +118,7 @@ func DeployHelmRelease(chartname string, namespace string, chartPath string, val
 		ExitWithError("Unable to read the kube config file", err)
 	}
 
-	helmChartPath, err := pathToHelmChart(chartPath)
+	helmChartPath, err := PathToHelmChart(chartPath)
 	if err != nil {
 		ExitWithError("Unable to locate helm chart location", err)
 	}

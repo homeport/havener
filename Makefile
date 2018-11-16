@@ -33,7 +33,7 @@ sanity:
 	test -z $(shell gofmt -l ./pkg ./internal ./cmd)
 
 test: sanity
-	ginkgo -r --nodes 4 --randomizeAllSpecs --randomizeSuites --race --trace
+	ginkgo -r --randomizeAllSpecs --randomizeSuites --failOnPending --nodes=4 --compilers=2 --race --trace
 
 build: binaries/havener-windows-amd64 binaries/havener-darwin-amd64 binaries/havener-linux-amd64
 

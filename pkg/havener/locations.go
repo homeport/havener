@@ -23,6 +23,7 @@ package havener
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 
 	git "gopkg.in/src-d/go-git.v4"
 )
@@ -88,26 +89,28 @@ func cloneOrPull(location string, url string) error {
 	return nil
 }
 
-// pathToHelmChart returns an absolute path to the location of the Helm Chart
+// PathToHelmChart returns an absolute path to the location of the Helm Chart
 // directory refereced by the input string. In case the path cannot be found
 // locally in the file system, Git repositories containing curated lists of
 // Helm Charts will be cloned into the Havener app directory and searched for
 // the provided location, too.
-func pathToHelmChart(input string) (string, error) {
+func PathToHelmChart(input string) (string, error) {
 	// Return the absolute path if the input is actually an existing local location
 	if isHelmChartLocation(input) {
 		return filepath.Abs(input)
 	}
+	shellRegexp := regexp.MustCompile(`^[A-Za-z]*\/stable$`)
+	if matches := shellRegexp.FindAllStringSubmatch(input, -1); len(matches) > 0 {
+		// Update Git repos with curated applications for Kubernetes
+		if err := updateLocalChartStore(); err != nil {
+			return "", err
+		}
 
-	// Update Git repos with curated applications for Kubernetes
-	if err := updateLocalChartStore(); err != nil {
-		return "", err
-	}
-
-	// Check whether the input matches a Helm Chart in one of the curated lists of charts
-	for _, candidate := range []string{chartRoomLocation() + "/charts/" + input, helmChartsLocation() + "/" + input} {
-		if isHelmChartLocation(candidate) {
-			return filepath.Abs(candidate)
+		// Check whether the input matches a Helm Chart in one of the curated lists of charts
+		for _, candidate := range []string{chartRoomLocation() + "/charts/" + input, helmChartsLocation() + "/" + input} {
+			if isHelmChartLocation(candidate) {
+				return filepath.Abs(candidate)
+			}
 		}
 	}
 
