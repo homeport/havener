@@ -76,3 +76,6 @@ RUN apt-get update > /dev/null && \
 RUN curl --progress-bar --location https://storage.googleapis.com/golang/go1.11.2.linux-amd64.tar.gz | tar -xzf - -C /usr/local
 ENV GOPATH=/go
 ENV PATH=$PATH:/usr/local/go/bin:$GOPATH/bin
+
+# Install latest Spruce
+RUN curl --silent --location "https://github.com/geofffranks/spruce/releases/download/$(curl --silent --location "https://api.github.com/repos/geofffranks/spruce/releases/latest" | jq -r .tag_name)/spruce-linux-amd64" > /usr/bin/spruce && chmod a+rx /usr/bin/spruce
