@@ -23,7 +23,6 @@ package havener
 import (
 	"fmt"
 
-	"github.com/spf13/viper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
@@ -47,19 +46,19 @@ func PurgeHelmRelease(kubeClient kubernetes.Interface, helmClient *helm.Client, 
 		return err
 	}
 
-	VerboseMessage(viper.GetBool("verbose"), "Purging deployments in namespace...")
+	VerboseMessage("Purging deployments in namespace...")
 
 	if err := PurgeDeploymentsInNamespace(kubeClient, statusResp.Namespace); err != nil {
 		return err
 	}
 
-	VerboseMessage(viper.GetBool("verbose"), "Purging stateful sets in namespace...")
+	VerboseMessage("Purging stateful sets in namespace...")
 
 	if err := PurgeStatefulSetsInNamespace(kubeClient, statusResp.Namespace); err != nil {
 		return err
 	}
 
-	VerboseMessage(viper.GetBool("verbose"), "Purging namespaces and helm releases...")
+	VerboseMessage("Purging namespaces and helm releases...")
 
 	errors := make(chan error, 2)
 	go func(namespace string) { errors <- PurgeNamespace(kubeClient, namespace) }(statusResp.Namespace)

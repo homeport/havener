@@ -32,7 +32,7 @@ var topCmd = &cobra.Command{
 	Long:  `TBD`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		havener.VerboseMessage(verbose, "Accessing Kubernetes cluster...")
+		havener.VerboseMessage("Accessing Kubernetes cluster...")
 
 		clientSet, _, err := havener.OutOfClusterAuthentication()
 		if err != nil {

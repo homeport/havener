@@ -76,8 +76,8 @@ func ExitWithError(msg string, err error) {
 }
 
 // VerboseMessage prints a message if the flag --verbose/-v is set to true
-func VerboseMessage(verbose bool, message string) {
-	if verbose != false {
+func VerboseMessage(message string) {
+	if viper.GetBool("verbose") {
 		fmt.Printf(bunt.BoldText("[DEBUG] " + message + "\n"))
 	}
 }

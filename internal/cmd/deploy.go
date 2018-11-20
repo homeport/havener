@@ -41,7 +41,7 @@ var deployCmd = &cobra.Command{
 	Short: "Deploy Helm Charts to Kubernetes",
 	Long:  `TODO please do this later`,
 	Run: func(cmd *cobra.Command, args []string) {
-		havener.VerboseMessage(verbose, "Looking for config file...")
+		havener.VerboseMessage("Looking for config file...")
 
 		if cfgFile == "" && viper.GetString("havenerconfig") == "" {
 			havener.ExitWithError("please provide configuration via --config or environment variable HAVENERCONFIG", fmt.Errorf("no havener configuration file set"))
@@ -52,32 +52,32 @@ var deployCmd = &cobra.Command{
 			havener.InfoMessage(fmt.Sprintf("Using config file: %s", viper.ConfigFileUsed()))
 		}
 
-		havener.VerboseMessage(verbose, "Reading config file...")
+		havener.VerboseMessage("Reading config file...")
 
 		cfgdata, err := ioutil.ReadFile(viper.GetString("havenerconfig"))
 		if err != nil {
 			havener.ExitWithError("unable to read file", err)
 		}
 
-		havener.VerboseMessage(verbose, "Unmarshaling config file...")
+		havener.VerboseMessage("Unmarshaling config file...")
 
 		var config havener.Config
 		if err := yaml.Unmarshal(cfgdata, &config); err != nil {
 			havener.ExitWithError("failed to unmarshal config file", err)
 		}
 
-		havener.VerboseMessage(verbose, "Creating helm chart(s)...")
+		havener.VerboseMessage("Creating helm chart(s)...")
 
 		for _, release := range config.Releases {
 			overrides, err := havener.TraverseStructureAndProcessShellOperators(release.Overrides)
 
-			havener.VerboseMessage(verbose, "Processing overrides section...")
+			havener.VerboseMessage("Processing overrides section...")
 
 			if err != nil {
 				havener.ExitWithError("failed to process overrides section", err)
 			}
 
-			havener.VerboseMessage(verbose, "Marshaling overrides section...")
+			havener.VerboseMessage("Marshaling overrides section...")
 
 			overridesData, err := yaml.Marshal(overrides)
 			if err != nil {

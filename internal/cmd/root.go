@@ -32,7 +32,7 @@ import (
 
 // kubeCfgFile is the path to the KUBECONFIG yaml
 var kubeCfgFile string
-var verbose bool
+var verboseEnabled bool
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -61,7 +61,7 @@ func init() {
 	// Add kubeconfig persistent flag with default value
 	rootCmd.PersistentFlags().StringVar(&kubeCfgFile, "kubeconfig", "", "kubeconfig file (default is $HOME/.kube/config)")
 
-	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
+	rootCmd.PersistentFlags().BoolVarP(&verboseEnabled, "verbose", "v", false, "verbose output")
 
 	// Bind kubeconfig flag with viper, so that the contents can be accessible later
 	viper.BindPFlag("kubeconfig", rootCmd.PersistentFlags().Lookup("kubeconfig"))

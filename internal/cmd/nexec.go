@@ -46,20 +46,20 @@ and respective pod will be deleted after the command was executed.
 	Run: func(cmd *cobra.Command, args []string) {
 		nodeName, command := args[0], strings.Join(args[1:], " ")
 
-		havener.VerboseMessage(verbose, "Connecting to Kubernetes cluster...")
+		havener.VerboseMessage("Connecting to Kubernetes cluster...")
 
 		client, restconfig, err := havener.OutOfClusterAuthentication()
 		if err != nil {
 			havener.ExitWithError("failed to connect to Kubernetes cluster", err)
 		}
 
-		havener.VerboseMessage(verbose, "Executing command on node...")
+		havener.VerboseMessage("Executing command on node...")
 
 		if err := havener.NodeExec(client, restconfig, nodeName, command, os.Stdin, os.Stdout, os.Stderr, nodeExecTty); err != nil {
 			havener.ExitWithError("failed to execute command on node", err)
 		}
 
-		havener.VerboseMessage(verbose, "Successfully executed command.")
+		havener.VerboseMessage("Successfully executed command.")
 
 	},
 }

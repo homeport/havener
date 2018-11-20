@@ -54,7 +54,7 @@ If multiple Helm Releases are specified, then they will deleted concurrently.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		havener.VerboseMessage(verbose, "Accessing cluster...")
+		havener.VerboseMessage("Accessing cluster...")
 
 		client, _, err := havener.OutOfClusterAuthentication()
 		if err != nil {
@@ -72,14 +72,14 @@ If multiple Helm Releases are specified, then they will deleted concurrently.
 
 func getConfiguredHelmClient() *helm.Client {
 
-	havener.VerboseMessage(verbose, "Reading kube config file...")
+	havener.VerboseMessage("Reading kube config file...")
 
 	cfg, err := ioutil.ReadFile(viper.GetString("kubeconfig"))
 	if err != nil {
 		havener.ExitWithError("unable to read the kube config file", err)
 	}
 
-	havener.VerboseMessage(verbose, "Getting helm client...")
+	havener.VerboseMessage("Getting helm client...")
 
 	helmClient, err := havener.GetHelmClient(cfg)
 	if err != nil {

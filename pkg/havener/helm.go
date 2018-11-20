@@ -113,35 +113,35 @@ func UpdateHelmRelease(chartname string, chartPath string, valueOverrides []byte
 
 //DeployHelmRelease will initialize a helm in both client and server
 func DeployHelmRelease(chartname string, namespace string, chartPath string, valueOverrides []byte) (*rls.InstallReleaseResponse, error) {
-	VerboseMessage(viper.GetBool("verbose"), "Reading kube config file...")
+	VerboseMessage("Reading kube config file...")
 
 	cfg, err := ioutil.ReadFile(viper.GetString("kubeconfig"))
 	if err != nil {
 		ExitWithError("Unable to read the kube config file", err)
 	}
 
-	VerboseMessage(viper.GetBool("verbose"), "Locating helm chart location...")
+	VerboseMessage("Locating helm chart location...")
 
 	helmChartPath, err := PathToHelmChart(chartPath)
 	if err != nil {
 		ExitWithError("Unable to locate helm chart location", err)
 	}
 
-	VerboseMessage(viper.GetBool("verbose"), fmt.Sprintf("Loading chart in namespace %s...", namespace))
+	VerboseMessage(fmt.Sprintf("Loading chart in namespace %s...", namespace))
 
 	chartRequested, err := GetHelmChart(helmChartPath)
 	if err != nil {
 		return nil, fmt.Errorf("error loading chart: %v", err)
 	}
 
-	VerboseMessage(viper.GetBool("verbose"), "Getting helm client...")
+	VerboseMessage("Getting helm client...")
 
 	helmClient, _ := GetHelmClient(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	VerboseMessage(viper.GetBool("verbose"), fmt.Sprintf("Installing release in namespace %s...", namespace))
+	VerboseMessage(fmt.Sprintf("Installing release in namespace %s...", namespace))
 
 	installRelease, err := helmClient.InstallReleaseFromChart(
 		chartRequested,

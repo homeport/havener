@@ -26,7 +26,6 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/spf13/viper"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -43,14 +42,14 @@ func VerifyCertExpirations() (err error) {
 	var count int
 	var countEmpty int
 
-	VerboseMessage(viper.GetBool("verbose"), "Accessing cluster...")
+	VerboseMessage("Accessing cluster...")
 
 	client, _, err := OutOfClusterAuthentication()
 	if err != nil {
 		ExitWithError("unable to get access to cluster", err)
 	}
 
-	VerboseMessage(viper.GetBool("verbose"), "Getting namespaces...")
+	VerboseMessage("Getting namespaces...")
 
 	list, err := ListNamespaces(client)
 	if err != nil {
@@ -58,7 +57,7 @@ func VerifyCertExpirations() (err error) {
 	}
 
 	for _, namespace := range list {
-		VerboseMessage(viper.GetBool("verbose"), fmt.Sprintf("Getting secrets of namespace %s...", namespace))
+		VerboseMessage(fmt.Sprintf("Getting secrets of namespace %s...", namespace))
 
 		secretList, err := ListSecretsInNamespace(client, namespace)
 		if err != nil {
@@ -66,11 +65,11 @@ func VerifyCertExpirations() (err error) {
 		}
 
 		if len(list) == 0 {
-			VerboseMessage(viper.GetBool("verbose"), fmt.Sprintf("No secrets in namespace %s", namespace))
+			VerboseMessage(fmt.Sprintf("No secrets in namespace %s", namespace))
 		}
 
 		for _, secret := range secretList {
-			VerboseMessage(viper.GetBool("verbose"), fmt.Sprintf("Accessing secret %s of namespace %s...", secret, namespace))
+			VerboseMessage(fmt.Sprintf("Accessing secret %s of namespace %s...", secret, namespace))
 
 			nodeList, err := client.CoreV1().Secrets(namespace).Get(secret, v1.GetOptions{})
 			if err != nil {
@@ -101,10 +100,9 @@ func VerifyCertExpirations() (err error) {
 				fmt.Println(line)
 			}
 			if len(results) == 0 {
-				VerboseMessage(viper.GetBool("verbose"), fmt.Sprintf("No certificates in secret %s", secret))
+				VerboseMessage(fmt.Sprintf("No certificates in secret %s\n", secret))
 			} else {
-				VerboseMessage(viper.GetBool("verbose"), fmt.Sprintf("Total nr. of certs in secret %s in namespace %s: %v; valid: %v; invalid: %v; empty: %v", secret, namespace, len(results), len(results)-count-countEmpty, count, countEmpty))
-				//newline
+				VerboseMessage(fmt.Sprintf("Total nr. of certs in secret %s in namespace %s: %v; valid: %v; invalid: %v; empty: %v\n", secret, namespace, len(results), len(results)-count-countEmpty, count, countEmpty))
 			}
 
 		}
