@@ -24,12 +24,11 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-
+	"github.com/HeavyWombat/gonvenience/pkg/v1/bunt"
 	"github.com/caarlos0/spin"
 	"github.com/homeport/havener/pkg/havener"
-
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -42,30 +41,43 @@ var deployCmd = &cobra.Command{
 	Short: "Deploy Helm Charts to Kubernetes",
 	Long:  `TODO please do this later`,
 	Run: func(cmd *cobra.Command, args []string) {
+		havener.VerboseMessage("Looking for config file...")
+
 		if cfgFile == "" && viper.GetString("havenerconfig") == "" {
 			havener.ExitWithError("please provide configuration via --config or environment variable HAVENERCONFIG", fmt.Errorf("no havener configuration file set"))
 		}
 
 		// If a config file is found, read it in.
 		if err := viper.ReadInConfig(); err == nil {
-			fmt.Println("Using config file:", viper.ConfigFileUsed())
+			havener.InfoMessage(fmt.Sprintf("Using config file: %s", viper.ConfigFileUsed()))
 		}
+
+		havener.VerboseMessage("Reading config file...")
 
 		cfgdata, err := ioutil.ReadFile(viper.GetString("havenerconfig"))
 		if err != nil {
 			havener.ExitWithError("unable to read file", err)
 		}
 
+		havener.VerboseMessage("Unmarshaling config file...")
+
 		var config havener.Config
 		if err := yaml.Unmarshal(cfgdata, &config); err != nil {
 			havener.ExitWithError("failed to unmarshal config file", err)
 		}
 
+		havener.VerboseMessage("Creating helm chart(s)...")
+
 		for _, release := range config.Releases {
 			overrides, err := havener.TraverseStructureAndProcessShellOperators(release.Overrides)
+
+			havener.VerboseMessage("Processing overrides section...")
+
 			if err != nil {
 				havener.ExitWithError("failed to process overrides section", err)
 			}
+
+			havener.VerboseMessage("Marshaling overrides section...")
 
 			overridesData, err := yaml.Marshal(overrides)
 			if err != nil {
@@ -73,12 +85,15 @@ var deployCmd = &cobra.Command{
 			}
 
 			// Show a wait indicator ...
-			s := spin.New("%s " + fmt.Sprintf("Creating Helm Release for %s", release.ChartName))
+			s := spin.New(bunt.BoldText("%s " + fmt.Sprintf("Creating Helm Release for %s\n", release.ChartName)))
 			s.Start()
+
 			if _, err := havener.DeployHelmRelease(release.ChartName, release.ChartNamespace, release.ChartLocation, overridesData); err != nil {
 				havener.ExitWithError("Error deploying chart", err)
 			}
 			s.Stop()
+
+			havener.InfoMessage(fmt.Sprintf("Successfully created new helm chart for %s in namespace %s.", release.ChartName, release.ChartNamespace))
 		}
 	},
 }

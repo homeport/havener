@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/HeavyWombat/gonvenience/pkg/v1/bunt"
 	"github.com/spf13/viper"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc" //from https://github.com/kubernetes/client-go/issues/345
@@ -72,4 +73,16 @@ func HomeDir() string {
 func ExitWithError(msg string, err error) {
 	fmt.Printf("Message: %s, Error: %s\n", msg, err.Error())
 	os.Exit(1)
+}
+
+// VerboseMessage prints a message if the flag --verbose/-v is set to true
+func VerboseMessage(message string) {
+	if viper.GetBool("verbose") {
+		fmt.Printf(bunt.BoldText("[DEBUG] " + message + "\n"))
+	}
+}
+
+// InfoMessage prints out an info message, in bold
+func InfoMessage(message string) {
+	fmt.Printf(bunt.BoldText("[INFO] " + message + "\n"))
 }

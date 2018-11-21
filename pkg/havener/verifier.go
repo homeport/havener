@@ -21,6 +21,7 @@
 package havener
 
 import (
+	"bytes"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
@@ -37,14 +38,20 @@ type VerifiedCert struct {
 
 // VerifyCertExpirations checks all certificates in all secrets in all namespaces
 func VerifyCertExpirations() (err error) {
-	fmt.Println("Going to check certificates")
+	InfoMessage("Going to check certificates...")
 
 	var count int
+	var countEmpty int
+	var buf bytes.Buffer
+
+	VerboseMessage("Accessing cluster...")
 
 	client, _, err := OutOfClusterAuthentication()
 	if err != nil {
 		ExitWithError("unable to get access to cluster", err)
 	}
+
+	VerboseMessage("Getting namespaces...")
 
 	list, err := ListNamespaces(client)
 	if err != nil {
@@ -52,29 +59,54 @@ func VerifyCertExpirations() (err error) {
 	}
 
 	for _, namespace := range list {
+		VerboseMessage(fmt.Sprintf("Getting secrets of namespace %s...", namespace))
+
 		secretList, err := ListSecretsInNamespace(client, namespace)
 		if err != nil {
 			ExitWithError("unable to get a list of secrets", err)
 		}
 
+		if len(list) == 0 {
+			VerboseMessage(fmt.Sprintf("No secrets in namespace %s", namespace))
+		}
+
 		for _, secret := range secretList {
+			VerboseMessage(fmt.Sprintf("Accessing secret %s of namespace %s...", secret, namespace))
+
 			nodeList, err := client.CoreV1().Secrets(namespace).Get(secret, v1.GetOptions{})
 			if err != nil {
 				ExitWithError("unable to access secrets", err)
 			}
 
-			for key, cert := range GetCertificateFromSecret(nodeList.Data, namespace, secret) {
+			results := GetCertificateFromSecret(nodeList.Data, namespace, secret)
+			count = 0
+			countEmpty = 0
+			for key, cert := range results {
 				var message string
 				if cert.Error != nil {
 					message = cert.Error.Error()
 					count++
-
+				} else if cert.Cert == nil {
+					message = "empty certificate"
+					countEmpty++
 				} else {
 					message = "valid"
 				}
 
-				fmt.Printf("%-30s %-30s %-30s %s\n", namespace, secret, key, message)
+				line := fmt.Sprintf("%-18s %-26s %-39s %s\n", namespace, secret, key, message)
+
+				if len(line) > GetTerminalWidth() {
+					line = line[:GetTerminalWidth()-5] + "[...]"
+				}
+
+				buf.WriteString(line)
 			}
+			if len(results) == 0 {
+				VerboseMessage(fmt.Sprintf("No certificates in secret %s\n", secret))
+			} else {
+				VerboseMessage(fmt.Sprintf("Total nr. of certs in secret %s in namespace %s: %v; valid: %v; invalid: %v; empty: %v\n", secret, namespace, len(results), len(results)-count-countEmpty, count, countEmpty))
+			}
+
 		}
 	}
 
@@ -82,6 +114,7 @@ func VerifyCertExpirations() (err error) {
 		ExitWithError("unable to verify certificates", fmt.Errorf("number of failed certs: %d", count))
 	}
 
+	fmt.Print(buf.String())
 	return nil
 }
 
@@ -91,14 +124,18 @@ func GetCertificateFromSecret(datamap map[string][]uint8, namespace string, secr
 
 	shellRegexp := regexp.MustCompile(`.*(-cert|-crt)$`)
 	for key, value := range datamap {
-		if len(string(value)) == 0 {
-			return result
-		}
 		if matches := shellRegexp.FindAllStringSubmatch(key, -1); len(matches) > 0 {
-			cert, err := GetCert(string(value))
-			result[key] = &VerifiedCert{
-				Cert:  cert,
-				Error: err,
+			if len(string(value)) == 0 {
+				result[key] = &VerifiedCert{
+					Cert:  nil,
+					Error: nil,
+				}
+			} else {
+				cert, err := GetCert(string(value))
+				result[key] = &VerifiedCert{
+					Cert:  cert,
+					Error: err,
+				}
 			}
 		}
 	}

@@ -39,19 +39,25 @@ var upgradeCmd = &cobra.Command{
 	Short: "Upgrade Kubernetes with new Helm Charts",
 	Long:  `TODO please do this later`,
 	Run: func(cmd *cobra.Command, args []string) {
+		havener.VerboseMessage("Looking for config file...")
+
 		if cfgFile == "" && viper.GetString("havenerconfig") == "" {
 			havener.ExitWithError("please provide configuration via --config or environment variable HAVENERCONFIG", fmt.Errorf("no havener configuration file set"))
 		}
 
 		// If a config file is found, read it in.
 		if err := viper.ReadInConfig(); err == nil {
-			fmt.Println("Using config file:", viper.ConfigFileUsed())
+			havener.InfoMessage(fmt.Sprintf("Using config file: %s", viper.ConfigFileUsed()))
 		}
+
+		havener.VerboseMessage("Reading config file...")
 
 		cfgdata, err := ioutil.ReadFile(viper.GetString("havenerconfig"))
 		if err != nil {
 			havener.ExitWithError("unable to read file", err)
 		}
+
+		havener.VerboseMessage("Unmarshaling config file...")
 
 		var config havener.Config
 		if err := yaml.Unmarshal(cfgdata, &config); err != nil {
@@ -60,20 +66,27 @@ var upgradeCmd = &cobra.Command{
 
 		for _, release := range config.Releases {
 			overrides, err := havener.TraverseStructureAndProcessShellOperators(release.Overrides)
+
+			havener.VerboseMessage("Processing overrides section...")
+
 			if err != nil {
 				havener.ExitWithError("failed to process overrides section", err)
 			}
+
+			havener.VerboseMessage("Marshaling overrides section...")
 
 			overridesData, err := yaml.Marshal(overrides)
 			if err != nil {
 				havener.ExitWithError("failed to marshal overrides structure into bytes", err)
 			}
 
-			fmt.Printf("Going to upgrade existing %s chart\n", release.ChartName)
+			havener.InfoMessage(fmt.Sprintf("Going to upgrade existing %s chart...", release.ChartName))
 
 			if _, err := havener.UpdateHelmRelease(release.ChartName, release.ChartLocation, overridesData, reuseValues); err != nil {
 				havener.ExitWithError("Error updating chart", err)
 			}
+
+			havener.InfoMessage(fmt.Sprintf("Successfully upgraded existing %s chart.", release.ChartName))
 		}
 
 	},

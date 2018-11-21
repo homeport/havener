@@ -31,6 +31,9 @@ var topCmd = &cobra.Command{
 	Short: "Shows CPU and Memory usage",
 	Long:  `TBD`,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		havener.VerboseMessage("Accessing Kubernetes cluster...")
+
 		clientSet, _, err := havener.OutOfClusterAuthentication()
 		if err != nil {
 			havener.ExitWithError("unable to get access to cluster", err)
