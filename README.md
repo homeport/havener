@@ -13,7 +13,7 @@ It seems that vendoring via `dep` is currently a mess when you need to pull in `
 ```sh
 go get -u github.com/ash2k/kubegodep2dep
 
-( cat Gopkg.boilerplate.toml && kubegodep2dep -kube-branch release-1.10 -client-go-branch release-7.0 ) | sed 's:go4.org/errorutil:go4.org:' > Gopkg.toml
+( cat Gopkg.boilerplate.toml && kubegodep2dep -kube-branch release-1.10 -client-go-branch release-7.0 ) >Gopkg.toml
 dep ensure -v -update && make clean test build
 ```
 
