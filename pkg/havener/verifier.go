@@ -21,6 +21,7 @@
 package havener
 
 import (
+	"bytes"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
@@ -41,6 +42,7 @@ func VerifyCertExpirations() (err error) {
 
 	var count int
 	var countEmpty int
+	var buf bytes.Buffer
 
 	VerboseMessage("Accessing cluster...")
 
@@ -91,13 +93,13 @@ func VerifyCertExpirations() (err error) {
 					message = "valid"
 				}
 
-				line := fmt.Sprintf("%-18s %-26s %-39s %s", namespace, secret, key, message)
+				line := fmt.Sprintf("%-18s %-26s %-39s %s\n", namespace, secret, key, message)
 
 				if len(line) > GetTerminalWidth() {
 					line = line[:GetTerminalWidth()-5] + "[...]"
 				}
 
-				fmt.Println(line)
+				buf.WriteString(line)
 			}
 			if len(results) == 0 {
 				VerboseMessage(fmt.Sprintf("No certificates in secret %s\n", secret))
@@ -112,6 +114,7 @@ func VerifyCertExpirations() (err error) {
 		ExitWithError("unable to verify certificates", fmt.Errorf("number of failed certs: %d", count))
 	}
 
+	fmt.Print(buf.String())
 	return nil
 }
 
