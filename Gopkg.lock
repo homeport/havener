@@ -20,12 +20,16 @@
   version = "v0.3.1"
 
 [[projects]]
-  digest = "1:b2011d989dee40ec66b8d8d627ed7b10408ad044dc21f2e478afd6437cb06f71"
+  digest = "1:61921f2218799382421ff2edf0eb8b0eaf62a80c98d326142143e0be9489c21e"
   name = "github.com/HeavyWombat/gonvenience"
-  packages = ["pkg/v1/bunt"]
+  packages = [
+    "pkg/v1/bunt",
+    "pkg/v1/term",
+    "pkg/v1/wait",
+  ]
   pruneopts = "NUT"
-  revision = "3905975288526a3a1c355f8f433e701e3e29a122"
-  version = "v1.0"
+  revision = "25de2e728b7a62796e3219c12565b7ffad290ae4"
+  version = "v1.1"
 
 [[projects]]
   digest = "1:79783ea658e83efedef1da04cd98ec1440ad191a4835cfb868de0ed37144f16d"
@@ -893,7 +897,7 @@
   version = "v4.3.0"
 
 [[projects]]
-  digest = "1:8225fd93ba0a18906b05a2ab52808349968f11a8c9c4be27001c2d10dbf781ef"
+  digest = "1:8a0efb153cc5b7e0e129d716834217be483e2b326e72f3dcca8b03cd3207e9e4"
   name = "gopkg.in/src-d/go-git.v4"
   packages = [
     ".",
@@ -938,8 +942,8 @@
     "utils/merkletrie/noder",
   ]
   pruneopts = "NUT"
-  revision = "cd64b4d630b6c2d2b3d72e9615e14f9d58bb5787"
-  version = "v4.7.1"
+  revision = "f62cd8e3495579a8323455fa0c4e6c44bb0d5e09"
+  version = "v4.8.0"
 
 [[projects]]
   digest = "1:e8e4582d879a25d93f5bde8025368840126d88625c1d6d802a20e138c13a756c"
@@ -1447,6 +1451,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/HeavyWombat/gonvenience/pkg/v1/bunt",
+    "github.com/HeavyWombat/gonvenience/pkg/v1/wait",
     "github.com/caarlos0/spin",
     "github.com/lucasb-eyer/go-colorful",
     "github.com/mitchellh/go-homedir",
