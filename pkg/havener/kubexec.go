@@ -62,15 +62,15 @@ import (
 // defaultTimeoutForGetPod is the timeout in seconds to wait until a newly created job spawned the actual pod
 const defaultTimeoutForGetPod = 5
 
-// PodExec executes the provided command in the referenced pod.
-func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.Pod, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
+// PodExec executes the provided command in the referenced pod's container.
+func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.Pod, container string, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
 	req := client.CoreV1().RESTClient().Post().
 		Resource("pods").
 		Name(pod.Name).
 		Namespace(pod.Namespace).
 		SubResource("exec").
 		VersionedParams(&corev1.PodExecOptions{
-			Container: pod.Spec.Containers[0].Name,
+			Container: container,
 			Command:   []string{"/bin/sh", "-c", command},
 			Stdin:     stdin != nil,
 			Stdout:    stdout != nil,
@@ -188,6 +188,7 @@ func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string,
 		client,
 		restconfig,
 		pod,
+		pod.Spec.Containers[0].Name,
 		fmt.Sprintf("nsenter --target 1 --mount --uts --ipc --net --pid -- %s", command),
 		stdin,
 		stdout,
