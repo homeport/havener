@@ -76,13 +76,13 @@ func ExitWithError(msg string, err error) {
 }
 
 // VerboseMessage prints a message if the flag --verbose/-v is set to true
-func VerboseMessage(message string) {
+func VerboseMessage(message string, vargs ...interface{}) {
 	if viper.GetBool("verbose") {
-		fmt.Printf(bunt.BoldText("[DEBUG] " + message + "\n"))
+		fmt.Printf(bunt.BoldText("[DEBUG] " + fmt.Sprintf(message, vargs...) + "\n"))
 	}
 }
 
 // InfoMessage prints out an info message, in bold
-func InfoMessage(message string) {
-	fmt.Printf(bunt.BoldText("[INFO] " + message + "\n"))
+func InfoMessage(message string, vargs ...interface{}) {
+	fmt.Printf(bunt.BoldText("[INFO] " + fmt.Sprintf(message, vargs...) + "\n"))
 }

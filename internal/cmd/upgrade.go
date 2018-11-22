@@ -47,7 +47,7 @@ var upgradeCmd = &cobra.Command{
 
 		// If a config file is found, read it in.
 		if err := viper.ReadInConfig(); err == nil {
-			havener.InfoMessage(fmt.Sprintf("Using config file: %s", viper.ConfigFileUsed()))
+			havener.InfoMessage("Using config file: %s", viper.ConfigFileUsed())
 		}
 
 		havener.VerboseMessage("Reading config file...")
@@ -80,13 +80,13 @@ var upgradeCmd = &cobra.Command{
 				havener.ExitWithError("failed to marshal overrides structure into bytes", err)
 			}
 
-			havener.InfoMessage(fmt.Sprintf("Going to upgrade existing %s chart...", release.ChartName))
+			havener.InfoMessage("Going to upgrade existing %s chart...", release.ChartName)
 
 			if _, err := havener.UpdateHelmRelease(release.ChartName, release.ChartLocation, overridesData, reuseValues); err != nil {
 				havener.ExitWithError("Error updating chart", err)
 			}
 
-			havener.InfoMessage(fmt.Sprintf("Successfully upgraded existing %s chart.", release.ChartName))
+			havener.InfoMessage("Successfully upgraded existing %s chart.", release.ChartName)
 		}
 
 	},

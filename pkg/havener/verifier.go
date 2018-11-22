@@ -59,7 +59,7 @@ func VerifyCertExpirations() (err error) {
 	}
 
 	for _, namespace := range list {
-		VerboseMessage(fmt.Sprintf("Getting secrets of namespace %s...", namespace))
+		VerboseMessage("Getting secrets of namespace %s...", namespace)
 
 		secretList, err := ListSecretsInNamespace(client, namespace)
 		if err != nil {
@@ -67,11 +67,11 @@ func VerifyCertExpirations() (err error) {
 		}
 
 		if len(list) == 0 {
-			VerboseMessage(fmt.Sprintf("No secrets in namespace %s", namespace))
+			VerboseMessage("No secrets in namespace %s", namespace)
 		}
 
 		for _, secret := range secretList {
-			VerboseMessage(fmt.Sprintf("Accessing secret %s of namespace %s...", secret, namespace))
+			VerboseMessage("Accessing secret %s of namespace %s...", secret, namespace)
 
 			nodeList, err := client.CoreV1().Secrets(namespace).Get(secret, v1.GetOptions{})
 			if err != nil {
@@ -102,9 +102,9 @@ func VerifyCertExpirations() (err error) {
 				buf.WriteString(line)
 			}
 			if len(results) == 0 {
-				VerboseMessage(fmt.Sprintf("No certificates in secret %s\n", secret))
+				VerboseMessage("No certificates in secret %s\n", secret)
 			} else {
-				VerboseMessage(fmt.Sprintf("Total nr. of certs in secret %s in namespace %s: %v; valid: %v; invalid: %v; empty: %v\n", secret, namespace, len(results), len(results)-count-countEmpty, count, countEmpty))
+				VerboseMessage("Total nr. of certs in secret %s in namespace %s: %v; valid: %v; invalid: %v; empty: %v\n", secret, namespace, len(results), len(results)-count-countEmpty, count, countEmpty)
 			}
 
 		}
