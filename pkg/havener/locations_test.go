@@ -81,6 +81,48 @@ var _ = Describe("Charts Locations", func() {
 				Expect(err.Error()).Should(Equal(constructedError))
 			})
 		})
+		Context("when the Helm Chart exists as a zip file in a github release", func() {
+			JustBeforeEach(func() {
+				os.Setenv("HOME", "/tmp/home")
+			})
+			AfterEach(func() {
+				os.RemoveAll(os.Getenv("HOME"))
+				os.Unsetenv("HOME")
+			})
+
+			It("should download cf chart, extract and place it under the ~/.havener dir", func() {
+				path, _ := havener.PathToHelmChart("helm/cf-opensuse@https://github.com/SUSE/scf/releases/download/2.13.3/scf-opensuse-2.13.3+cf2.7.0.0.gf95d9aed.zip")
+				Expect(path).Should(Equal("/tmp/home/.havener/extracted/helm/cf-opensuse"))
+			})
+		})
+		Context("when the Helm Chart zip file location contains an invalid dir path", func() {
+			JustBeforeEach(func() {
+				os.Setenv("HOME", "/tmp/home-invalid-path")
+			})
+			AfterEach(func() {
+				os.RemoveAll(os.Getenv("HOME"))
+				os.Unsetenv("HOME")
+			})
+			It("should throw an error regarding the unexisting path", func() {
+				_, err := havener.PathToHelmChart("foo/bar@https://github.com/SUSE/scf/releases/download/2.13.3/scf-opensuse-2.13.3+cf2.7.0.0.gf95d9aed.zip")
+				constructedError := "Error: The provided path: foo/bar, does not exist under the /tmp/home-invalid-path/.havener/scf-opensuse-2.13.3+cf2.7.0.0.gf95d9aed.zip file"
+				Expect(err.Error()).Should(Equal(constructedError))
+			})
+		})
+		Context("when the Helm Chart zip file location does not contains a .zip file", func() {
+			JustBeforeEach(func() {
+				os.Setenv("HOME", "/tmp/home-invalid-file")
+			})
+			AfterEach(func() {
+				os.Unsetenv("HOME")
+			})
+			It("should not download, throw an error regarding the invalid zip file", func() {
+				_, err := havener.PathToHelmChart("helm/cf-opensuse@https://github.com/SUSE/scf/releases/download/2.13.3/scf-opensuse-2.13.3+cf2.7.0.0.gf95d9aed")
+				constructedError := "Error: The provided file under the https://github.com/SUSE/scf/releases/download/2.13.3/scf-opensuse-2.13.3+cf2.7.0.0.gf95d9aed URL, is not a valid zip file."
+				Expect(err.Error()).Should(Equal(constructedError))
+			})
+		})
+
 	})
 })
 
