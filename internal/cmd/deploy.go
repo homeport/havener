@@ -49,7 +49,7 @@ var deployCmd = &cobra.Command{
 
 		// If a config file is found, read it in.
 		if err := viper.ReadInConfig(); err == nil {
-			havener.InfoMessage(fmt.Sprintf("Using config file: %s", viper.ConfigFileUsed()))
+			havener.InfoMessage("Using config file: %s", viper.ConfigFileUsed())
 		}
 
 		havener.VerboseMessage("Reading config file...")
@@ -93,7 +93,7 @@ var deployCmd = &cobra.Command{
 			}
 			s.Stop()
 
-			havener.InfoMessage(fmt.Sprintf("Successfully created new helm chart for %s in namespace %s.", release.ChartName, release.ChartNamespace))
+			havener.InfoMessage("Successfully created new helm chart for %s in namespace %s.", release.ChartName, release.ChartNamespace)
 		}
 	},
 }

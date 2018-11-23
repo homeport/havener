@@ -127,7 +127,7 @@ func DeployHelmRelease(chartname string, namespace string, chartPath string, val
 		ExitWithError("Unable to locate helm chart location", err)
 	}
 
-	VerboseMessage(fmt.Sprintf("Loading chart in namespace %s...", namespace))
+	VerboseMessage("Loading chart in namespace %s...", namespace)
 
 	chartRequested, err := GetHelmChart(helmChartPath)
 	if err != nil {
@@ -141,7 +141,7 @@ func DeployHelmRelease(chartname string, namespace string, chartPath string, val
 		return nil, err
 	}
 
-	VerboseMessage(fmt.Sprintf("Installing release in namespace %s...", namespace))
+	VerboseMessage("Installing release in namespace %s...", namespace)
 
 	installRelease, err := helmClient.InstallReleaseFromChart(
 		chartRequested,
