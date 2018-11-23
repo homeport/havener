@@ -21,11 +21,11 @@
 package cmd
 
 import (
+	"fmt"
 	"io/ioutil"
 	"strings"
 
-	"github.com/HeavyWombat/gonvenience/pkg/v1/bunt"
-	"github.com/caarlos0/spin"
+	"github.com/HeavyWombat/gonvenience/pkg/v1/wait"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -53,7 +53,6 @@ in parallel to the deletion of the Helm Release itself.
 If multiple Helm Releases are specified, then they will deleted concurrently.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-
 		havener.VerboseMessage("Accessing cluster...")
 
 		client, _, err := havener.OutOfClusterAuthentication()
@@ -64,9 +63,6 @@ If multiple Helm Releases are specified, then they will deleted concurrently.
 		if err := purgeHelmReleases(client, getConfiguredHelmClient(), args...); err != nil {
 			havener.ExitWithError("failed to purge helm releases", err)
 		}
-
-		havener.InfoMessage("Successfully purged helm release(s).")
-
 	},
 }
 
@@ -104,9 +100,9 @@ func purgeHelmReleases(kubeClient kubernetes.Interface, helmClient *helm.Client,
 	}
 
 	// Show a wait indicator ...
-	s := spin.New(bunt.BoldText("%s Deleting Helm Releases: " + strings.Join(toBeDeleted, ","+"\n")))
-	s.Start()
-	defer s.Stop()
+	pi := wait.NewProgressIndicator(fmt.Sprintf("Deleting Helm Releases: " + strings.Join(toBeDeleted, ",")))
+	pi.Start()
+	defer pi.Done()
 
 	// Start to purge the helm releaes in parallel
 	errors := make(chan error, len(toBeDeleted))

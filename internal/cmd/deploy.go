@@ -24,8 +24,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/HeavyWombat/gonvenience/pkg/v1/bunt"
-	"github.com/caarlos0/spin"
+	"github.com/HeavyWombat/gonvenience/pkg/v1/wait"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -85,15 +84,14 @@ var deployCmd = &cobra.Command{
 			}
 
 			// Show a wait indicator ...
-			s := spin.New(bunt.BoldText("%s " + fmt.Sprintf("Creating Helm Release for %s\n", release.ChartName)))
-			s.Start()
+			pi := wait.NewProgressIndicator(fmt.Sprintf("Creating Helm Release for %s", release.ChartName))
+			pi.Start()
 
 			if _, err := havener.DeployHelmRelease(release.ChartName, release.ChartNamespace, release.ChartLocation, overridesData); err != nil {
 				havener.ExitWithError("Error deploying chart", err)
 			}
-			s.Stop()
 
-			havener.InfoMessage("Successfully created new helm chart for %s in namespace %s.", release.ChartName, release.ChartNamespace)
+			pi.Done(fmt.Sprintf("Successfully created new helm chart for %s in namespace %s.", release.ChartName, release.ChartNamespace))
 		}
 	},
 }
