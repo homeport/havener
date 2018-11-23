@@ -21,6 +21,7 @@
 package cmd
 
 import (
+	"github.com/HeavyWombat/gonvenience/pkg/v1/term"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
 )
@@ -46,6 +47,6 @@ var topCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(topCmd)
 
-	topCmd.PersistentFlags().IntVar(&havener.FixedTerminalWidth, "terminal-width", -1, "disable autodetection and specify an explicit terminal width")
-	topCmd.PersistentFlags().IntVar(&havener.FixedTerminalHeight, "terminal-height", -1, "disable autodetection and specify an explicit terminal height")
+	topCmd.PersistentFlags().IntVar(&term.FixedTerminalWidth, "terminal-width", -1, "disable autodetection and specify an explicit terminal width")
+	topCmd.PersistentFlags().IntVar(&term.FixedTerminalHeight, "terminal-height", -1, "disable autodetection and specify an explicit terminal height")
 }

@@ -31,6 +31,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/HeavyWombat/gonvenience/pkg/v1/bunt"
+	"github.com/HeavyWombat/gonvenience/pkg/v1/term"
 	colorful "github.com/lucasb-eyer/go-colorful"
 
 	"k8s.io/client-go/kubernetes"
@@ -97,7 +98,7 @@ func ShowTopStats(client kubernetes.Interface) {
 	const memoryCaption = "Memory "
 
 	var delimiter = "  "
-	if GetTerminalWidth() <= 80 {
+	if term.GetTerminalWidth() <= 80 {
 		delimiter = " "
 	}
 
@@ -115,7 +116,7 @@ func ShowTopStats(client kubernetes.Interface) {
 		}
 	}
 
-	barLength := float64(GetTerminalWidth()-
+	barLength := float64(term.GetTerminalWidth()-
 		len(nodeCaption)-
 		maxLength-
 		len(delimiter)-
@@ -184,7 +185,7 @@ func ShowTopStats(client kubernetes.Interface) {
 	fmt.Print(bunt.Style("Usage by Namespace\n", bunt.Bold, bunt.Italic))
 	fmt.Print(usageChart(names, usedCPUOfNamespace, usedMemOfNamespace))
 
-	availableLines := GetTerminalHeight() -
+	availableLines := term.GetTerminalHeight() -
 		2 - len(usageData) - // usage by node section
 		4 - len(names) - // usage by namespace section
 		2 - // usage by pod section
@@ -208,8 +209,8 @@ func ShowTopStats(client kubernetes.Interface) {
 		for _, entry := range data {
 			line := fmt.Sprintf("%s, %s %s/%s/%s", entry[3], entry[4], entry[0], entry[1], entry[2])
 
-			if len(line) > GetTerminalWidth() {
-				line = line[:GetTerminalWidth()-5] + "[...]"
+			if len(line) > term.GetTerminalWidth() {
+				line = line[:term.GetTerminalWidth()-5] + "[...]"
 			}
 
 			fmt.Println(line)
@@ -464,7 +465,7 @@ func usageChart(names []string, cpu map[string]int64, memory map[string]int64) s
 	var buf bytes.Buffer
 
 	chart := func(caption string, input map[string]int64, totalSum int64) {
-		possibleRunes := GetTerminalWidth() - len(caption) - 3
+		possibleRunes := term.GetTerminalWidth() - len(caption) - 3
 
 		var chartBuf bytes.Buffer
 		for idx, namespace := range names {

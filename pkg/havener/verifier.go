@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/HeavyWombat/gonvenience/pkg/v1/term"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -95,8 +96,8 @@ func VerifyCertExpirations() (err error) {
 
 				line := fmt.Sprintf("%-18s %-26s %-39s %s\n", namespace, secret, key, message)
 
-				if len(line) > GetTerminalWidth() {
-					line = line[:GetTerminalWidth()-5] + "[...]"
+				if len(line) > term.GetTerminalWidth() {
+					line = line[:term.GetTerminalWidth()-5] + "[...]"
 				}
 
 				buf.WriteString(line)
