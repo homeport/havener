@@ -61,11 +61,7 @@ func updateLocalChartStore() error {
 		return err
 	}
 
-	if err := cloneOrPull(helmChartsLocation(), helmChartsURL); err != nil {
-		return err
-	}
-
-	return nil
+	return cloneOrPull(helmChartsLocation(), helmChartsURL)
 }
 
 func cloneOrPull(location string, url string) error {

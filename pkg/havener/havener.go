@@ -18,20 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+/*
+Package havener is a convenience layer to handle Containerized CF tasks on a
+Kubernetes cluster, e.g. deploy, or upgrade.
+
+It provides functions that wrap Kubernetes API calls (client-go) or Helm client
+calls, or even both, to help with everyday tasks on a Kubernetes cluster that
+runs Cloud Foundry in its containerized version. However, it is not limited to
+this kind of workload.
+*/
 package havener
-
-// Config is the Havener configuration main structure contract.
-type Config struct {
-	Name     string    `yaml:"name"`
-	Releases []Release `yaml:"releases"`
-}
-
-// Release is the Havener configuration Helm Release abstraction, which
-// consists of the Havener specific additional details, e.g. Overrides.
-type Release struct {
-	ChartName      string      `yaml:"chart_name"`
-	ChartNamespace string      `yaml:"chart_namespace"`
-	ChartLocation  string      `yaml:"chart_location"`
-	ChartVersion   int         `yaml:"chart_version"`
-	Overrides      interface{} `yaml:"overrides"`
-}
