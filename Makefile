@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-.PHONY: clean sanity test build
+.PHONY: clean sanity test todo-list build
 
 version := $(shell git describe --tags 2>/dev/null || ( git rev-parse HEAD | cut -c-8 ))
 gofiles := $(wildcard cmd/havener/*.go internal/cmd/*.go pkg/havener/*.go)
@@ -31,6 +31,9 @@ clean:
 
 sanity: $(gofiles)
 	@test -z $(shell gofmt -l ./pkg ./internal ./cmd)
+
+todo-list:
+	@grep -R --exclude-dir=vendor '[T]ODO' $(shell pwd)
 
 test: sanity
 	ginkgo -r --randomizeAllSpecs --randomizeSuites --failOnPending --nodes=4 --compilers=2 --race --trace
