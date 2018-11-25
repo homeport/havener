@@ -13,6 +13,10 @@ There are different ways to get `havener`. You are free to pick the one that mak
 - Docker Hub serves curated Docker images with `havener` as well as  `kubectl` and other important CLI tools. There are two flavours available:
   - [Alpine based images](https://hub.docker.com/r/havener/alpine-havener/): `docker pull havener/alpine-havener`
   - [Ubuntu based images](https://hub.docker.com/r/havener/ubuntu-havener/): `docker pull havener/ubuntu-havener`
+- On macOS systems, a Homebrew tap is available to install `havener`:
+  ```sh
+  brew install homeport/tap/havener
+  ```
 - Use a convenience script to download the latest release to install it in a suitable location on your local machine:
   ```sh
   curl -sL https://raw.githubusercontent.com/homeport/havener/master/scripts/download-latest.sh | bash
@@ -25,7 +29,7 @@ There are different ways to get `havener`. You are free to pick the one that mak
 
 
 ## Quick Command Overview
-Like `kubectl` and `helm`, `havener` relies on the Kubernetes configuration that can be set via the `KUBECONFIG` environment variable. It can also be provided with the `--kubeconfig` flag, which takes the path to the yaml file (for example `$HOME/.kube/config`).
+Like `kubectl` and `helm`, `havener` relies on the Kubernetes configuration that can be set via the `KUBECONFIG` environment variable. It can also be provided with the `--kubeconfig` flag, which takes the path to the YAML file (for example `$HOME/.kube/config`).
 ```
 $ havener
 
@@ -73,7 +77,7 @@ The `deploy` command installs a helm release. A config file has to be provided, 
   ```
 
 #### logs command
-It loops over all pods and all namespaces and downloads log and configuration files from some well-known hardcoded locations to a local directory. Use this to quickly scan through multiple files from multiple locations in case you have to debug an issue where it is not clear yet where to look.
+It loops over all pods and all namespaces and downloads log and configuration files from some well-known hard-coded locations to a local directory. Use this to quickly scan through multiple files from multiple locations in case you have to debug an issue where it is not clear yet where to look.
 
 #### node-exec command
 The `node-exec` command executes a shell command on a node. 
