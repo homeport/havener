@@ -65,6 +65,7 @@ const retrieveAllConfigFilesCommand = `/bin/sh -c '
 #!/bin/sh
 
 FILES="$(cd / && find var/vcap/jobs -type f -size +0c 2>/dev/null; \
+	             find etc/nginx -type f -size +0c 2>/dev/null; \
 				 find opt/fissile -type f -size +0c 2>/dev/null )"
 
 if [ ! -z "${FILES}" ]; then
