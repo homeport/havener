@@ -22,10 +22,15 @@ package cmd
 
 import (
 	"os"
+	"path/filepath"
 
+	"github.com/HeavyWombat/gonvenience/pkg/v1/wait"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
 )
+
+var includeConfigFiles bool
+var downloadLocation string
 
 // logsCmd represents the top command
 var logsCmd = &cobra.Command{
@@ -38,12 +43,28 @@ var logsCmd = &cobra.Command{
 			havener.ExitWithError("unable to get access to cluster", err)
 		}
 
-		if err := havener.RetrieveLogs(clientSet, restconfig, os.TempDir()); err != nil {
+		var commonText string
+		if includeConfigFiles {
+			commonText = "log and configuration files"
+		} else {
+			commonText = "log files"
+		}
+
+		pi := wait.NewProgressIndicator("Downloading " + commonText + " ...")
+		pi.Start()
+
+		if err := havener.RetrieveLogs(clientSet, restconfig, downloadLocation, includeConfigFiles); err != nil {
+			pi.Done()
 			havener.ExitWithError("unable to retrieve logs from pods", err)
 		}
+
+		pi.Done("Done downloading " + commonText + ": " + filepath.Join(downloadLocation, havener.LogDirName))
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(logsCmd)
+
+	logsCmd.PersistentFlags().BoolVar(&includeConfigFiles, "config-files", false, "include configuration files in download package")
+	logsCmd.PersistentFlags().StringVar(&downloadLocation, "target", os.TempDir(), "desired target download location for retrieved files")
 }

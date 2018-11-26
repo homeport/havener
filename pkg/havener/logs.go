@@ -33,8 +33,6 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/HeavyWombat/gonvenience/pkg/v1/wait"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -42,14 +40,31 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-const logDirName = "retrieved-logs"
+// LogDirName is the subdirectory name where retrieved logs are stored
+const LogDirName = "retrieved-logs"
 
-const packageCmd = `/bin/sh -c '
+const retrieveAllLogFilesCommand = `/bin/sh -c '
+#!/bin/sh
+
+FILES="$(cd / && find var/vcap/sys -type f -name '*.log*' -size +0c 2>/dev/null; \
+				 find var/log -type f -size +0c 2>/dev/null )"
+
+if [ ! -z "${FILES}" ]; then
+  ( cd / && ls -1Sr ${FILES} ) | while read -r FILENAME; do
+    case "$(file --brief --mime-type "${FILENAME}")" in
+      text/*)
+        echo "${FILENAME}"
+        ;;
+    esac
+  done | tar -czf - -T - 2>/dev/null
+fi
+
+' 2>/dev/null`
+
+const retrieveAllConfigFilesCommand = `/bin/sh -c '
 #!/bin/sh
 
 FILES="$(cd / && find var/vcap/jobs -type f -size +0c 2>/dev/null; \
-				 find var/vcap/sys -type f -name '*.log*' -size +0c 2>/dev/null; \
-				 find var/log -type f -size +0c 2>/dev/null; \
 				 find opt/fissile -type f -size +0c 2>/dev/null )"
 
 if [ ! -z "${FILES}" ]; then
@@ -104,7 +119,7 @@ func ClusterName() (string, error) {
 
 // RetrieveLogs downloads log and configuration files from some well known location of all the pods
 // of all the namespaces and stored them in the local file system.
-func RetrieveLogs(client kubernetes.Interface, restconfig *rest.Config, target string) error {
+func RetrieveLogs(client kubernetes.Interface, restconfig *rest.Config, target string, includeConfigFiles bool) error {
 	clusterName, err := ClusterName()
 	if err != nil {
 		return err
@@ -113,9 +128,6 @@ func RetrieveLogs(client kubernetes.Interface, restconfig *rest.Config, target s
 	if absolute, err := filepath.Abs(target); err == nil {
 		target = absolute
 	}
-
-	pi := wait.NewProgressIndicator("Downloading log and configuration files ...")
-	pi.Start()
 
 	type task struct {
 		pod     *corev1.Pod
@@ -130,13 +142,24 @@ func RetrieveLogs(client kubernetes.Interface, restconfig *rest.Config, target s
 		wg.Add(1)
 		go func() {
 			for task := range tasks {
-				for _, err := range retrieveLogsFromPod(client, restconfig, task.pod, task.baseDir) {
+				for _, err := range retrieveLogFilesFromPod(client, restconfig, task.pod, task.baseDir) {
 					switch err {
 					case io.EOF, gzip.ErrHeader, gzip.ErrChecksum:
 						continue
 					}
 
 					errors = append(errors, err)
+				}
+
+				if includeConfigFiles {
+					for _, err := range retrieveConfigFilesFromPod(client, restconfig, task.pod, task.baseDir) {
+						switch err {
+						case io.EOF, gzip.ErrHeader, gzip.ErrChecksum:
+							continue
+						}
+
+						errors = append(errors, err)
+					}
 				}
 			}
 
@@ -154,7 +177,7 @@ func RetrieveLogs(client kubernetes.Interface, restconfig *rest.Config, target s
 
 					baseDir := filepath.Join(
 						target,
-						logDirName,
+						LogDirName,
 						clusterName,
 						namespace,
 					)
@@ -167,7 +190,6 @@ func RetrieveLogs(client kubernetes.Interface, restconfig *rest.Config, target s
 
 	close(tasks)
 	wg.Wait()
-	pi.Done("Done downloading log and configuration files: " + filepath.Join(target, logDirName))
 
 	if len(errors) > 0 {
 		var buf bytes.Buffer
@@ -183,7 +205,7 @@ func RetrieveLogs(client kubernetes.Interface, restconfig *rest.Config, target s
 	return nil
 }
 
-func retrieveLogsFromPod(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.Pod, baseDir string) []error {
+func retrieveLogFilesFromPod(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.Pod, baseDir string) []error {
 	errors := []error{}
 
 	for _, container := range pod.Spec.Containers {
@@ -201,7 +223,41 @@ func retrieveLogsFromPod(client kubernetes.Interface, restconfig *rest.Config, p
 				restconfig,
 				pod,
 				container.Name,
-				packageCmd,
+				retrieveAllLogFilesCommand,
+				nil,
+				write,
+				os.Stderr,
+				false)
+			write.Close()
+		}()
+
+		if err := untar(read, targetPath); err != nil {
+			errors = append(errors, err)
+		}
+	}
+
+	return errors
+}
+
+func retrieveConfigFilesFromPod(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.Pod, baseDir string) []error {
+	errors := []error{}
+
+	for _, container := range pod.Spec.Containers {
+		targetPath := filepath.Join(
+			baseDir,
+			pod.Name,
+			container.Name,
+		)
+
+		read, write := io.Pipe()
+
+		go func() {
+			PodExec(
+				client,
+				restconfig,
+				pod,
+				container.Name,
+				retrieveAllConfigFilesCommand,
 				nil,
 				write,
 				os.Stderr,
