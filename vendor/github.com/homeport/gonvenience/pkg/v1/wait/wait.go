@@ -1,4 +1,4 @@
-// Copyright © 2018 Matthias Diester
+// Copyright © 2018 The Homeport Team
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -50,8 +50,8 @@ import (
 
 	"github.com/lucasb-eyer/go-colorful"
 
-	"github.com/HeavyWombat/gonvenience/pkg/v1/bunt"
-	"github.com/HeavyWombat/gonvenience/pkg/v1/term"
+	"github.com/homeport/gonvenience/pkg/v1/bunt"
+	"github.com/homeport/gonvenience/pkg/v1/term"
 )
 
 const resetLine = "\r\x1b[K"

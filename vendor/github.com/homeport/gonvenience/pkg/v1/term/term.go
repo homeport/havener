@@ -1,4 +1,4 @@
-// Copyright © 2018 Matthias Diester
+// Copyright © 2018 The Homeport Team
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,7 @@ import (
 	"os"
 
 	isatty "github.com/mattn/go-isatty"
+	ps "github.com/mitchellh/go-ps"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -131,4 +132,17 @@ func IsTrueColor() bool {
 	}
 
 	return *isTrueColor
+}
+
+// IsGardenContainer returns whether the current process is started in the process
+// tree of garden container (https://github.com/cloudfoundry/garden).
+func IsGardenContainer() bool {
+	if process, err := ps.FindProcess(1); err == nil {
+		switch process.Executable() {
+		case "garden-init":
+			return true
+		}
+	}
+
+	return false
 }

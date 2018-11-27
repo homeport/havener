@@ -20,18 +20,6 @@
   version = "v0.3.1"
 
 [[projects]]
-  digest = "1:61921f2218799382421ff2edf0eb8b0eaf62a80c98d326142143e0be9489c21e"
-  name = "github.com/HeavyWombat/gonvenience"
-  packages = [
-    "pkg/v1/bunt",
-    "pkg/v1/term",
-    "pkg/v1/wait",
-  ]
-  pruneopts = "NUT"
-  revision = "25de2e728b7a62796e3219c12565b7ffad290ae4"
-  version = "v1.1"
-
-[[projects]]
   digest = "1:79783ea658e83efedef1da04cd98ec1440ad191a4835cfb868de0ed37144f16d"
   name = "github.com/MakeNowJust/heredoc"
   packages = ["."]
@@ -324,6 +312,18 @@
   revision = "d8c773c4cba11b11539e3d45f93daeaa5dcf1fa1"
 
 [[projects]]
+  digest = "1:962a920868cd31aed4f75379ceaa58e76e5231263f2bec0ae08c4154e00a8935"
+  name = "github.com/homeport/gonvenience"
+  packages = [
+    "pkg/v1/bunt",
+    "pkg/v1/term",
+    "pkg/v1/wait",
+  ]
+  pruneopts = "NUT"
+  revision = "f3a0320a871840ec3932581249c0e706a2f0ce46"
+  version = "v1.2"
+
+[[projects]]
   digest = "1:b7f860847a1d71f925ba9385ed95f1ebc0abfeb418a78e219ab61f48fdfeffad"
   name = "github.com/howeyc/gopass"
   packages = ["."]
@@ -430,6 +430,14 @@
   pruneopts = "NUT"
   revision = "ae18d6b8b3205b561c79e8e5f69bff09736185f4"
   version = "v1.0.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:2d209eb757bb4101584c2618becd4026593509343ce55491233fd090faa1f1da"
+  name = "github.com/mitchellh/go-ps"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "4fdf99ab29366514c69ccccddab5dc58b8d84062"
 
 [[projects]]
   digest = "1:9f63926f52745d1f9d6053f8fbbb3bd3983c2c97c0565957e682b8d2f7aad3af"
@@ -889,7 +897,7 @@
   version = "v4.3.0"
 
 [[projects]]
-  digest = "1:8a0efb153cc5b7e0e129d716834217be483e2b326e72f3dcca8b03cd3207e9e4"
+  digest = "1:5ac294a32214a1838a0df4af6b8fb4d161316f16b3dd59c3479dc25b5c90aab2"
   name = "gopkg.in/src-d/go-git.v4"
   packages = [
     ".",
@@ -934,8 +942,8 @@
     "utils/merkletrie/noder",
   ]
   pruneopts = "NUT"
-  revision = "f62cd8e3495579a8323455fa0c4e6c44bb0d5e09"
-  version = "v4.8.0"
+  revision = "3dbfb89e0f5bce0008724e547b999fe3af9f60db"
+  version = "v4.8.1"
 
 [[projects]]
   digest = "1:e8e4582d879a25d93f5bde8025368840126d88625c1d6d802a20e138c13a756c"
@@ -1059,7 +1067,7 @@
     "third_party/forked/golang/reflect",
   ]
   pruneopts = "NUT"
-  revision = "e386b2658ed20923da8cc9250e552f082899a1ee"
+  revision = "8cc49011eb0c800f6c179342d0265ad234c0bf83"
 
 [[projects]]
   branch = "release-1.10"
@@ -1421,8 +1429,8 @@
     "pkg/volume/util/types",
   ]
   pruneopts = "NUT"
-  revision = "be1a908c6aa47e0ae1b1dc861a1de6ccfe963aa2"
-  version = "v1.10.10"
+  revision = "637c7e288581ee40ab4ca210618a89a555b6e7e9"
+  version = "v1.10.11"
 
 [[projects]]
   digest = "1:5271b4ee2724d8c2ad7df650a5f9db46d01ce558769469713feba0e3e6079292"
@@ -1442,8 +1450,9 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/HeavyWombat/gonvenience/pkg/v1/bunt",
-    "github.com/HeavyWombat/gonvenience/pkg/v1/wait",
+    "github.com/homeport/gonvenience/pkg/v1/bunt",
+    "github.com/homeport/gonvenience/pkg/v1/term",
+    "github.com/homeport/gonvenience/pkg/v1/wait",
     "github.com/lucasb-eyer/go-colorful",
     "github.com/mitchellh/go-homedir",
     "github.com/onsi/ginkgo",
@@ -1456,6 +1465,7 @@
     "gopkg.in/yaml.v2",
     "k8s.io/api/batch/v1",
     "k8s.io/api/core/v1",
+    "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/api/resource",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/watch",
