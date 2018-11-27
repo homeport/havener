@@ -151,7 +151,7 @@ func DeployHelmRelease(chartname string, namespace string, chartPath string, val
 		helm.InstallDryRun(false),
 		helm.InstallReuseName(false),
 		helm.InstallDisableHooks(false),
-		helm.InstallTimeout(30*60), // TODO Make this configurable via havener config
+		helm.InstallTimeout(40*60), // TODO Make this configurable via havener config
 		helm.InstallWait(true))
 	if err != nil {
 		ExitWithError("Error deploying chart", err)
