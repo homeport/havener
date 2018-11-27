@@ -23,7 +23,10 @@ package havener
 import (
 	"fmt"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/helm/pkg/helm"
@@ -60,19 +63,24 @@ func PurgeHelmRelease(kubeClient kubernetes.Interface, helmClient *helm.Client, 
 
 	VerboseMessage("Purging namespaces and helm releases...")
 
-	errors := make(chan error, 2)
-	go func(namespace string) { errors <- PurgeNamespace(kubeClient, namespace) }(statusResp.Namespace)
+	results := make(chan error, 2)
+	go func(namespace string) { results <- PurgeNamespace(kubeClient, namespace) }(statusResp.Namespace)
 	go func(helmRelease string) {
 		_, err := helmClient.DeleteRelease(helmRelease,
 			helm.DeletePurge(true),
 			helm.DeleteTimeout(defaultHelmDeleteTimeout))
-		errors <- err
+		results <- err
 	}(helmRelease)
 
+	errors := []error{}
 	for i := 0; i < 2; i++ {
-		if err := <-errors; err != nil {
-			return err
+		if err := <-results; err != nil {
+			errors = append(errors, err)
 		}
+	}
+
+	if len(errors) > 0 {
+		return &MultipleErrors{errors}
 	}
 
 	return nil
@@ -116,7 +124,21 @@ func PurgeStatefulSetsInNamespace(kubeClient kubernetes.Interface, namespace str
 func PurgeNamespace(kubeClient kubernetes.Interface, namespace string) error {
 	ns, err := kubeClient.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
 	if err != nil {
+		// Bail out if namespace is already deleted
+		switch err.(type) {
+		case *errors.StatusError:
+			if err.Error() == fmt.Sprintf(`namespaces "%s" not found`, namespace) {
+				return nil
+			}
+		}
+
 		return err
+	}
+
+	// Bail out if namespace is already in Phase Terminating
+	switch ns.Status.Phase {
+	case corev1.NamespaceTerminating:
+		return nil
 	}
 
 	watcher, err := kubeClient.CoreV1().Namespaces().Watch(metav1.SingleObject(ns.ObjectMeta))
