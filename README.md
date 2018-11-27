@@ -140,5 +140,17 @@ There are multiple make targets, but running `all` does everything you want in o
 make all
 ```
 
+### Test it with Linux on your macOS system
+Best way is to use Docker to spin up a container:
+```sh
+docker run \
+  --interactive \
+  --tty \
+  --rm \
+  --volume $GOPATH/src/github.com/homeport/havener:/go/src/github.com/homeport/havener \
+  --workdir /go/src/github.com/homeport/havener \
+  golang /bin/bash
+```
+
 ## License
 Licensed under [MIT License](https://github.com/homeport/havener/blob/master/LICENSE)
