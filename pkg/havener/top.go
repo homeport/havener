@@ -30,8 +30,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/HeavyWombat/gonvenience/pkg/v1/bunt"
-	"github.com/HeavyWombat/gonvenience/pkg/v1/term"
+	"github.com/homeport/gonvenience/pkg/v1/bunt"
+	"github.com/homeport/gonvenience/pkg/v1/term"
 	colorful "github.com/lucasb-eyer/go-colorful"
 
 	"k8s.io/client-go/kubernetes"

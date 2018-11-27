@@ -27,7 +27,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/HeavyWombat/gonvenience/pkg/v1/term"
+	"github.com/homeport/gonvenience/pkg/v1/term"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

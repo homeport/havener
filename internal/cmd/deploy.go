@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/HeavyWombat/gonvenience/pkg/v1/wait"
+	"github.com/homeport/gonvenience/pkg/v1/wait"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
