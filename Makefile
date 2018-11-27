@@ -33,7 +33,7 @@ sanity: $(gofiles)
 	@test -z $(shell gofmt -l ./pkg ./internal ./cmd)
 
 todo-list:
-	@grep -R --exclude-dir=vendor '[T]ODO' $(shell pwd)
+	@grep -InHR --exclude-dir=vendor --exclude-dir=.git '[T]ODO' $(shell pwd)
 
 test: sanity
 	ginkgo -r --randomizeAllSpecs --randomizeSuites --failOnPending --nodes=4 --compilers=2 --race --trace
