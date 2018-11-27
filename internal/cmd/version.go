@@ -21,12 +21,15 @@
 package cmd
 
 import (
-	"fmt"
+	"runtime"
 
+	"github.com/homeport/gonvenience/pkg/v1/bunt"
 	"github.com/spf13/cobra"
 )
 
-var version string
+var havenerVersion string
+var kubeVersion string
+var helmVersion string
 
 // versionCmd represents the top command
 var versionCmd = &cobra.Command{
@@ -34,7 +37,20 @@ var versionCmd = &cobra.Command{
 	Short: "Shows the version",
 	Long:  `Shows version details`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("version %s\n", version)
+		for _, ptr := range []*string{&havenerVersion, &kubeVersion, &helmVersion} {
+			if len(*ptr) == 0 {
+				*ptr = "develop"
+			}
+		}
+
+		bunt.Printf("*havener* version MintCream{_%s_}, *Go* version MintCream{_%s %s/%s_}, *Kubernetes API* version MintCream{_%s_}, *Helm* version MintCream{_%s_}\n",
+			havenerVersion,
+			runtime.Version(),
+			runtime.GOOS,
+			runtime.GOARCH,
+			kubeVersion,
+			helmVersion,
+		)
 	},
 }
 

@@ -18,10 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-.PHONY: clean sanity test todo-list build
-
-version := $(shell git describe --tags 2>/dev/null || ( git rev-parse HEAD | cut -c-8 ))
-gofiles := $(wildcard cmd/havener/*.go internal/cmd/*.go pkg/havener/*.go)
+.PHONY: all clean todo-list test build
 
 all: test build
 
@@ -29,22 +26,11 @@ clean:
 	@go clean -r -cache
 	@rm -rf binaries
 
-sanity: $(gofiles)
-	@test -z $(shell gofmt -l ./pkg ./internal ./cmd)
-
 todo-list:
 	@grep -InHR --exclude-dir=vendor --exclude-dir=.git '[T]ODO' $(shell pwd)
 
-test: sanity
+test:
 	ginkgo -r --randomizeAllSpecs --randomizeSuites --failOnPending --nodes=4 --compilers=2 --race --trace
 
-build: binaries/havener-windows-amd64 binaries/havener-darwin-amd64 binaries/havener-linux-amd64
-
-binaries/havener-windows-amd64: $(gofiles)
-	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -a -tags netgo -ldflags '-s -w -extldflags "-static" -X github.com/homeport/havener/internal/cmd.version=$(version)' -o binaries/havener-windows-amd64 cmd/havener/main.go
-
-binaries/havener-darwin-amd64: $(gofiles)
-	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -a -tags netgo -ldflags '-s -w -extldflags "-static" -X github.com/homeport/havener/internal/cmd.version=$(version)' -o binaries/havener-darwin-amd64 cmd/havener/main.go
-
-binaries/havener-linux-amd64: $(gofiles)
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -tags netgo -ldflags '-s -w -extldflags "-static" -X github.com/homeport/havener/internal/cmd.version=$(version)' -o binaries/havener-linux-amd64 cmd/havener/main.go
+build:
+	@scripts/build-binaries.sh
