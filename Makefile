@@ -20,6 +20,8 @@
 
 .PHONY: all clean todo-list test build
 
+default: build
+
 all: test build
 
 clean:

@@ -24,7 +24,11 @@ set -euo pipefail
 
 for TOOL in ytbx git sed shasum file; do
   if ! hash "${TOOL}" 2>/dev/null; then
-    echo -e "Required tool \\033[1m${TOOL}\\033[0m is not installed."
+    if [ "${TOOL}" = "ytbx" ]; then
+      echo -e "Required tool \\033[1m${TOOL}\\033[0m is not installed, can be downloaded from \\033[1mhttps://github.com/HeavyWombat/ytbx/releases\\033[0m"
+    else
+      echo -e "Required tool \\033[1m${TOOL}\\033[0m is not installed."
+    fi
     exit 1
   fi
 done
