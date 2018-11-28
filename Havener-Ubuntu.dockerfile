@@ -21,8 +21,8 @@
 FROM golang:1.11 AS build
 COPY . /go/src/github.com/homeport/havener
 RUN cd /go/src/github.com/homeport/havener && \
-  make binaries/havener-linux-amd64 && \
-  cp -p binaries/havener-linux-amd64 /usr/local/bin/havener
+  make build && \
+  cp -p binaries/havener-kube-*-linux-amd64 /usr/local/bin/havener
 
 
 FROM ubuntu:bionic
