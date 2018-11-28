@@ -65,6 +65,11 @@ echo -e '\n\033[1mFile details of compiled binaries:\033[0m'
 file binaries/*
 
 echo -e '\n\033[1mSHA sum of compiled binaries:\033[0m'
-shasum --algorithm 256 binaries/*
+if [[ "${OSTYPE}" == *darwin* ]]; then
+  shasum --algorithm 256 binaries/*
+else
+  sha1sum binaries/*
+fi
+
 
 echo

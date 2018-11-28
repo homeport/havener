@@ -19,8 +19,12 @@
 # THE SOFTWARE.
 
 FROM golang:1.11-alpine AS build
-RUN apk add --update make git
+RUN apk add --update make git bash file
 COPY . /go/src/github.com/homeport/havener
+RUN go get -d github.com/HeavyWombat/ytbx/... && \
+  cd /go/src/github.com/HeavyWombat/ytbx && \
+  make binaries/ytbx-linux-amd64 && \
+  cp -p binaries/ytbx-linux-amd64 /usr/local/bin/ytbx
 RUN cd /go/src/github.com/homeport/havener && \
   make build && \
   cp -p binaries/havener-kube-*-linux-amd64 /usr/local/bin/havener
