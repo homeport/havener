@@ -112,7 +112,8 @@ func UpdateHelmRelease(chartname string, chartPath string, valueOverrides []byte
 }
 
 //DeployHelmRelease will initialize a helm in both client and server
-func DeployHelmRelease(chartname string, namespace string, chartPath string, valueOverrides []byte) (*rls.InstallReleaseResponse, error) {
+func DeployHelmRelease(chartname string, namespace string, chartPath string, timeOut int, valueOverrides []byte) (*rls.InstallReleaseResponse, error) {
+
 	VerboseMessage("Reading kube config file...")
 
 	cfg, err := ioutil.ReadFile(viper.GetString("kubeconfig"))
@@ -143,6 +144,9 @@ func DeployHelmRelease(chartname string, namespace string, chartPath string, val
 
 	VerboseMessage("Installing release in namespace %s...", namespace)
 
+	//cast timeout to int64, as required by InstallReleaseFromChart
+	timeOutInt64 := int64(MinutesToSeconds(timeOut))
+
 	installRelease, err := helmClient.InstallReleaseFromChart(
 		chartRequested,
 		namespace,
@@ -151,7 +155,7 @@ func DeployHelmRelease(chartname string, namespace string, chartPath string, val
 		helm.InstallDryRun(false),
 		helm.InstallReuseName(false),
 		helm.InstallDisableHooks(false),
-		helm.InstallTimeout(40*60), // TODO Make this configurable via havener config
+		helm.InstallTimeout(timeOutInt64),
 		helm.InstallWait(true))
 	if err != nil {
 		ExitWithError("Error deploying chart", err)

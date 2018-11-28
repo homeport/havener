@@ -34,6 +34,9 @@ import (
 // cfgFile holds the related configuration of havener
 var cfgFile string
 
+// maxTimeOut holds the timeout in minutes for a helm init
+var maxTimeOut int
+
 // deployCmd represents the deploy command
 var deployCmd = &cobra.Command{
 	Use:   "deploy",
@@ -87,7 +90,7 @@ var deployCmd = &cobra.Command{
 			pi := wait.NewProgressIndicator(fmt.Sprintf("Creating Helm Release for %s", release.ChartName))
 			pi.Start()
 
-			if _, err := havener.DeployHelmRelease(release.ChartName, release.ChartNamespace, release.ChartLocation, overridesData); err != nil {
+			if _, err := havener.DeployHelmRelease(release.ChartName, release.ChartNamespace, release.ChartLocation, maxTimeOut, overridesData); err != nil {
 				havener.ExitWithError("Error deploying chart", err)
 			}
 
@@ -100,6 +103,7 @@ func init() {
 	rootCmd.AddCommand(deployCmd)
 
 	deployCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (Mandatory argument)")
+	deployCmd.PersistentFlags().IntVar(&maxTimeOut, "timeout", 40, "install timeout in minutes")
 
 	viper.AutomaticEnv() // read in environment variables that match
 

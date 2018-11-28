@@ -75,6 +75,11 @@ func ExitWithError(msg string, err error) {
 	os.Exit(1)
 }
 
+// MinutesToSeconds returns the amount of seconds
+func MinutesToSeconds(minutes int) int {
+	return minutes * 60
+}
+
 // VerboseMessage prints a message if the flag --verbose/-v is set to true
 func VerboseMessage(message string, vargs ...interface{}) {
 	if viper.GetBool("verbose") {
