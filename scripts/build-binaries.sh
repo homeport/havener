@@ -22,7 +22,7 @@
 
 set -euo pipefail
 
-for TOOL in ytbx git sed shasum file; do
+for TOOL in ytbx git sed file; do
   if ! hash "${TOOL}" 2>/dev/null; then
     if [ "${TOOL}" = "ytbx" ]; then
       echo -e "Required tool \\033[1m${TOOL}\\033[0m is not installed, can be downloaded from \\033[1mhttps://github.com/HeavyWombat/ytbx/releases\\033[0m"
@@ -57,19 +57,20 @@ while read -r OS ARCH; do
 
 done <<EOL
 darwin amd64
-linux amd64
 windows amd64
+linux amd64
 EOL
 
 echo -e '\n\033[1mFile details of compiled binaries:\033[0m'
 file binaries/*
 
-echo -e '\n\033[1mSHA sum of compiled binaries:\033[0m'
-if [[ "${OSTYPE}" == *darwin* ]]; then
+if hash shasum >/dev/null 2>&1; then
+  echo -e '\n\033[1mSHA sum of compiled binaries:\033[0m'
   shasum --algorithm 256 binaries/*
-else
+
+elif hash sha1sum >/dev/null 2>&1; then
+  echo -e '\n\033[1mSHA sum of compiled binaries:\033[0m'
   sha1sum binaries/*
 fi
-
 
 echo
