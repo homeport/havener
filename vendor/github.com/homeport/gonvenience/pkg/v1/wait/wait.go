@@ -25,24 +25,35 @@ changing symbol that provides feedback to the user that something is still
 running even though there is no information how long it will continue to run.
 
 Example:
+	package main
+
+	import (
+		"time"
+
+		"github.com/homeport/gonvenience/pkg/v1/wait"
+	)
+
 	func main() {
 		pi := wait.NewProgressIndicator("operation in progress")
 
+		pi.SetTimeout(10 * time.Second)
 		pi.Start()
-		defer pi.Done("Ok, done")
 
-		time.Sleep(2 * time.Second)
+		time.Sleep(5 * time.Second)
 
 		pi.SetText("operation *still* in progress")
-		pi.SetElapsedTimeFormat("really, we wait %d seconds already")
 
-		time.Sleep(3 * time.Second)
+		time.Sleep(5 * time.Second)
+
+		pi.Done("Ok, done")
 	}
 */
 package wait
 
 import (
+	"fmt"
 	"io"
+	"math"
 	"os"
 	"strings"
 	"sync/atomic"
@@ -61,6 +72,8 @@ const refreshIntervalInMs = 250
 
 var symbols = []rune(`⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏`)
 
+var defaultElapsedTimeColor = bunt.DimGray
+
 // ProgressIndicator is a handle to a progress indicator (spinner).
 type ProgressIndicator struct {
 	out  io.Writer
@@ -70,8 +83,9 @@ type ProgressIndicator struct {
 	running uint64
 	counter uint64
 
-	elapsedTimeColor  colorful.Color
-	elapsedTimeFormat string
+	timeout time.Duration
+
+	timeInfoText func(time.Duration) (string, colorful.Color)
 }
 
 // NewProgressIndicator creates a new progress indicator handle. The provided
@@ -79,10 +93,10 @@ type ProgressIndicator struct {
 // supplied during runtime.
 func NewProgressIndicator(text string) *ProgressIndicator {
 	return &ProgressIndicator{
-		out:               os.Stdout,
-		text:              text,
-		elapsedTimeColor:  bunt.DimGray,
-		elapsedTimeFormat: "%d seconds",
+		out:          os.Stdout,
+		text:         text,
+		timeout:      0 * time.Second,
+		timeInfoText: TimeInfoText,
 	}
 }
 
@@ -99,18 +113,34 @@ func (pi *ProgressIndicator) Start() *ProgressIndicator {
 	bunt.Fprint(pi.out, hideCursor)
 	go func() {
 		for atomic.LoadUint64(&pi.running) > 0 {
+			elapsedTime := time.Since(pi.start)
+
+			// Timeout reached, stopping the progress indicator
+			if pi.timeout > time.Nanosecond && elapsedTime > pi.timeout {
+				pi.Done("timeout occurred")
+				break
+			}
+
 			mainContentText := bunt.Sprint(pi.text)
-			elapsedTimeText := bunt.Sprintf(pi.elapsedTimeFormat, int(time.Since(pi.start).Seconds()))
+			elapsedTimeText, elapsedTimeColor := pi.timeInfoText(elapsedTime)
 
 			padding := term.GetTerminalWidth() - 3 -
 				bunt.PlainTextLength(mainContentText) -
 				bunt.PlainTextLength(elapsedTimeText)
 
+			// In case a timeout is set, smoothly blend the time info text color from
+			// the provided color into red depending on how much time is left
+			if pi.timeout > time.Nanosecond {
+				// Use smooth curved gradient: http://fooplot.com/?lang=en#W3sidHlwZSI6MCwiZXEiOiIoMS1jb3MoeF4yKjMuMTQxNSkpLzIiLCJjb2xvciI6IiMwMDAwMDAifSx7InR5cGUiOjEwMDAsIndpbmRvdyI6WyIwIiwiMSIsIjAiLCIxIl19XQ--
+				blendFactor := 0.5 * (1.0 - math.Cos(math.Pow(elapsedTime.Seconds()/pi.timeout.Seconds(), 2)*math.Pi))
+				elapsedTimeColor = elapsedTimeColor.BlendLab(bunt.Red, blendFactor)
+			}
+
 			bunt.Fprint(pi.out,
 				resetLine, " ", pi.nextSymbol(), " ",
 				mainContentText,
 				strings.Repeat(" ", padding),
-				bunt.Colorize(elapsedTimeText, pi.elapsedTimeColor),
+				bunt.Colorize(elapsedTimeText, elapsedTimeColor),
 			)
 
 			time.Sleep(refreshIntervalInMs * time.Millisecond)
@@ -131,17 +161,18 @@ func (pi *ProgressIndicator) SetOutputWriter(out io.Writer) {
 	pi.out = out
 }
 
-// SetElapsedTimeColor sets the color to be used to colorize the elapsed time
-// text, which is added to the progress indicator.
-func (pi *ProgressIndicator) SetElapsedTimeColor(color colorful.Color) {
-	pi.elapsedTimeColor = color
+// SetTimeout specifies that the progress indicator will timeout after the
+// provided duration. A timeout duration lower than one nanosecond means that
+// there is no timeout.
+func (pi *ProgressIndicator) SetTimeout(timeout time.Duration) {
+	pi.timeout = timeout
 }
 
-// SetElapsedTimeFormat sets a custom elapsed time format, which is used to
-// create the elapsed time text. The format must contain one integer placeholder
-// (%d), which is fed with the elapsed time in seconds.
-func (pi *ProgressIndicator) SetElapsedTimeFormat(format string) {
-	pi.elapsedTimeFormat = format
+// SetTimeInfoTextFunc sets a custom time info text function that is called to
+// create the string and the color to be used on the far right side of the
+// progress indicator.
+func (pi *ProgressIndicator) SetTimeInfoTextFunc(f func(time.Duration) (string, colorful.Color)) {
+	pi.timeInfoText = f
 }
 
 // Done stops the progress indicator.
@@ -167,4 +198,45 @@ func (pi *ProgressIndicator) Done(texts ...string) bool {
 func (pi *ProgressIndicator) nextSymbol() string {
 	pi.counter++
 	return string(symbols[pi.counter%uint64(len(symbols))])
+}
+
+// TimeInfoText is the default implementation for the time information text on
+// the far right side of the progress indicator line.
+func TimeInfoText(elapsedTime time.Duration) (string, colorful.Color) {
+	return humanReadableDuration(elapsedTime), defaultElapsedTimeColor
+}
+
+func humanReadableDuration(duration time.Duration) string {
+	if duration < time.Second {
+		return "less than a second"
+	}
+
+	seconds := int(duration.Seconds())
+	minutes := 0
+	hours := 0
+
+	if seconds >= 60 {
+		minutes = seconds / 60
+		seconds = seconds % 60
+
+		if minutes >= 60 {
+			hours = minutes / 60
+			minutes = minutes % 60
+		}
+	}
+
+	parts := []string{}
+	if hours > 0 {
+		parts = append(parts, fmt.Sprintf("%d h", hours))
+	}
+
+	if minutes > 0 {
+		parts = append(parts, fmt.Sprintf("%d min", minutes))
+	}
+
+	if seconds > 0 {
+		parts = append(parts, fmt.Sprintf("%d sec", seconds))
+	}
+
+	return strings.Join(parts, " ")
 }

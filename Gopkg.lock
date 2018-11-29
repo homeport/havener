@@ -312,7 +312,7 @@
   revision = "d8c773c4cba11b11539e3d45f93daeaa5dcf1fa1"
 
 [[projects]]
-  digest = "1:962a920868cd31aed4f75379ceaa58e76e5231263f2bec0ae08c4154e00a8935"
+  digest = "1:4dea34d7ed70a0b9f6840bf97bc570bd43ef3bae4bddbda1eacb32bf08c59c4a"
   name = "github.com/homeport/gonvenience"
   packages = [
     "pkg/v1/bunt",
@@ -320,8 +320,8 @@
     "pkg/v1/wait",
   ]
   pruneopts = "NUT"
-  revision = "f3a0320a871840ec3932581249c0e706a2f0ce46"
-  version = "v1.2"
+  revision = "634b9a0b5b94a0b4526e3fb11c1be1329ca16eac"
+  version = "v1.3"
 
 [[projects]]
   digest = "1:b7f860847a1d71f925ba9385ed95f1ebc0abfeb418a78e219ab61f48fdfeffad"
