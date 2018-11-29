@@ -129,8 +129,12 @@ dep ensure -v -update && make clean test build
 The `dep` command will run for quite some time before it finishes. Grab a cup of coffee, five or ten minutes runtime are not unheard of. The make targets `test` and `build` are both required to make absolutely sure we have all the dependencies we need.
 
 For no reasons other than an undiagnosed OCD, we do not fancy the files in the `vendor` directory attributed to a user and therefore use a fake user to perform the Git commit for us. In case you introduce new dependencies, use the following command to add them:
-```
-git add Gopkg.* vendor && git commit --author "Mr. Vendor <mrvendor@foobar.com>"
+```sh
+cat <<'EOF' | ( git add Gopkg.* vendor && git commit --file - --author "Mr. Vendor <mrvendor@foobar.com>" )
+Update vendor directory
+
+Update dependency files in `vendor` directory.
+EOF
 ```
 
 
