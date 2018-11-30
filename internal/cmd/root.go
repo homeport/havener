@@ -77,4 +77,10 @@ func init() {
 	viper.BindPFlag("TERMINAL_HEIGHT", rootCmd.PersistentFlags().Lookup("terminal-height"))
 
 	term.FixedTerminalWidth, term.FixedTerminalHeight = viper.GetInt("TERMINAL_WIDTH"), viper.GetInt("TERMINAL_HEIGHT")
+
+	// Issue https://github.com/homeport/havener/issues/26:
+	// Enforce fixed terminal width override if executed inside a Garden container
+	if term.FixedTerminalWidth < 0 && term.IsGardenContainer() {
+		term.FixedTerminalHeight = 128
+	}
 }
