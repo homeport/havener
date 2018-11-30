@@ -21,16 +21,16 @@
 package cmd
 
 import (
-	"github.com/homeport/gonvenience/pkg/v1/term"
-	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
+
+	"github.com/homeport/havener/pkg/havener"
 )
 
 // topCmd represents the top command
 var topCmd = &cobra.Command{
 	Use:   "top",
 	Short: "Shows CPU and Memory usage",
-	Long:  `TBD`,
+	Long:  `Shows more detailed CPU and Memory usage details`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		havener.VerboseMessage("Accessing Kubernetes cluster...")
@@ -46,7 +46,4 @@ var topCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(topCmd)
-
-	topCmd.PersistentFlags().IntVar(&term.FixedTerminalWidth, "terminal-width", -1, "disable autodetection and specify an explicit terminal width")
-	topCmd.PersistentFlags().IntVar(&term.FixedTerminalHeight, "terminal-height", -1, "disable autodetection and specify an explicit terminal height")
 }

@@ -23,27 +23,28 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
-	"github.com/homeport/havener/pkg/havener"
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-)
 
-// kubeCfgFile is the path to the KUBECONFIG yaml
-var kubeCfgFile string
-var verboseEnabled bool
+	"github.com/homeport/gonvenience/pkg/v1/term"
+	"github.com/mitchellh/go-homedir"
+
+	"github.com/homeport/havener/pkg/havener"
+)
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "havener",
-	Short: "Proof of concept tool to help you manage Kubernetes releases",
-	Long: `A proof of concept tool to verify if a Kubernetes releases
-helper tool can be done in Golang
+	Short: "Convenience tool to handle tasks around Containerized CF workloads on a Kubernetes cluster",
+	Long: `A convenience tool to handle tasks around Containerized CF workloads on a Kubernetes cluster, for example:
+- Deploy a new series of Helm Charts
+- Remove all Helm Releases
+- Retrieve log and configuration files from all pods
+
+See the individual commands to get the complete overview.
 `,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) {	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -56,28 +57,24 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
-
-	// Add kubeconfig persistent flag with default value
-	rootCmd.PersistentFlags().StringVar(&kubeCfgFile, "kubeconfig", "", "kubeconfig file (default is $HOME/.kube/config)")
-
-	rootCmd.PersistentFlags().BoolVarP(&verboseEnabled, "verbose", "v", false, "verbose output")
-
-	// Bind kubeconfig flag with viper, so that the contents can be accessible later
-	viper.BindPFlag("kubeconfig", rootCmd.PersistentFlags().Lookup("kubeconfig"))
-
-	viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
-
-}
-
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
-	// If the kube config path flag is empty, set it to default
-	if kubeCfgFile == "" {
-		home, err := homedir.Dir()
-		if err != nil {
-			havener.ExitWithError("unable to get home directory", err)
-		}
-		viper.SetDefault("kubeconfig", home+"/.kube/config")
+	home, err := homedir.Dir()
+	if err != nil {
+		havener.ExitWithError("unable to get home directory", err)
 	}
+
+	rootCmd.Flags().SortFlags = false
+	rootCmd.PersistentFlags().SortFlags = false
+
+	rootCmd.PersistentFlags().String("kubeconfig", filepath.Join(home, ".kube", "config"), "kubeconfig file (default is $HOME/.kube/config)")
+	rootCmd.PersistentFlags().Int("terminal-width", -1, "disable autodetection and specify an explicit terminal width")
+	rootCmd.PersistentFlags().Int("terminal-height", -1, "disable autodetection and specify an explicit terminal height")
+	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "verbose output")
+
+	// Bind environment variables to CLI flags
+	viper.BindPFlag("kubeconfig", rootCmd.PersistentFlags().Lookup("kubeconfig"))
+	viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
+	viper.BindPFlag("TERMINAL_WIDTH", rootCmd.PersistentFlags().Lookup("terminal-width"))
+	viper.BindPFlag("TERMINAL_HEIGHT", rootCmd.PersistentFlags().Lookup("terminal-height"))
+
+	term.FixedTerminalWidth, term.FixedTerminalHeight = viper.GetInt("TERMINAL_WIDTH"), viper.GetInt("TERMINAL_HEIGHT")
 }
