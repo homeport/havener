@@ -21,16 +21,21 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"time"
+
+	"github.com/spf13/cobra"
 
 	"github.com/homeport/gonvenience/pkg/v1/wait"
+
 	"github.com/homeport/havener/pkg/havener"
-	"github.com/spf13/cobra"
 )
 
 var includeConfigFiles bool
 var downloadLocation string
+var totalDownloadTimeout int
 
 // logsCmd represents the top command
 var logsCmd = &cobra.Command{
@@ -50,12 +55,27 @@ var logsCmd = &cobra.Command{
 			commonText = "log files"
 		}
 
+		timeout := time.Duration(totalDownloadTimeout) * time.Second
+
 		pi := wait.NewProgressIndicator("Downloading " + commonText + " ...")
+		pi.SetTimeout(timeout)
 		pi.Start()
 
-		if err := havener.RetrieveLogs(clientSet, restconfig, downloadLocation, includeConfigFiles); err != nil {
+		resultChan := make(chan error, 1)
+		go func() {
+			resultChan <- havener.RetrieveLogs(clientSet, restconfig, downloadLocation, includeConfigFiles)
+		}()
+
+		select {
+		case err := <-resultChan:
+			if err != nil {
+				pi.Done()
+				havener.ExitWithError("unable to retrieve logs from pods", err)
+			}
+
+		case <-time.After(timeout):
 			pi.Done()
-			havener.ExitWithError("unable to retrieve logs from pods", err)
+			havener.ExitWithError("unable to retrieve logs from pods", fmt.Errorf("download did not finish within configured timeout"))
 		}
 
 		pi.Done("Done downloading " + commonText + ": " + filepath.Join(downloadLocation, havener.LogDirName))
@@ -67,4 +87,5 @@ func init() {
 
 	logsCmd.PersistentFlags().BoolVar(&includeConfigFiles, "config-files", false, "include configuration files in download package")
 	logsCmd.PersistentFlags().StringVar(&downloadLocation, "target", os.TempDir(), "desired target download location for retrieved files")
+	logsCmd.PersistentFlags().IntVar(&totalDownloadTimeout, "timeout", 5*60, "allowed time in seconds before the download is aborted")
 }
