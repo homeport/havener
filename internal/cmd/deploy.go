@@ -24,11 +24,13 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/homeport/gonvenience/pkg/v1/wait"
-	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	yaml "gopkg.in/yaml.v2"
+
+	"github.com/homeport/gonvenience/pkg/v1/wait"
+	"gopkg.in/yaml.v2"
+
+	"github.com/homeport/havener/pkg/havener"
 )
 
 // cfgFile holds the related configuration of havener
@@ -40,13 +42,13 @@ var maxTimeOut int
 // deployCmd represents the deploy command
 var deployCmd = &cobra.Command{
 	Use:   "deploy",
-	Short: "Deploy Helm Charts to Kubernetes",
-	Long:  `TODO please do this later`,
+	Short: "Deploy to Kubernetes",
+	Long:  `Deploy to Kubernetes based on havener configuration`,
 	Run: func(cmd *cobra.Command, args []string) {
 		havener.VerboseMessage("Looking for config file...")
 
 		if cfgFile == "" && viper.GetString("havenerconfig") == "" {
-			havener.ExitWithError("please provide configuration via --config or environment variable HAVENERCONFIG", fmt.Errorf("no havener configuration file set"))
+			exitWithError("please provide configuration via --config or environment variable HAVENERCONFIG", fmt.Errorf("no havener configuration file set"))
 		}
 
 		// If a config file is found, read it in.
@@ -58,14 +60,14 @@ var deployCmd = &cobra.Command{
 
 		cfgdata, err := ioutil.ReadFile(viper.GetString("havenerconfig"))
 		if err != nil {
-			havener.ExitWithError("unable to read file", err)
+			exitWithError("unable to read file", err)
 		}
 
 		havener.VerboseMessage("Unmarshaling config file...")
 
 		var config havener.Config
 		if err := yaml.Unmarshal(cfgdata, &config); err != nil {
-			havener.ExitWithError("failed to unmarshal config file", err)
+			exitWithError("failed to unmarshal config file", err)
 		}
 
 		havener.VerboseMessage("Creating helm chart(s)...")
@@ -76,14 +78,14 @@ var deployCmd = &cobra.Command{
 			havener.VerboseMessage("Processing overrides section...")
 
 			if err != nil {
-				havener.ExitWithError("failed to process overrides section", err)
+				exitWithError("failed to process overrides section", err)
 			}
 
 			havener.VerboseMessage("Marshaling overrides section...")
 
 			overridesData, err := yaml.Marshal(overrides)
 			if err != nil {
-				havener.ExitWithError("failed to marshal overrides structure into bytes", err)
+				exitWithError("failed to marshal overrides structure into bytes", err)
 			}
 
 			// Show a wait indicator ...
@@ -91,7 +93,8 @@ var deployCmd = &cobra.Command{
 			pi.Start()
 
 			if _, err := havener.DeployHelmRelease(release.ChartName, release.ChartNamespace, release.ChartLocation, maxTimeOut, overridesData); err != nil {
-				havener.ExitWithError("Error deploying chart", err)
+				pi.Done()
+				exitWithError("Error deploying chart", err)
 			}
 
 			pi.Done(fmt.Sprintf("Successfully created new helm chart for %s in namespace %s.", release.ChartName, release.ChartNamespace))

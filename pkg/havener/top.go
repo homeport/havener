@@ -92,7 +92,7 @@ type usageData struct {
 }
 
 // ShowTopStats prints cluster usage statistics
-func ShowTopStats(client kubernetes.Interface) {
+func ShowTopStats(client kubernetes.Interface) error {
 	const nodeCaption = "Node "
 	const processorCaption = "CPU "
 	const memoryCaption = "Memory "
@@ -106,7 +106,7 @@ func ShowTopStats(client kubernetes.Interface) {
 
 	usageData, err := getNodeUsageData(client)
 	if err != nil {
-		ExitWithError("unable to get node usage metrics", err)
+		return err
 	}
 
 	maxLength := 0
@@ -154,7 +154,7 @@ func ShowTopStats(client kubernetes.Interface) {
 
 	podUsage, err := getPodUsageData(client)
 	if err != nil {
-		ExitWithError("unable to get pod usage metrics", err)
+		return err
 	}
 
 	splitKey := func(key string) (string, string, string) {
@@ -216,6 +216,8 @@ func ShowTopStats(client kubernetes.Interface) {
 			fmt.Println(line)
 		}
 	}
+
+	return nil
 }
 
 func getNodeUsageData(client kubernetes.Interface) (map[string]usageData, error) {

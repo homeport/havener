@@ -57,11 +57,11 @@ If multiple Helm Releases are specified, then they will deleted concurrently.
 
 		client, _, err := havener.OutOfClusterAuthentication()
 		if err != nil {
-			havener.ExitWithError("unable to get access to cluster", err)
+			exitWithError("unable to get access to cluster", err)
 		}
 
 		if err := purgeHelmReleases(client, getConfiguredHelmClient(), args...); err != nil {
-			havener.ExitWithError("failed to purge helm releases", err)
+			exitWithError("failed to purge helm releases", err)
 		}
 	},
 }
@@ -72,14 +72,14 @@ func getConfiguredHelmClient() *helm.Client {
 
 	cfg, err := ioutil.ReadFile(viper.GetString("kubeconfig"))
 	if err != nil {
-		havener.ExitWithError("unable to read the kube config file", err)
+		exitWithError("unable to read the kube config file", err)
 	}
 
 	havener.VerboseMessage("Getting helm client...")
 
 	helmClient, err := havener.GetHelmClient(cfg)
 	if err != nil {
-		havener.ExitWithError("failed to get helm client", err)
+		exitWithError("failed to get helm client", err)
 	}
 
 	return helmClient

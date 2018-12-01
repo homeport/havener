@@ -42,7 +42,7 @@ var upgradeCmd = &cobra.Command{
 		havener.VerboseMessage("Looking for config file...")
 
 		if cfgFile == "" && viper.GetString("havenerconfig") == "" {
-			havener.ExitWithError("please provide configuration via --config or environment variable HAVENERCONFIG", fmt.Errorf("no havener configuration file set"))
+			exitWithError("please provide configuration via --config or environment variable HAVENERCONFIG", fmt.Errorf("no havener configuration file set"))
 		}
 
 		// If a config file is found, read it in.
@@ -54,14 +54,14 @@ var upgradeCmd = &cobra.Command{
 
 		cfgdata, err := ioutil.ReadFile(viper.GetString("havenerconfig"))
 		if err != nil {
-			havener.ExitWithError("unable to read file", err)
+			exitWithError("unable to read file", err)
 		}
 
 		havener.VerboseMessage("Unmarshaling config file...")
 
 		var config havener.Config
 		if err := yaml.Unmarshal(cfgdata, &config); err != nil {
-			havener.ExitWithError("failed to unmarshal config file", err)
+			exitWithError("failed to unmarshal config file", err)
 		}
 
 		for _, release := range config.Releases {
@@ -70,20 +70,20 @@ var upgradeCmd = &cobra.Command{
 			havener.VerboseMessage("Processing overrides section...")
 
 			if err != nil {
-				havener.ExitWithError("failed to process overrides section", err)
+				exitWithError("failed to process overrides section", err)
 			}
 
 			havener.VerboseMessage("Marshaling overrides section...")
 
 			overridesData, err := yaml.Marshal(overrides)
 			if err != nil {
-				havener.ExitWithError("failed to marshal overrides structure into bytes", err)
+				exitWithError("failed to marshal overrides structure into bytes", err)
 			}
 
 			havener.InfoMessage("Going to upgrade existing %s chart...", release.ChartName)
 
 			if _, err := havener.UpdateHelmRelease(release.ChartName, release.ChartLocation, overridesData, reuseValues); err != nil {
-				havener.ExitWithError("Error updating chart", err)
+				exitWithError("Error updating chart", err)
 			}
 
 			havener.InfoMessage("Successfully upgraded existing %s chart.", release.ChartName)

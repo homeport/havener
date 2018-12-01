@@ -25,6 +25,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/homeport/gonvenience/pkg/v1/bunt"
 )
 
 // NoUserPrompt defines whether a user confirmation is required or should be omitted
@@ -51,4 +53,17 @@ func PromptUser(message string) bool {
 	}
 
 	return false
+}
+
+// exitWithError leaves the tool with the provided error message
+func exitWithError(msg string, err error) {
+	bunt.Printf("Coral{*%s*}\n", msg)
+
+	if err != nil {
+		for _, line := range strings.Split(err.Error(), "\n") {
+			bunt.Printf("Coral{│} DimGray{%s}\n", line)
+		}
+	}
+
+	os.Exit(1)
 }

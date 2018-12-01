@@ -30,8 +30,6 @@ import (
 
 	"github.com/homeport/gonvenience/pkg/v1/term"
 	"github.com/mitchellh/go-homedir"
-
-	"github.com/homeport/havener/pkg/havener"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -59,7 +57,7 @@ func Execute() {
 func init() {
 	home, err := homedir.Dir()
 	if err != nil {
-		havener.ExitWithError("unable to get home directory", err)
+		exitWithError("unable to get home directory", err)
 	}
 
 	rootCmd.Flags().SortFlags = false

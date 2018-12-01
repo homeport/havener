@@ -37,7 +37,7 @@ var topCmd = &cobra.Command{
 
 		clientSet, _, err := havener.OutOfClusterAuthentication()
 		if err != nil {
-			havener.ExitWithError("unable to get access to cluster", err)
+			exitWithError("unable to get access to cluster", err)
 		}
 
 		havener.ShowTopStats(clientSet)
