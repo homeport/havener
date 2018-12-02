@@ -40,8 +40,9 @@ import (
 func ListHelmReleases() (*rls.ListReleasesResponse, error) {
 	cfg, err := ioutil.ReadFile(viper.GetString("kubeconfig"))
 	if err != nil {
-		ExitWithError("Unable to read the kube config file", err)
+		return nil, err
 	}
+
 	helmClient, _ := GetHelmClient(cfg)
 	var sortBy = int32(2)  //LAST_RELEASED
 	var sortOrd = int32(1) //descendent
@@ -58,10 +59,12 @@ func ListHelmReleases() (*rls.ListReleasesResponse, error) {
 			release.Status_PENDING_ROLLBACK}),
 		// helm.ReleaseListNamespace("cf"),
 	}
+
 	resp, err := helmClient.ListReleases(ops...)
 	if err != nil {
-		ExitWithError("Unable to list the helm releases", err)
+		return nil, err
 	}
+
 	return resp, nil
 }
 
@@ -70,21 +73,17 @@ func ListHelmReleases() (*rls.ListReleasesResponse, error) {
 // TODO: other options for loading the chart, e.g. downloading
 func GetHelmChart(path string) (requestedChart *chart.Chart, err error) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		ExitWithError("File to load does not exist", err)
+		return nil, err
 	}
 
-	requestedChart, err = chartutil.Load(path)
-	if err != nil {
-		ExitWithError("Unable to load the chart", err)
-	}
-	return requestedChart, nil
+	return chartutil.Load(path)
 }
 
 //UpdateHelmRelease will upgrade an existing release with provided override values
 func UpdateHelmRelease(chartname string, chartPath string, valueOverrides []byte, reuseVal bool) (*rls.UpdateReleaseResponse, error) {
 	cfg, err := ioutil.ReadFile(viper.GetString("kubeconfig"))
 	if err != nil {
-		ExitWithError("Unable to read the kube config file", err)
+		return nil, err
 	}
 
 	chartRequested, err := GetHelmChart(chartPath)
@@ -97,18 +96,14 @@ func UpdateHelmRelease(chartname string, chartPath string, valueOverrides []byte
 		return nil, err
 	}
 
-	upgradeRelease, err := helmClient.UpdateReleaseFromChart(
+	return helmClient.UpdateReleaseFromChart(
 		chartname,
 		chartRequested,
 		helm.UpdateValueOverrides(valueOverrides),
 		helm.UpgradeDryRun(false),
 		helm.UpgradeTimeout(30*60),
-		helm.ReuseValues(reuseVal))
-
-	if err != nil {
-		ExitWithError("Error upgrading chart", err)
-	}
-	return upgradeRelease, err
+		helm.ReuseValues(reuseVal),
+	)
 }
 
 //DeployHelmRelease will initialize a helm in both client and server
@@ -118,14 +113,14 @@ func DeployHelmRelease(chartname string, namespace string, chartPath string, tim
 
 	cfg, err := ioutil.ReadFile(viper.GetString("kubeconfig"))
 	if err != nil {
-		ExitWithError("Unable to read the kube config file", err)
+		return nil, err
 	}
 
 	VerboseMessage("Locating helm chart location...")
 
 	helmChartPath, err := PathToHelmChart(chartPath)
 	if err != nil {
-		ExitWithError("Unable to locate helm chart location", err)
+		return nil, err
 	}
 
 	VerboseMessage("Loading chart in namespace %s...", namespace)
@@ -147,7 +142,7 @@ func DeployHelmRelease(chartname string, namespace string, chartPath string, tim
 	//cast timeout to int64, as required by InstallReleaseFromChart
 	timeOutInt64 := int64(MinutesToSeconds(timeOut))
 
-	installRelease, err := helmClient.InstallReleaseFromChart(
+	return helmClient.InstallReleaseFromChart(
 		chartRequested,
 		namespace,
 		helm.ValueOverrides(valueOverrides), // ValueOverrides specifies a list of values to include when installing.
@@ -156,11 +151,8 @@ func DeployHelmRelease(chartname string, namespace string, chartPath string, tim
 		helm.InstallReuseName(false),
 		helm.InstallDisableHooks(false),
 		helm.InstallTimeout(timeOutInt64),
-		helm.InstallWait(true))
-	if err != nil {
-		ExitWithError("Error deploying chart", err)
-	}
-	return installRelease, err
+		helm.InstallWait(true),
+	)
 }
 
 // GetHelmClient creates a new client for the Helm-Tiller protocol
@@ -169,13 +161,14 @@ func GetHelmClient(kubeConfig []byte) (*helm.Client, error) {
 
 	clientSet, config, err := OutOfClusterAuthentication()
 	if err != nil {
-		ExitWithError("Unable to authenticate to the cluster from the outside", err)
+		return nil, err
 	}
 
 	tillerTunnel, err = portforwarder.New("kube-system", clientSet, config)
 	if err != nil {
-		ExitWithError("Unable to create and initialize the tunnel", err)
+		return nil, err
 	}
+
 	tillerTunnelAddress := fmt.Sprintf("localhost:%d", tillerTunnel.Local)
 	hClient := helm.NewClient(helm.Host(tillerTunnelAddress))
 

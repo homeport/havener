@@ -28,6 +28,7 @@ import (
 	"regexp"
 
 	"github.com/homeport/gonvenience/pkg/v1/term"
+	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -49,14 +50,14 @@ func VerifyCertExpirations() (err error) {
 
 	client, _, err := OutOfClusterAuthentication()
 	if err != nil {
-		ExitWithError("unable to get access to cluster", err)
+		return errors.Wrap(err, "unable to get access to cluster")
 	}
 
 	VerboseMessage("Getting namespaces...")
 
 	list, err := ListNamespaces(client)
 	if err != nil {
-		ExitWithError("unable to get a list of namespaces", err)
+		return errors.Wrap(err, "unable to get a list of namespaces")
 	}
 
 	for _, namespace := range list {
@@ -64,7 +65,7 @@ func VerifyCertExpirations() (err error) {
 
 		secretList, err := ListSecretsInNamespace(client, namespace)
 		if err != nil {
-			ExitWithError("unable to get a list of secrets", err)
+			return errors.Wrap(err, "unable to get a list of secrets")
 		}
 
 		if len(list) == 0 {
@@ -76,7 +77,7 @@ func VerifyCertExpirations() (err error) {
 
 			nodeList, err := client.CoreV1().Secrets(namespace).Get(secret, v1.GetOptions{})
 			if err != nil {
-				ExitWithError("unable to access secrets", err)
+				return errors.Wrap(err, "unable to access secrets")
 			}
 
 			results := GetCertificateFromSecret(nodeList.Data, namespace, secret)
@@ -112,7 +113,7 @@ func VerifyCertExpirations() (err error) {
 	}
 
 	if count > 0 {
-		ExitWithError("unable to verify certificates", fmt.Errorf("number of failed certs: %d", count))
+		return fmt.Errorf("unable to verify certificates, snumber of failed certs: %d", count)
 	}
 
 	fmt.Print(buf.String())

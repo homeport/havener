@@ -54,9 +54,6 @@ var _ = Describe("Charts Locations", func() {
 				os.Create(fakeChartLocation + "/Chart.yaml")
 				os.Create(fakeChartLocation + "/values.yaml")
 				helmChartPath, err := havener.PathToHelmChart(fakeChartLocation)
-				if err != nil {
-					havener.ExitWithError("Unable to locate helm chart location", err)
-				}
 				Expect(err).Should(BeNil())
 				absolutePath, _ := filepath.Abs(fakeChartLocation)
 				Expect(helmChartPath).Should(Equal(absolutePath))
@@ -65,9 +62,6 @@ var _ = Describe("Charts Locations", func() {
 		Context("when the Helm Chart exists remotely", func() {
 			It("should find a remote chart and place in under the ~/.havener repo", func() {
 				remoteHelmChartPath, err := havener.PathToHelmChart(goodChartTempLocation)
-				if err != nil {
-					havener.ExitWithError("Unable to locate helm chart location", err)
-				}
 				Expect(err).Should(BeNil())
 				absoluteChartPath, _ := filepath.Abs(os.Getenv("HOME") + helmChartTempLocation)
 				Expect(remoteHelmChartPath).Should(Equal(absoluteChartPath))

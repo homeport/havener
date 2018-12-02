@@ -45,7 +45,7 @@ var logsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		clientSet, restconfig, err := havener.OutOfClusterAuthentication()
 		if err != nil {
-			havener.ExitWithError("unable to get access to cluster", err)
+			exitWithError("unable to get access to cluster", err)
 		}
 
 		var commonText string
@@ -70,12 +70,12 @@ var logsCmd = &cobra.Command{
 		case err := <-resultChan:
 			if err != nil {
 				pi.Done()
-				havener.ExitWithError("unable to retrieve logs from pods", err)
+				exitWithError("unable to retrieve logs from pods", err)
 			}
 
 		case <-time.After(timeout):
 			pi.Done()
-			havener.ExitWithError("unable to retrieve logs from pods", fmt.Errorf("download did not finish within configured timeout"))
+			exitWithError("unable to retrieve logs from pods", fmt.Errorf("download did not finish within configured timeout"))
 		}
 
 		pi.Done("Done downloading " + commonText + ": " + filepath.Join(downloadLocation, havener.LogDirName))

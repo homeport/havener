@@ -52,7 +52,7 @@ func OutOfClusterAuthentication() (*kubernetes.Clientset, *rest.Config, error) {
 	// url or a kubeconfig filepath.
 	config, err := clientcmd.BuildConfigFromFlags("", getKubeConfig())
 	if err != nil {
-		ExitWithError("Unable to build the config from kubeconfig file", err)
+		return nil, nil, err
 	}
 
 	// create the clientset
@@ -67,12 +67,6 @@ func HomeDir() string {
 		return h
 	}
 	return os.Getenv("USERPROFILE") // windows
-}
-
-// ExitWithError defines a common exit log and exit code
-func ExitWithError(msg string, err error) {
-	fmt.Printf("Message: %s, Error: %s\n", msg, err.Error())
-	os.Exit(1)
 }
 
 // MinutesToSeconds returns the amount of seconds
