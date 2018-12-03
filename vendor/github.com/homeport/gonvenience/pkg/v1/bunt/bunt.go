@@ -115,6 +115,11 @@ func Colorize(text string, color colorful.Color, modifiers ...Attribute) string 
 	return applyColorAndAttributes(text, false, color, modifiers...)
 }
 
+// Colorize4bit applies the best suitable 4-bit color attribute to the given text.
+func Colorize4bit(text string, color colorful.Color, modifiers ...Attribute) string {
+	return wrapTextInSeq(text, append(modifiers, Get4bitEquivalentColorAttribute(color))...)
+}
+
 // ColorizeFgBg applies an ANSI truecolor sequence for the provided foreground and background colors to the given text.
 func ColorizeFgBg(text string, foreground colorful.Color, background colorful.Color, modifiers ...Attribute) string {
 	modifiers = keepAttributes(modifiers, []Attribute{Bold, Italic, Underline})

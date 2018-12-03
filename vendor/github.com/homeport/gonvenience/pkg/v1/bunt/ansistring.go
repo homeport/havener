@@ -26,6 +26,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/lucasb-eyer/go-colorful"
 )
 
 var boldMarker = regexp.MustCompile(`\*([^*]+?)\*`)
@@ -40,7 +42,8 @@ type ansiString struct {
 
 type marker struct {
 	position int
-	setting  uint32
+	codes    []uint8
+	fgColor  *colorful.Color
 }
 
 func (a *ansiString) String() string {
@@ -52,7 +55,7 @@ func (a *ansiString) String() string {
 	offset := 0
 
 	for _, marker := range a.seqs {
-		seq := markerToSeq(marker.setting)
+		seq := markerToSeq(marker)
 		pos := marker.position + offset
 		result = result[:pos] + seq + result[pos:]
 		offset += len(seq)
@@ -61,24 +64,17 @@ func (a *ansiString) String() string {
 	return result
 }
 
-func markerToSeq(setting uint32) string {
-	switch setting {
-	case 0x00000000, 0x01000000, 0x02000000, 0x03000000, 0x04000000:
-		return ansiSeq(uint8(setting >> 24))
+func markerToSeq(m marker) string {
+	values := []uint8{}
 
-	default:
-		values := []uint8{}
-		if value := uint8(setting >> 24); value != 0 {
-			values = append(values, value)
-		}
+	values = append(values, m.codes...)
 
-		values = append(values, 38, 2,
-			uint8(setting>>16)&0xFF,
-			uint8(setting>>8)&0xFF,
-			uint8(setting>>0)&0xFF)
-
-		return ansiSeq(values...)
+	if m.fgColor != nil {
+		r, g, b := (*m.fgColor).RGB255()
+		values = append(values, 38, 2, r, g, b)
 	}
+
+	return ansiSeq(values...)
 }
 
 func ansiSeq(values ...uint8) string {
@@ -92,7 +88,7 @@ func ansiSeq(values ...uint8) string {
 }
 
 func uintSliceToStringSlice(uintSlice []uint8) []string {
-	result := make([]string, len(uintSlice), len(uintSlice))
+	result := make([]string, len(uintSlice))
 	for i, x := range uintSlice {
 		result[i] = strconv.Itoa(int(x))
 	}
@@ -101,7 +97,7 @@ func uintSliceToStringSlice(uintSlice []uint8) []string {
 }
 
 func stringSliceToUintSlice(strSlice []string) ([]uint8, error) {
-	result := make([]uint8, len(strSlice), len(strSlice))
+	result := make([]uint8, len(strSlice))
 	for i, x := range strSlice {
 		num, err := strconv.Atoi(x)
 		if err != nil {
@@ -114,28 +110,32 @@ func stringSliceToUintSlice(strSlice []string) ([]uint8, error) {
 	return result, nil
 }
 
-func parseSettings(input []string) (uint32, error) {
+func parseSettings(input []string) ([]uint8, *colorful.Color, error) {
 	settings, err := stringSliceToUintSlice(input)
 	if err != nil {
-		return 0, err
+		return nil, nil, err
 	}
 
-	var result uint32
+	var codes []uint8
+	var color *colorful.Color
+
 	for len(settings) > 0 {
 		switch {
 		case len(settings) >= 5 && settings[0] == 38 && settings[1] == 2:
-			result |= uint32(settings[2])<<16 |
-				uint32(settings[3])<<8 |
-				uint32(settings[4])<<0
+			color = &colorful.Color{
+				R: float64(settings[2]) / 255.0,
+				G: float64(settings[3]) / 255.0,
+				B: float64(settings[4]) / 255.0,
+			}
 			settings = settings[5:]
 
 		default:
-			result |= uint32(settings[0]) << 24
+			codes = append(codes, settings[0])
 			settings = settings[1:]
 		}
 	}
 
-	return result, nil
+	return codes, color, nil
 }
 
 func blendIn(orig []marker, oldLength int, newLength int, new ...marker) []marker {
@@ -172,17 +172,18 @@ func parseString(input string) (*ansiString, error) {
 		replace string
 		posA    int
 		posB    int
-		setting uint32
+		codes   []uint8
+		fgColor *colorful.Color
 	}
 
-	positionsToTextMarker := func(list *[]textMarker, str string, positions []int, setting uint32) {
+	positionsToTextMarker := func(list *[]textMarker, str string, positions []int, code uint8) {
 		if len(positions) > 0 {
 			*list = append(*list, textMarker{
 				search:  str[positions[0]:positions[1]],
 				replace: str[positions[2]:positions[3]],
 				posA:    positions[0],
 				posB:    positions[3] - 1,
-				setting: setting,
+				codes:   []uint8{code},
 			})
 		}
 	}
@@ -191,17 +192,12 @@ func parseString(input string) (*ansiString, error) {
 		if len(positions) == 6 {
 			colorName := str[positions[2]:positions[3]]
 			if color := lookupColorByName(colorName); color != nil {
-				r, g, b := color.RGB255()
-				setting := uint32((uint32(r) << 16) |
-					(uint32(g) << 8) |
-					(uint32(b) << 0))
-
 				*list = append(*list, textMarker{
 					search:  str[positions[0]:positions[1]],
 					replace: str[positions[4]:positions[5]],
 					posA:    positions[0],
 					posB:    positions[5] - len(colorName) - 1,
-					setting: setting,
+					fgColor: color,
 				})
 			}
 		}
@@ -210,9 +206,9 @@ func parseString(input string) (*ansiString, error) {
 	next := func(str string) *textMarker {
 		results := []textMarker{}
 		positionsToTextMarker2(&results, str, colorMarker.FindStringSubmatchIndex(str))
-		positionsToTextMarker(&results, str, boldMarker.FindStringSubmatchIndex(str), 0x01000000)
-		positionsToTextMarker(&results, str, italicMarker.FindStringSubmatchIndex(str), 0x03000000)
-		positionsToTextMarker(&results, str, underlineMarker.FindStringSubmatchIndex(str), 0x04000000)
+		positionsToTextMarker(&results, str, boldMarker.FindStringSubmatchIndex(str), 1)
+		positionsToTextMarker(&results, str, italicMarker.FindStringSubmatchIndex(str), 3)
+		positionsToTextMarker(&results, str, underlineMarker.FindStringSubmatchIndex(str), 4)
 
 		if len(results) == 0 {
 			return nil
@@ -228,8 +224,8 @@ func parseString(input string) (*ansiString, error) {
 	for x := next(text); x != nil; x = next(text) {
 		text = strings.Replace(text, x.search, x.replace, 1)
 		sequences = blendIn(sequences, len(x.search), len(x.replace),
-			marker{position: x.posA, setting: x.setting},
-			marker{position: x.posB, setting: 0x00000000},
+			marker{position: x.posA, codes: x.codes, fgColor: x.fgColor},
+			marker{position: x.posB, codes: []uint8{0}},
 		)
 	}
 
@@ -243,12 +239,12 @@ func parseString(input string) (*ansiString, error) {
 		settingsStart, settingsEnd := submatch[2], submatch[3]
 
 		settings := strings.Split(input[settingsStart:settingsEnd], ";")
-		parsed, err := parseSettings(settings)
+		codes, color, err := parseSettings(settings)
 		if err != nil {
 			return nil, err
 		}
 
-		sequences = append(sequences, marker{position: fullMatchStart - offset, setting: parsed})
+		sequences = append(sequences, marker{position: fullMatchStart - offset, codes: codes, fgColor: color})
 		offset += fullMatchEnd - fullMatchStart
 	}
 

@@ -312,7 +312,7 @@
   revision = "d8c773c4cba11b11539e3d45f93daeaa5dcf1fa1"
 
 [[projects]]
-  digest = "1:4dea34d7ed70a0b9f6840bf97bc570bd43ef3bae4bddbda1eacb32bf08c59c4a"
+  digest = "1:0f1af92ebe9657eb729fd87f70777e18bdf742f4e2f39b59b19a819db8ce42a3"
   name = "github.com/homeport/gonvenience"
   packages = [
     "pkg/v1/bunt",
@@ -320,8 +320,8 @@
     "pkg/v1/wait",
   ]
   pruneopts = "NUT"
-  revision = "634b9a0b5b94a0b4526e3fb11c1be1329ca16eac"
-  version = "v1.3"
+  revision = "675de31aa5337f0019588aa9c1e01ba2b6b467ac"
+  version = "v1.5"
 
 [[projects]]
   digest = "1:b7f860847a1d71f925ba9385ed95f1ebc0abfeb418a78e219ab61f48fdfeffad"
@@ -1008,7 +1008,7 @@
 
 [[projects]]
   branch = "release-1.10"
-  digest = "1:cdce25106694ec2fde52ca68621eba84a7039b6b754f44801e76fd99558ef095"
+  digest = "1:fa9d5706b56fca1c075abb56429a638f1d3bee912a23f88893399d5f0c140bb7"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/equality",
@@ -1067,7 +1067,7 @@
     "third_party/forked/golang/reflect",
   ]
   pruneopts = "NUT"
-  revision = "8cc49011eb0c800f6c179342d0265ad234c0bf83"
+  revision = "110b8e1801665ddf67cf9c5187b1975de2c62f7f"
 
 [[projects]]
   branch = "release-1.10"
@@ -1084,7 +1084,7 @@
     "pkg/util/flag",
   ]
   pruneopts = "NUT"
-  revision = "c0373f43cffe58a0a99215236c4bbec8be78be09"
+  revision = "b0bd5c8b39384f2f85a7b9eb6ae14222c276b555"
 
 [[projects]]
   branch = "release-7.0"
@@ -1457,6 +1457,7 @@
     "github.com/mitchellh/go-homedir",
     "github.com/onsi/ginkgo",
     "github.com/onsi/gomega",
+    "github.com/pkg/errors",
     "github.com/spf13/cobra",
     "github.com/spf13/viper",
     "golang.org/x/crypto/ssh/terminal",

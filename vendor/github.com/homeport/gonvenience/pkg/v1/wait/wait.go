@@ -66,8 +66,6 @@ import (
 )
 
 const resetLine = "\r\x1b[K"
-const hideCursor = "\x1b[?25l"
-const showCursor = "\x1b[?25h"
 const refreshIntervalInMs = 250
 
 var symbols = []rune(`⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏`)
@@ -76,8 +74,11 @@ var defaultElapsedTimeColor = bunt.DimGray
 
 // ProgressIndicator is a handle to a progress indicator (spinner).
 type ProgressIndicator struct {
-	out  io.Writer
-	text string
+	out    io.Writer
+	format string
+	args   []interface{}
+
+	spin bool
 
 	start   time.Time
 	running uint64
@@ -91,10 +92,12 @@ type ProgressIndicator struct {
 // NewProgressIndicator creates a new progress indicator handle. The provided
 // text is shown as long as the progress indicator runs, or if new text is
 // supplied during runtime.
-func NewProgressIndicator(text string) *ProgressIndicator {
+func NewProgressIndicator(format string, args ...interface{}) *ProgressIndicator {
 	return &ProgressIndicator{
 		out:          os.Stdout,
-		text:         text,
+		format:       format,
+		args:         args,
+		spin:         term.IsTerminal() && !term.IsDumbTerminal(),
 		timeout:      0 * time.Second,
 		timeInfoText: TimeInfoText,
 	}
@@ -110,49 +113,79 @@ func (pi *ProgressIndicator) Start() *ProgressIndicator {
 
 	pi.start = time.Now()
 	atomic.StoreUint64(&pi.running, 1)
-	bunt.Fprint(pi.out, hideCursor)
-	go func() {
-		for atomic.LoadUint64(&pi.running) > 0 {
-			elapsedTime := time.Since(pi.start)
 
-			// Timeout reached, stopping the progress indicator
-			if pi.timeout > time.Nanosecond && elapsedTime > pi.timeout {
-				pi.Done("timeout occurred")
-				break
+	if pi.spin {
+		term.HideCursor()
+
+		go func() {
+			for atomic.LoadUint64(&pi.running) > 0 {
+				elapsedTime := time.Since(pi.start)
+
+				// Timeout reached, stopping the progress indicator
+				if pi.timeout > time.Nanosecond && elapsedTime > pi.timeout {
+					pi.Done("timeout occurred")
+					break
+				}
+
+				mainContentText := removeLineFeeds(bunt.Sprintf(pi.format, pi.args...))
+				elapsedTimeText, elapsedTimeColor := pi.timeInfoText(elapsedTime)
+
+				padding := term.GetTerminalWidth() - 3 -
+					bunt.PlainTextLength(mainContentText) -
+					bunt.PlainTextLength(elapsedTimeText)
+
+				// In case a timeout is set, smoothly blend the time info text color from
+				// the provided color into red depending on how much time is left
+				if pi.timeout > time.Nanosecond {
+					// Use smooth curved gradient: http://fooplot.com/?lang=en#W3sidHlwZSI6MCwiZXEiOiIoMS1jb3MoeF4yKjMuMTQxNSkpLzIiLCJjb2xvciI6IiMwMDAwMDAifSx7InR5cGUiOjEwMDAsIndpbmRvdyI6WyIwIiwiMSIsIjAiLCIxIl19XQ--
+					blendFactor := 0.5 * (1.0 - math.Cos(math.Pow(elapsedTime.Seconds()/pi.timeout.Seconds(), 2)*math.Pi))
+					elapsedTimeColor = elapsedTimeColor.BlendLab(bunt.Red, blendFactor)
+				}
+
+				bunt.Fprint(pi.out,
+					resetLine, " ", pi.nextSymbol(), " ",
+					mainContentText,
+					strings.Repeat(" ", padding),
+					bunt.Colorize(elapsedTimeText, elapsedTimeColor),
+				)
+
+				time.Sleep(refreshIntervalInMs * time.Millisecond)
 			}
+		}()
 
-			mainContentText := bunt.Sprint(pi.text)
-			elapsedTimeText, elapsedTimeColor := pi.timeInfoText(elapsedTime)
-
-			padding := term.GetTerminalWidth() - 3 -
-				bunt.PlainTextLength(mainContentText) -
-				bunt.PlainTextLength(elapsedTimeText)
-
-			// In case a timeout is set, smoothly blend the time info text color from
-			// the provided color into red depending on how much time is left
-			if pi.timeout > time.Nanosecond {
-				// Use smooth curved gradient: http://fooplot.com/?lang=en#W3sidHlwZSI6MCwiZXEiOiIoMS1jb3MoeF4yKjMuMTQxNSkpLzIiLCJjb2xvciI6IiMwMDAwMDAifSx7InR5cGUiOjEwMDAsIndpbmRvdyI6WyIwIiwiMSIsIjAiLCIxIl19XQ--
-				blendFactor := 0.5 * (1.0 - math.Cos(math.Pow(elapsedTime.Seconds()/pi.timeout.Seconds(), 2)*math.Pi))
-				elapsedTimeColor = elapsedTimeColor.BlendLab(bunt.Red, blendFactor)
-			}
-
-			bunt.Fprint(pi.out,
-				resetLine, " ", pi.nextSymbol(), " ",
-				mainContentText,
-				strings.Repeat(" ", padding),
-				bunt.Colorize(elapsedTimeText, elapsedTimeColor),
-			)
-
-			time.Sleep(refreshIntervalInMs * time.Millisecond)
-		}
-	}()
+	} else {
+		bunt.Fprintf(pi.out, pi.format, pi.args...)
+		bunt.Fprintln(pi.out)
+	}
 
 	return pi
 }
 
+// Stop stops the progress indicator by clearing the line one last time
+func (pi *ProgressIndicator) Stop() bool {
+	if x := atomic.SwapUint64(&pi.running, 0); x > 0 {
+		if pi.spin {
+			term.ShowCursor()
+			bunt.Fprint(pi.out, resetLine)
+		}
+
+		return true
+	}
+
+	return false
+}
+
 // SetText updates the waiting text.
-func (pi *ProgressIndicator) SetText(text string) {
-	pi.text = text
+func (pi *ProgressIndicator) SetText(format string, args ...interface{}) {
+	if bunt.Sprintf(format, args...) != bunt.Sprintf(pi.format, pi.args...) {
+		pi.format = format
+		pi.args = args
+
+		if !pi.spin {
+			bunt.Fprintf(pi.out, pi.format, pi.args...)
+			bunt.Fprintln(pi.out)
+		}
+	}
 }
 
 // SetOutputWriter sets the output writer to used to print the progress
@@ -176,23 +209,13 @@ func (pi *ProgressIndicator) SetTimeInfoTextFunc(f func(time.Duration) (string, 
 }
 
 // Done stops the progress indicator.
-func (pi *ProgressIndicator) Done(texts ...string) bool {
-	if x := atomic.SwapUint64(&pi.running, 0); x > 0 {
-		bunt.Fprint(pi.out, showCursor)
-		bunt.Fprint(pi.out, resetLine)
+func (pi *ProgressIndicator) Done(format string, args ...interface{}) bool {
+	defer func() {
+		bunt.Fprintf(pi.out, format, args...)
+		bunt.Fprintln(pi.out)
+	}()
 
-		if len(texts) > 0 {
-			for _, text := range texts {
-				bunt.Fprint(pi.out, text)
-			}
-
-			bunt.Fprint(pi.out, "\n")
-		}
-
-		return true
-	}
-
-	return false
+	return pi.Stop()
 }
 
 func (pi *ProgressIndicator) nextSymbol() string {
@@ -239,4 +262,8 @@ func humanReadableDuration(duration time.Duration) string {
 	}
 
 	return strings.Join(parts, " ")
+}
+
+func removeLineFeeds(input string) string {
+	return strings.Replace(input, "\n", " ", -1)
 }
