@@ -93,7 +93,7 @@ var deployCmd = &cobra.Command{
 			pi.Start()
 
 			if _, err := havener.DeployHelmRelease(release.ChartName, release.ChartNamespace, release.ChartLocation, maxTimeOut, overridesData); err != nil {
-				pi.Done()
+				pi.Stop()
 				exitWithError("Error deploying chart", err)
 			}
 

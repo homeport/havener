@@ -102,7 +102,7 @@ func purgeHelmReleases(kubeClient kubernetes.Interface, helmClient *helm.Client,
 	// Show a wait indicator ...
 	pi := wait.NewProgressIndicator(fmt.Sprintf("Deleting Helm Releases: " + strings.Join(toBeDeleted, ",")))
 	pi.Start()
-	defer pi.Done()
+	defer pi.Stop()
 
 	// Start to purge the helm releaes in parallel
 	errors := make(chan error, len(toBeDeleted))

@@ -69,12 +69,12 @@ var logsCmd = &cobra.Command{
 		select {
 		case err := <-resultChan:
 			if err != nil {
-				pi.Done()
+				pi.Stop()
 				exitWithError("unable to retrieve logs from pods", err)
 			}
 
 		case <-time.After(timeout):
-			pi.Done()
+			pi.Stop()
 			exitWithError("unable to retrieve logs from pods", fmt.Errorf("download did not finish within configured timeout"))
 		}
 

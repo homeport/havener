@@ -22,6 +22,8 @@
 
 set -euo pipefail
 
+BASEDIR="$(cd "$(dirname "$0")/.." && pwd)"
+
 for TOOL in ytbx git sed file; do
   if ! hash "${TOOL}" 2>/dev/null; then
     if [ "${TOOL}" = "ytbx" ]; then
@@ -43,7 +45,7 @@ KUBE_VERSION="$(ytbx get Gopkg.toml '/override/name=k8s.io\/api/branch' | sed 's
 #
 echo -e "\\n\\033[1mCompiling ${HAVENER_NAME} binaries:\\033[0m"
 while read -r OS ARCH; do
-  TARGET_FILE="binaries/${HAVENER_NAME}-kube-${KUBE_VERSION}-helm-${HELM_VERSION}-${OS}-${ARCH}"
+  TARGET_FILE="${BASEDIR}/binaries/${HAVENER_NAME}-kube-${KUBE_VERSION}-helm-${HELM_VERSION}-${OS}-${ARCH}"
   if [[ ${OS} == "windows" ]]; then
     TARGET_FILE="${TARGET_FILE}.exe"
   fi
