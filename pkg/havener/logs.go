@@ -47,6 +47,7 @@ const retrieveAllLogFilesCommand = `/bin/sh -c '
 #!/bin/sh
 
 FILES="$(cd / && find var/vcap/sys -type f -name '*.log*' -size +0c 2>/dev/null; \
+                 find var/vcap/monit -type f -size +0c 2>/dev/null; \
 				 find var/log -type f -size +0c 2>/dev/null )"
 
 if [ ! -z "${FILES}" ]; then
