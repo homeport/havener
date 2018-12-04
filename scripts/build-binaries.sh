@@ -52,6 +52,7 @@ while read -r OS ARCH; do
 
   echo -e "Running go build of version \\033[1;3m${HAVENER_VERSION}\\033[0m for \\033[1;91m${OS}\\033[0m/\\033[1;31m${ARCH}\\033[0m: \\033[93m$(basename "${TARGET_FILE}")\\033[0m"
   CGO_ENABLED=0 GOOS="${OS}" GOARCH="${ARCH}" go build \
+    -a \
     -tags netgo \
     -ldflags "-s -w -extldflags '-static' -X github.com/homeport/havener/internal/cmd.havenerVersion=${HAVENER_VERSION} -X github.com/homeport/havener/internal/cmd.kubeVersion=${KUBE_VERSION} -X github.com/homeport/havener/internal/cmd.helmVersion=${HELM_VERSION}" \
     -o "${TARGET_FILE}" \
@@ -59,7 +60,6 @@ while read -r OS ARCH; do
 
 done <<EOL
 darwin amd64
-windows amd64
 linux amd64
 EOL
 
