@@ -29,6 +29,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"gopkg.in/yaml.v2"
@@ -43,12 +44,22 @@ import (
 // LogDirName is the subdirectory name where retrieved logs are stored
 const LogDirName = "retrieved-logs"
 
-const retrieveAllLogFilesCommand = `/bin/sh -c '
+var logFinds = []string{
+	"find var/vcap/sys -type f -name '*.log*' -size +0c 2>/dev/null",
+	"find var/vcap/monit -type f -size +0c 2>/dev/null",
+	"find var/log -type f -size +0c 2>/dev/null",
+}
+
+var cfgFinds = []string{
+	"find var/vcap/jobs -type f -size +0c 2>/dev/null",
+	"find etc/nginx -type f -size +0c 2>/dev/null",
+	"find opt/fissile -type f -size +0c 2>/dev/null",
+}
+
+const retrieveCommand = `/bin/sh -c '
 #!/bin/sh
 
-FILES="$(cd / && find var/vcap/sys -type f -name '*.log*' -size +0c 2>/dev/null; \
-                 find var/vcap/monit -type f -size +0c 2>/dev/null; \
-				 find var/log -type f -size +0c 2>/dev/null )"
+FILES="$(cd / && %s )"
 
 if [ ! -z "${FILES}" ]; then
   ( cd / && ls -1Sr ${FILES} ) | while read -r FILENAME; do
@@ -57,26 +68,7 @@ if [ ! -z "${FILES}" ]; then
         echo "${FILENAME}"
         ;;
     esac
-  done | tar -czf - -T - 2>/dev/null
-fi
-
-' 2>/dev/null`
-
-const retrieveAllConfigFilesCommand = `/bin/sh -c '
-#!/bin/sh
-
-FILES="$(cd / && find var/vcap/jobs -type f -size +0c 2>/dev/null; \
-	             find etc/nginx -type f -size +0c 2>/dev/null; \
-				 find opt/fissile -type f -size +0c 2>/dev/null )"
-
-if [ ! -z "${FILES}" ]; then
-  ( cd / && ls -1Sr ${FILES} ) | while read -r FILENAME; do
-    case "$(file --brief --mime-type "${FILENAME}")" in
-      text/*)
-        echo "${FILENAME}"
-        ;;
-    esac
-  done | tar -czf - -T - 2>/dev/null
+  done | GZIP=-9 tar --create --gzip --file=- --files-from=- 2>/dev/null
 fi
 
 ' 2>/dev/null`
@@ -144,24 +136,13 @@ func RetrieveLogs(client kubernetes.Interface, restconfig *rest.Config, target s
 		wg.Add(1)
 		go func() {
 			for task := range tasks {
-				for _, err := range retrieveLogFilesFromPod(client, restconfig, task.pod, task.baseDir) {
+				for _, err := range retrieveFilesFromPod(client, restconfig, task.pod, task.baseDir, includeConfigFiles) {
 					switch err {
 					case io.EOF, gzip.ErrHeader, gzip.ErrChecksum:
 						continue
 					}
 
 					errors = append(errors, err)
-				}
-
-				if includeConfigFiles {
-					for _, err := range retrieveConfigFilesFromPod(client, restconfig, task.pod, task.baseDir) {
-						switch err {
-						case io.EOF, gzip.ErrHeader, gzip.ErrChecksum:
-							continue
-						}
-
-						errors = append(errors, err)
-					}
 				}
 			}
 
@@ -207,43 +188,14 @@ func RetrieveLogs(client kubernetes.Interface, restconfig *rest.Config, target s
 	return nil
 }
 
-func retrieveLogFilesFromPod(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.Pod, baseDir string) []error {
-	errors := []error{}
-
-	for _, container := range pod.Spec.Containers {
-		targetPath := filepath.Join(
-			baseDir,
-			pod.Name,
-			container.Name,
-		)
-
-		read, write := io.Pipe()
-
-		go func() {
-			PodExec(
-				client,
-				restconfig,
-				pod,
-				container.Name,
-				retrieveAllLogFilesCommand,
-				nil,
-				write,
-				os.Stderr,
-				false)
-			write.Close()
-		}()
-
-		if err := untar(read, targetPath); err != nil {
-			errors = append(errors, err)
-		}
+func retrieveFilesFromPod(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.Pod, baseDir string, includeConfigFiles bool) []error {
+	finds := []string{}
+	finds = append(finds, logFinds...)
+	if includeConfigFiles {
+		finds = append(finds, cfgFinds...)
 	}
 
-	return errors
-}
-
-func retrieveConfigFilesFromPod(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.Pod, baseDir string) []error {
 	errors := []error{}
-
 	for _, container := range pod.Spec.Containers {
 		targetPath := filepath.Join(
 			baseDir,
@@ -259,7 +211,7 @@ func retrieveConfigFilesFromPod(client kubernetes.Interface, restconfig *rest.Co
 				restconfig,
 				pod,
 				container.Name,
-				retrieveAllConfigFilesCommand,
+				fmt.Sprintf(retrieveCommand, strings.Join(finds, "; ")),
 				nil,
 				write,
 				os.Stderr,
