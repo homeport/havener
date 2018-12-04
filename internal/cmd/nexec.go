@@ -48,7 +48,7 @@ and respective pod will be deleted after the command was executed.
 
 		havener.VerboseMessage("Connecting to Kubernetes cluster...")
 
-		client, restconfig, err := havener.OutOfClusterAuthentication()
+		client, restconfig, err := havener.OutOfClusterAuthentication("")
 		if err != nil {
 			exitWithError("failed to connect to Kubernetes cluster", err)
 		}

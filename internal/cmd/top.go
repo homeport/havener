@@ -35,7 +35,7 @@ var topCmd = &cobra.Command{
 
 		havener.VerboseMessage("Accessing Kubernetes cluster...")
 
-		clientSet, _, err := havener.OutOfClusterAuthentication()
+		clientSet, _, err := havener.OutOfClusterAuthentication("")
 		if err != nil {
 			exitWithError("unable to get access to cluster", err)
 		}

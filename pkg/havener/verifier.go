@@ -48,7 +48,7 @@ func VerifyCertExpirations() (err error) {
 
 	VerboseMessage("Accessing cluster...")
 
-	client, _, err := OutOfClusterAuthentication()
+	client, _, err := OutOfClusterAuthentication("")
 	if err != nil {
 		return errors.Wrap(err, "unable to get access to cluster")
 	}

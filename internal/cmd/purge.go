@@ -22,7 +22,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"strings"
 
 	"github.com/homeport/gonvenience/pkg/v1/wait"
@@ -55,7 +54,7 @@ If multiple Helm Releases are specified, then they will deleted concurrently.
 	Run: func(cmd *cobra.Command, args []string) {
 		havener.VerboseMessage("Accessing cluster...")
 
-		client, _, err := havener.OutOfClusterAuthentication()
+		client, _, err := havener.OutOfClusterAuthentication("")
 		if err != nil {
 			exitWithError("unable to get access to cluster", err)
 		}
@@ -70,10 +69,7 @@ func getConfiguredHelmClient() *helm.Client {
 
 	havener.VerboseMessage("Reading kube config file...")
 
-	cfg, err := ioutil.ReadFile(viper.GetString("kubeconfig"))
-	if err != nil {
-		exitWithError("unable to read the kube config file", err)
-	}
+	cfg := viper.GetString("kubeconfig")
 
 	havener.VerboseMessage("Getting helm client...")
 
