@@ -86,7 +86,12 @@ func UpdateHelmRelease(chartname string, chartPath string, valueOverrides []byte
 		return nil, err
 	}
 
-	chartRequested, err := GetHelmChart(chartPath)
+	helmChartPath, err := PathToHelmChart(chartPath)
+	if err != nil {
+		return nil, err
+	}
+
+	chartRequested, err := GetHelmChart(helmChartPath)
 	if err != nil {
 		return nil, fmt.Errorf("error loading chart: %v", err)
 	}

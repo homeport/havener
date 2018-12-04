@@ -23,84 +23,93 @@ package cmd
 import (
 	"fmt"
 	"io/ioutil"
+	"time"
 
-	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	yaml "gopkg.in/yaml.v2"
+
+	"github.com/homeport/gonvenience/pkg/v1/wait"
+	"gopkg.in/yaml.v2"
+
+	"github.com/homeport/havener/pkg/havener"
 )
 
-// reuseValues holds the bool of --reuse-values
-var reuseValues bool
+const (
+	envVarUpgradeConfig     = "upgrade_config"
+	envVarUpgradeTimeout    = "upgrade_timeout"
+	envVarUpgradeValueReuse = "upgrade_reuse_values"
+)
 
 // upgradeCmd represents the upgrade command
 var upgradeCmd = &cobra.Command{
 	Use:   "upgrade",
-	Short: "Upgrade Kubernetes with new Helm Charts",
-	Long:  `TODO please do this later`,
+	Short: "Upgrade Helm Release in Kubernetes",
+	Long:  `Upgrade Helm Release based on havener configuration`,
 	Run: func(cmd *cobra.Command, args []string) {
-		havener.VerboseMessage("Looking for config file...")
+		switch {
+		case len(viper.GetString(envVarUpgradeConfig)) > 0:
+			upgradeViaHavenerConfig()
 
-		if cfgFile == "" && viper.GetString("havenerconfig") == "" {
-			exitWithError("please provide configuration via --config or environment variable HAVENERCONFIG", fmt.Errorf("no havener configuration file set"))
+		default:
+			cmd.Usage()
 		}
-
-		// If a config file is found, read it in.
-		if err := viper.ReadInConfig(); err == nil {
-			havener.InfoMessage("Using config file: %s", viper.ConfigFileUsed())
-		}
-
-		havener.VerboseMessage("Reading config file...")
-
-		cfgdata, err := ioutil.ReadFile(viper.GetString("havenerconfig"))
-		if err != nil {
-			exitWithError("unable to read file", err)
-		}
-
-		havener.VerboseMessage("Unmarshaling config file...")
-
-		var config havener.Config
-		if err := yaml.Unmarshal(cfgdata, &config); err != nil {
-			exitWithError("failed to unmarshal config file", err)
-		}
-
-		for _, release := range config.Releases {
-			overrides, err := havener.TraverseStructureAndProcessShellOperators(release.Overrides)
-
-			havener.VerboseMessage("Processing overrides section...")
-
-			if err != nil {
-				exitWithError("failed to process overrides section", err)
-			}
-
-			havener.VerboseMessage("Marshaling overrides section...")
-
-			overridesData, err := yaml.Marshal(overrides)
-			if err != nil {
-				exitWithError("failed to marshal overrides structure into bytes", err)
-			}
-
-			havener.InfoMessage("Going to upgrade existing %s chart...", release.ChartName)
-
-			if _, err := havener.UpdateHelmRelease(release.ChartName, release.ChartLocation, overridesData, reuseValues); err != nil {
-				exitWithError("Error updating chart", err)
-			}
-
-			havener.InfoMessage("Successfully upgraded existing %s chart.", release.ChartName)
-		}
-
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(upgradeCmd)
 
-	upgradeCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (Mandatory argument)")
-	upgradeCmd.PersistentFlags().BoolVar(&reuseValues, "reuse-values", false, "reuse the last release's values and merge in any overrides")
+	upgradeCmd.PersistentFlags().String("config", "", "havener configuration file")
+	upgradeCmd.PersistentFlags().Int("timeout", 40, "upgrade timeout in minutes")
+	upgradeCmd.PersistentFlags().Bool("reuse-values", false, "reuse the last release's values and merge in any overrides")
 
-	viper.AutomaticEnv() // read in environment variables that match
+	viper.AutomaticEnv()
+	viper.BindPFlag(envVarUpgradeConfig, upgradeCmd.PersistentFlags().Lookup("config"))
+	viper.BindPFlag(envVarUpgradeTimeout, upgradeCmd.PersistentFlags().Lookup("timeout"))
+	viper.BindPFlag(envVarUpgradeValueReuse, upgradeCmd.PersistentFlags().Lookup("reuse-values"))
+}
 
-	// Bind kubeconfig flag with viper, so that the contents can be accessible later
-	viper.BindPFlag("havenerconfig", upgradeCmd.PersistentFlags().Lookup("config"))
+func upgradeViaHavenerConfig() {
+	havenerConfig := viper.GetString(envVarUpgradeConfig)
+	timeoutInMin := viper.GetInt(envVarUpgradeTimeout)
+	reuseValues := viper.GetBool(envVarUpgradeValueReuse)
 
+	cfgdata, err := ioutil.ReadFile(havenerConfig)
+	if err != nil {
+		exitWithError("unable to read havener configuration", err)
+	}
+
+	var config havener.Config
+	if err := yaml.Unmarshal(cfgdata, &config); err != nil {
+		exitWithError("failed to unmarshal havener configuration", err)
+	}
+
+	for _, release := range config.Releases {
+		overrides, err := havener.TraverseStructureAndProcessShellOperators(release.Overrides)
+		if err != nil {
+			exitWithError("failed to process overrides section", err)
+		}
+
+		overridesData, err := yaml.Marshal(overrides)
+		if err != nil {
+			exitWithError("failed to marshal overrides structure into bytes", err)
+		}
+
+		pi := wait.NewProgressIndicator(fmt.Sprintf("Upgrading Helm Release for %s", release.ChartName))
+		pi.SetTimeout(time.Duration(timeoutInMin) * time.Minute)
+		pi.Start()
+
+		_, err = havener.UpdateHelmRelease(
+			release.ChartName,
+			release.ChartLocation,
+			overridesData,
+			reuseValues)
+
+		if err != nil {
+			pi.Stop()
+			exitWithError("failed to upgrade via havener configuration", err)
+		}
+
+		pi.Done("Successfully upgraded helm chart *%s* in namespace *_%s_*.", release.ChartName, release.ChartNamespace)
+	}
 }
