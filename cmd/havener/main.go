@@ -20,8 +20,24 @@
 
 package main
 
-import "github.com/homeport/havener/internal/cmd"
+import (
+	"os"
+	"os/signal"
+	"syscall"
+
+	"github.com/homeport/gonvenience/pkg/v1/term"
+	"github.com/homeport/havener/internal/cmd"
+)
 
 func main() {
+	signals := make(chan os.Signal)
+	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		<-signals
+		term.ShowCursor()
+		os.Exit(1)
+	}()
+
 	cmd.Execute()
 }
