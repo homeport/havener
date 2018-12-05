@@ -24,13 +24,19 @@ set -euo pipefail
 
 BASEDIR="$(cd "$(dirname "$0")/.." && pwd)"
 
-for TOOL in ytbx git sed file; do
+for TOOL in ytbx git sed; do
   if ! hash "${TOOL}" 2>/dev/null; then
-    if [ "${TOOL}" = "ytbx" ]; then
-      echo -e "Required tool \\033[1m${TOOL}\\033[0m is not installed, can be downloaded from \\033[1mhttps://github.com/HeavyWombat/ytbx/releases\\033[0m"
-    else
-      echo -e "Required tool \\033[1m${TOOL}\\033[0m is not installed."
-    fi
+    echo -e "Required tool \\033[1m${TOOL}\\033[0m is not installed."
+
+    case "${TOOL}" in
+      ytbx)
+        echo
+        echo "The latest ytbx can be installed using the following convenience script:"
+        echo "curl -sL https://raw.githubusercontent.com/HeavyWombat/ytbx/master/scripts/download-latest.sh | bash"
+        ;;
+    esac
+
+    echo
     exit 1
   fi
 done
@@ -63,8 +69,10 @@ darwin amd64
 linux amd64
 EOL
 
-echo -e '\n\033[1mFile details of compiled binaries:\033[0m'
-file binaries/*
+if hash file >/dev/null 2>&1; then
+  echo -e '\n\033[1mFile details of compiled binaries:\033[0m'
+  file binaries/*
+fi
 
 if hash shasum >/dev/null 2>&1; then
   echo -e '\n\033[1mSHA sum of compiled binaries:\033[0m'
