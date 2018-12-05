@@ -25,7 +25,7 @@ default: build
 all: test build
 
 clean:
-	@go clean -r -cache
+	@go clean -r -cache 2>/dev/null || go clean -r
 	@rm -rf binaries
 
 todo-list:
