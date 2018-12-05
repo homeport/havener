@@ -48,6 +48,19 @@ See the individual commands to get the complete overview.
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+	defer func() {
+		const panicTitle = "Well, uhm, that is something we did not cover ..."
+		if r := recover(); r != nil {
+			switch r.(type) {
+			case error:
+				exitWithErrorAndIssue(panicTitle, r.(error))
+
+			default:
+				exitWithErrorAndIssue(panicTitle, fmt.Errorf("%v", r))
+			}
+		}
+	}()
+
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
