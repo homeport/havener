@@ -68,7 +68,7 @@ The `deploy` command installs a helm release. A config file has to be provided, 
    `<key>: (( shell <command> | <command>))`
 - Deploying SCF on minikube
    ```
-   $ minikube start --cpus 4 --disk-size 100g --memory 819
+   $ minikube start --cpus 4 --disk-size 100g --memory 8192
    $ havener deploy --config examples/minikube-config.yml
    ```
 - Installing SCF on IBM Armada
