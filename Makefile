@@ -32,7 +32,7 @@ todo-list:
 	@grep -InHR --exclude-dir=vendor --exclude-dir=.git '[T]ODO' $(shell pwd)
 
 test:
-	ginkgo -r --randomizeAllSpecs --randomizeSuites --failOnPending --nodes=4 --compilers=2 --race --trace
+	@scripts/test.sh
 
 build:
 	@scripts/build-binaries.sh
