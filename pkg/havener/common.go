@@ -47,10 +47,14 @@ func getKubeConfig() string {
 }
 
 //OutOfClusterAuthentication for kube authentication from the outside
-func OutOfClusterAuthentication() (*kubernetes.Clientset, *rest.Config, error) {
+func OutOfClusterAuthentication(kubeConfig string) (*kubernetes.Clientset, *rest.Config, error) {
+	if kubeConfig == "" {
+		kubeConfig = getKubeConfig()
+	}
+
 	// BuildConfigFromFlags is a helper function that builds configs from a master
 	// url or a kubeconfig filepath.
-	config, err := clientcmd.BuildConfigFromFlags("", getKubeConfig())
+	config, err := clientcmd.BuildConfigFromFlags("", kubeConfig)
 	if err != nil {
 		return nil, nil, err
 	}

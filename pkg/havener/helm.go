@@ -22,10 +22,12 @@ package havener
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/spf13/viper"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/helm/cmd/helm/installer"
 	"k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/helm"
 	"k8s.io/helm/pkg/helm/portforwarder"
@@ -35,13 +37,16 @@ import (
 	rls "k8s.io/helm/pkg/proto/hapi/services"
 )
 
+// Hardcode tiller image because version.Version is overwritten when build helm release
+// https://github.com/helm/helm/blob/99199c975236430fdf7599c69a956c6eb73b44e9/versioning.mk#L16-L19
+const (
+	ImageSpec = "gcr.io/kubernetes-helm/tiller:v2.10.0"
+)
+
 // ListHelmReleases returns a list of releases
 // Based on https://github.com/helm/helm/blob/7cad59091a9451b2aa4f95aa882ea27e6b195f98/pkg/proto/hapi/services/tiller.pb.go
 func ListHelmReleases() (*rls.ListReleasesResponse, error) {
-	cfg, err := ioutil.ReadFile(viper.GetString("kubeconfig"))
-	if err != nil {
-		return nil, err
-	}
+	cfg := viper.GetString("kubeconfig")
 
 	helmClient, _ := GetHelmClient(cfg)
 	var sortBy = int32(2)  //LAST_RELEASED
@@ -81,10 +86,7 @@ func GetHelmChart(path string) (requestedChart *chart.Chart, err error) {
 
 //UpdateHelmRelease will upgrade an existing release with provided override values
 func UpdateHelmRelease(chartname string, chartPath string, valueOverrides []byte, reuseVal bool) (*rls.UpdateReleaseResponse, error) {
-	cfg, err := ioutil.ReadFile(viper.GetString("kubeconfig"))
-	if err != nil {
-		return nil, err
-	}
+	cfg := viper.GetString("kubeconfig")
 
 	helmChartPath, err := PathToHelmChart(chartPath)
 	if err != nil {
@@ -116,10 +118,7 @@ func DeployHelmRelease(chartname string, namespace string, chartPath string, tim
 
 	VerboseMessage("Reading kube config file...")
 
-	cfg, err := ioutil.ReadFile(viper.GetString("kubeconfig"))
-	if err != nil {
-		return nil, err
-	}
+	cfg := viper.GetString("kubeconfig")
 
 	VerboseMessage("Locating helm chart location...")
 
@@ -161,10 +160,15 @@ func DeployHelmRelease(chartname string, namespace string, chartPath string, tim
 }
 
 // GetHelmClient creates a new client for the Helm-Tiller protocol
-func GetHelmClient(kubeConfig []byte) (*helm.Client, error) {
+func GetHelmClient(kubeConfig string) (*helm.Client, error) {
 	var tillerTunnel *kube.Tunnel
 
-	clientSet, config, err := OutOfClusterAuthentication()
+	clientSet, config, err := OutOfClusterAuthentication(kubeConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	err = InitTiller("kube-system", clientSet)
 	if err != nil {
 		return nil, err
 	}
@@ -178,4 +182,24 @@ func GetHelmClient(kubeConfig []byte) (*helm.Client, error) {
 	hClient := helm.NewClient(helm.Host(tillerTunnelAddress))
 
 	return hClient, nil
+}
+
+// InitTiller installs Tiller or upgrade if needed
+func InitTiller(namespace string, clientSet kubernetes.Interface) error {
+	VerboseMessage("Installing Tiller in namespace %s...", namespace)
+	if err := installer.Install(clientSet, &installer.Options{Namespace: namespace, ImageSpec: ImageSpec}); err != nil {
+		if !apierrors.IsAlreadyExists(err) {
+			return fmt.Errorf("error when installing: %s", err)
+		}
+		if err := installer.Upgrade(clientSet, &installer.Options{Namespace: namespace, ForceUpgrade: true, ImageSpec: ImageSpec}); err != nil {
+			return fmt.Errorf("error when upgrading: %s", err)
+		}
+
+		VerboseMessage("Tiller has been upgraded to the current version.")
+
+	} else {
+		VerboseMessage("Tiller has been installed.")
+	}
+
+	return nil
 }

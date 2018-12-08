@@ -21,10 +21,20 @@
 package havener_test
 
 import (
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"reflect"
 
+	"github.com/homeport/havener/pkg/havener"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"k8s.io/api/core/v1"
+	"k8s.io/api/extensions/v1beta1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/kubernetes/fake"
+	testcore "k8s.io/client-go/testing"
 	"k8s.io/helm/pkg/helm"
 	"k8s.io/helm/pkg/proto/hapi/chart"
 	"k8s.io/helm/pkg/proto/hapi/release"
@@ -154,5 +164,196 @@ var _ = Describe("Helm Operations", func() {
 				Expect(reflect.DeepEqual(installResponse, tt.want)).To(BeTrue())
 			}
 		})
+	})
+
+	Context("Installing tiller", func() {
+		var (
+			namespace    string
+			image        string
+			replicasSpec int32
+			fc           *fake.Clientset
+		)
+		BeforeEach(func() {
+			namespace = "fake-namespace"
+			image = havener.ImageSpec
+			replicasSpec = 1
+			fc = &fake.Clientset{}
+		})
+		It("should install tiller", func() {
+			fc.AddReactor("create", "deployments", func(action testcore.Action) (bool, runtime.Object, error) {
+				obj := action.(testcore.CreateAction).GetObject().(*v1beta1.Deployment)
+				l := obj.GetLabels()
+				Expect(reflect.DeepEqual(l, map[string]string{"app": "helm"}))
+
+				i := obj.Spec.Template.Spec.Containers[0].Image
+				Expect(i).To(Equal(image))
+
+				ports := len(obj.Spec.Template.Spec.Containers[0].Ports)
+				Expect(ports).To(Equal(2))
+
+				replicas := obj.Spec.Replicas
+				Expect(*replicas).To(Equal(replicasSpec))
+
+				return true, obj, nil
+			})
+			fc.AddReactor("create", "services", func(action testcore.Action) (bool, runtime.Object, error) {
+				obj := action.(testcore.CreateAction).GetObject().(*v1.Service)
+				l := obj.GetLabels()
+				Expect(reflect.DeepEqual(l, map[string]string{"app": "helm"}))
+
+				n := obj.ObjectMeta.Namespace
+				Expect(n).To(Equal(namespace))
+				return true, obj, nil
+			})
+
+			err := havener.InitTiller(namespace, fc)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("Failed to install when create deployment return error", func() {
+			fc.AddReactor("create", "deployments", func(action testcore.Action) (bool, runtime.Object, error) {
+				err := apierrors.NewServiceUnavailable("fake-reason")
+
+				return true, nil, err
+			})
+
+			err := havener.InitTiller(namespace, fc)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("error when installing"))
+		})
+
+		Context("when tiller exists", func() {
+			It("should upgrade tiller", func() {
+				fc.AddReactor("create", "deployments", func(action testcore.Action) (bool, runtime.Object, error) {
+					err := apierrors.NewAlreadyExists(schema.GroupResource{Group: "extensions", Resource: "deployments"}, "tiller-deploy")
+
+					return true, nil, err
+				})
+				fc.AddReactor("get", "deployments", func(action testcore.Action) (bool, runtime.Object, error) {
+					obj := &v1beta1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      action.(testcore.GetAction).GetName(),
+							Namespace: namespace,
+							Labels:    map[string]string{"app": "helm"},
+						},
+						Spec: v1beta1.DeploymentSpec{
+							Replicas: &replicasSpec,
+							Template: v1.PodTemplateSpec{
+								ObjectMeta: metav1.ObjectMeta{
+									Labels: map[string]string{"app": "helm"},
+								},
+								Spec: v1.PodSpec{
+									Containers: []v1.Container{
+										{
+											Name:  "tiller",
+											Image: havener.ImageSpec,
+											Ports: []v1.ContainerPort{
+												{ContainerPort: 44134, Name: "tiller"},
+												{ContainerPort: 44135, Name: "http"},
+											},
+										},
+									},
+								},
+							},
+						},
+					}
+
+					return true, obj, nil
+				})
+
+				fc.AddReactor("update", "deployments", func(action testcore.Action) (bool, runtime.Object, error) {
+					obj := action.(testcore.UpdateAction).GetObject().(*v1beta1.Deployment)
+					l := obj.GetLabels()
+					Expect(reflect.DeepEqual(l, map[string]string{"app": "helm"}))
+
+					i := obj.Spec.Template.Spec.Containers[0].Image
+					Expect(i).To(Equal(image))
+
+					ports := len(obj.Spec.Template.Spec.Containers[0].Ports)
+					Expect(ports).To(Equal(2))
+
+					replicas := obj.Spec.Replicas
+					Expect(*replicas).To(Equal(replicasSpec))
+
+					return true, obj, nil
+				})
+
+				fc.AddReactor("get", "services", func(action testcore.Action) (bool, runtime.Object, error) {
+					obj := &v1.Service{
+						ObjectMeta: metav1.ObjectMeta{
+							Namespace: namespace,
+							Name:      "tiller-deploy",
+							Labels:    map[string]string{"app": "helm"},
+						},
+						Spec: v1.ServiceSpec{
+							Type: v1.ServiceTypeClusterIP,
+							Ports: []v1.ServicePort{
+								{
+									Name:       "tiller",
+									Port:       44134,
+									TargetPort: intstr.FromString("tiller"),
+								},
+							},
+							Selector: map[string]string{"app": "helm"},
+						},
+					}
+
+					return true, obj, nil
+				})
+
+				err := havener.InitTiller(namespace, fc)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("Failed to upgrade when update deployment return error", func() {
+				fc.AddReactor("create", "deployments", func(action testcore.Action) (bool, runtime.Object, error) {
+					err := apierrors.NewAlreadyExists(schema.GroupResource{Group: "extensions", Resource: "deployments"}, "tiller-deploy")
+
+					return true, nil, err
+				})
+				fc.AddReactor("get", "deployments", func(action testcore.Action) (bool, runtime.Object, error) {
+					obj := &v1beta1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      action.(testcore.GetAction).GetName(),
+							Namespace: namespace,
+							Labels:    map[string]string{"app": "helm"},
+						},
+						Spec: v1beta1.DeploymentSpec{
+							Replicas: &replicasSpec,
+							Template: v1.PodTemplateSpec{
+								ObjectMeta: metav1.ObjectMeta{
+									Labels: map[string]string{"app": "helm"},
+								},
+								Spec: v1.PodSpec{
+									Containers: []v1.Container{
+										{
+											Name:  "tiller",
+											Image: havener.ImageSpec,
+											Ports: []v1.ContainerPort{
+												{ContainerPort: 44134, Name: "tiller"},
+												{ContainerPort: 44135, Name: "http"},
+											},
+										},
+									},
+								},
+							},
+						},
+					}
+
+					return true, obj, nil
+				})
+
+				fc.AddReactor("update", "deployments", func(action testcore.Action) (bool, runtime.Object, error) {
+					err := apierrors.NewServiceUnavailable("fake-reason")
+
+					return true, nil, err
+				})
+
+				err := havener.InitTiller(namespace, fc)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("error when upgrading"))
+			})
+		})
+
 	})
 })

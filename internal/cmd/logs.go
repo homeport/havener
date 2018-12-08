@@ -43,7 +43,7 @@ var logsCmd = &cobra.Command{
 	Short: "Retrieve log files from pods",
 	Long:  `Retrieve log files from pods`,
 	Run: func(cmd *cobra.Command, args []string) {
-		clientSet, restconfig, err := havener.OutOfClusterAuthentication()
+		clientSet, restconfig, err := havener.OutOfClusterAuthentication("")
 		if err != nil {
 			exitWithError("unable to get access to cluster", err)
 		}
