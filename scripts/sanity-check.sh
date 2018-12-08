@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # Copyright © 2018 The Havener
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,24 +20,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-.PHONY: all clean todo-list test build
+set -euo pipefail
 
-default: build
+echo -e "\\nGolinting packages..."
+golint -set_exit_status $(go list ./... | grep -v vendor/)
 
-all: test build
-
-clean:
-	@go clean -r -cache 2>/dev/null || go clean -r
-	@rm -rf binaries
-
-todo-list:
-	@grep -InHR --exclude-dir=vendor --exclude-dir=.git '[T]ODO' $(shell pwd)
-
-sanity-check:
-	@scripts/sanity-check.sh
-
-test: sanity-check
-	@scripts/unit-test.sh
-
-build:
-	@scripts/build-binaries.sh
+echo -e "\\nVetting packages..."
+go vet $(go list ./... | grep -v vendor/)
