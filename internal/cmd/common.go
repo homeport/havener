@@ -24,12 +24,17 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
+	"os/exec"
 	"runtime/debug"
 	"strings"
 
+	"github.com/lucasb-eyer/go-colorful"
+
 	"github.com/homeport/gonvenience/pkg/v1/bunt"
+	"github.com/homeport/havener/pkg/havener"
 )
 
 // NoUserPrompt defines whether a user confirmation is required or should be omitted
@@ -97,4 +102,111 @@ func exitWithErrorAndIssue(msg string, err error) {
 	)
 
 	os.Exit(1)
+}
+
+func processTask(title string, task *havener.Task) error {
+	if task == nil {
+		return nil
+	}
+
+	var buf bytes.Buffer
+
+	for _, taskEntry := range *task {
+		var cmd string
+		var args []string
+		var err error
+
+		switch taskEntry.(type) {
+		case string:
+			cmd, args = "/bin/sh", append(args, "-c", taskEntry.(string))
+
+		case map[interface{}]interface{}:
+			cmd, args, err = parseCommandFromMap(taskEntry.(map[interface{}]interface{}))
+
+		default:
+			return fmt.Errorf("unsupported command specification (type %T):\n%v", taskEntry, taskEntry)
+		}
+
+		if err != nil {
+			return err
+		}
+
+		read, write := io.Pipe()
+		go func() {
+			command := exec.Command(cmd, args...)
+			command.Stdout = write
+			command.Stderr = write
+			err = command.Run()
+			write.Close()
+		}()
+
+		buf.ReadFrom(read)
+
+		if err != nil {
+			return fmt.Errorf("failed to run command: %s %s\n%s",
+				cmd,
+				strings.Join(args, " "),
+				err.Error())
+		}
+	}
+
+	if output := buf.String(); len(output) > 0 {
+		printStyledMessageInGray(title, output)
+	}
+
+	return nil
+}
+
+func parseCommandFromMap(data map[interface{}]interface{}) (string, []string, error) {
+	var command string
+	var arguments []string
+
+	cmd, ok := data["cmd"]
+	if !ok {
+		return "", nil, fmt.Errorf("failed to find mandatory entry 'cmd'")
+	}
+
+	switch cmd.(type) {
+	case string:
+		command = cmd.(string)
+
+	default:
+		return "", nil, fmt.Errorf("incompatible types, mandatory entry 'cmd' must be of type string")
+	}
+
+	if args, ok := data["args"]; ok {
+		switch args.(type) {
+		case []interface{}:
+			for _, entry := range args.([]interface{}) {
+				switch entry.(type) {
+				case string:
+					arguments = append(arguments, entry.(string))
+
+				default:
+					return "", nil, fmt.Errorf("incompatible types, the 'args' entries must be of type string")
+				}
+			}
+
+		default:
+			return "", nil, fmt.Errorf("incompatible types, optional entry 'args' must be of type list")
+		}
+	}
+
+	return command, arguments, nil
+}
+
+func printStyledMessageInGray(head string, body string) {
+	printStyledMessage(head, body, bunt.Gray, bunt.DimGray)
+}
+
+func printStyledMessage(head string, body string, headColor colorful.Color, bodyColor colorful.Color) {
+	bunt.Printf("*%s*\n", bunt.Colorize(head, headColor))
+	for _, line := range strings.Split(body, "\n") {
+		bunt.Printf("%s %s\n",
+			bunt.Colorize("│", headColor),
+			bunt.Colorize(line, bodyColor),
+		)
+	}
+
+	bunt.Println()
 }
