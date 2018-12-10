@@ -127,6 +127,7 @@ The `version` command pretty much does what it says on the tin: it gives out the
 
 We are happy to have other people contributing to the project. If you decide to do that, here's how to:
 
+- get Go (`havener` requires Go version 1.8 or greater)
 - fork the project
 - create a new branch
 - make your changes
