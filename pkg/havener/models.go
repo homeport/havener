@@ -24,6 +24,8 @@ package havener
 type Config struct {
 	Name     string    `yaml:"name"`
 	Releases []Release `yaml:"releases"`
+	Before   *Task     `yaml:"before,omitempty"`
+	After    *Task     `yaml:"after,omitempty"`
 }
 
 // Release is the Havener configuration Helm Release abstraction, which
@@ -34,4 +36,11 @@ type Release struct {
 	ChartLocation  string      `yaml:"chart_location"`
 	ChartVersion   int         `yaml:"chart_version"`
 	Overrides      interface{} `yaml:"overrides"`
+	Before         *Task       `yaml:"before,omitempty"`
+	After          *Task       `yaml:"after,omitempty"`
 }
+
+// Task is the obviously relative generic definition of a list of steps to be
+// evaluated. A task can be configured before and/or after a deployment.
+// Furthermore, a task can also be configured before and/or after each release.
+type Task []interface{}

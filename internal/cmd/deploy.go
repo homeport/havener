@@ -80,10 +80,18 @@ func deployViaHavenerConfig() {
 		exitWithError("failed to unmarshal havener configuration", err)
 	}
 
+	if err := processTask("Predeployment Steps", config.Before); err != nil {
+		exitWithError("failed to evaluate predeployment steps", err)
+	}
+
 	for _, release := range config.Releases {
 		overrides, err := havener.TraverseStructureAndProcessShellOperators(release.Overrides)
 		if err != nil {
 			exitWithError("failed to process overrides section", err)
+		}
+
+		if err := processTask("Before Chart "+release.ChartName, release.Before); err != nil {
+			exitWithError("failed to evaluate before release steps", err)
 		}
 
 		overridesData, err := yaml.Marshal(overrides)
@@ -108,5 +116,13 @@ func deployViaHavenerConfig() {
 		}
 
 		pi.Done("Successfully created new helm chart *%s* in namespace *_%s_*.", release.ChartName, release.ChartNamespace)
+
+		if err := processTask("After Chart "+release.ChartName, release.After); err != nil {
+			exitWithError("failed to evaluate after release steps", err)
+		}
+	}
+
+	if err := processTask("Postdeployment Steps", config.After); err != nil {
+		exitWithError("failed to evaluate postdeployment steps", err)
 	}
 }

@@ -84,10 +84,18 @@ func upgradeViaHavenerConfig() {
 		exitWithError("failed to unmarshal havener configuration", err)
 	}
 
+	if err := processTask("Pre-upgrade Steps", config.Before); err != nil {
+		exitWithError("failed to evaluate pre-upgrade steps", err)
+	}
+
 	for _, release := range config.Releases {
 		overrides, err := havener.TraverseStructureAndProcessShellOperators(release.Overrides)
 		if err != nil {
 			exitWithError("failed to process overrides section", err)
+		}
+
+		if err := processTask("Before Chart "+release.ChartName, release.Before); err != nil {
+			exitWithError("failed to evaluate before release steps", err)
 		}
 
 		overridesData, err := yaml.Marshal(overrides)
@@ -111,5 +119,13 @@ func upgradeViaHavenerConfig() {
 		}
 
 		pi.Done("Successfully upgraded helm chart *%s* in namespace *_%s_*.", release.ChartName, release.ChartNamespace)
+
+		if err := processTask("After Chart "+release.ChartName, release.After); err != nil {
+			exitWithError("failed to evaluate after release steps", err)
+		}
+	}
+
+	if err := processTask("Post-upgrade Steps", config.After); err != nil {
+		exitWithError("failed to evaluate post-upgrade steps", err)
 	}
 }
