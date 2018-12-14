@@ -87,6 +87,9 @@ func TraverseStructureAndProcessShellOperators(input interface{}) (interface{}, 
 		if err != nil {
 			return nil, err
 		}
+
+	case nil:
+		input, err = map[interface{}]interface{}{}, nil
 	}
 
 	return input, err
