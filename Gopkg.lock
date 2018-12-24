@@ -806,7 +806,7 @@
   revision = "f51c12702a4d776e4c1fa9b0fabab841babae631"
 
 [[projects]]
-  digest = "1:655acbef8faad33db29b6a35655341fb4a594e87e56635f05a3e70ed0bd7bd95"
+  digest = "1:34c10243da5972105edd1b4b883e2bd918fbb3f73fbe14d6af6929e547173494"
   name = "google.golang.org/appengine"
   packages = [
     "internal",
@@ -818,8 +818,8 @@
     "urlfetch",
   ]
   pruneopts = "NUT"
-  revision = "4a4468ece617fc8205e99368fa2200e9d1fad421"
-  version = "v1.3.0"
+  revision = "e9657d882bb81064595ca3b56cbe2546bbabf7b1"
+  version = "v1.4.0"
 
 [[projects]]
   digest = "1:93180612a69db36a06d801302b867d53a50a8a5f0943b34db66adc0574ea57df"
@@ -1067,7 +1067,7 @@
     "third_party/forked/golang/reflect",
   ]
   pruneopts = "NUT"
-  revision = "110b8e1801665ddf67cf9c5187b1975de2c62f7f"
+  revision = "688d824527473e1e3f6c3f0b01171308393bdfe3"
 
 [[projects]]
   branch = "release-1.10"
@@ -1084,7 +1084,7 @@
     "pkg/util/flag",
   ]
   pruneopts = "NUT"
-  revision = "b0bd5c8b39384f2f85a7b9eb6ae14222c276b555"
+  revision = "56f0d9f8f1c3d4e170132aeb935134b9da006c79"
 
 [[projects]]
   branch = "release-7.0"
@@ -1259,7 +1259,7 @@
     "util/workqueue",
   ]
   pruneopts = "NUT"
-  revision = "745ca830039794f7b927b8a2c2a58dcc1e8a0a72"
+  revision = "16a8a034ed284c656d27f043a57624e4873b7ad3"
 
 [[projects]]
   branch = "release-2.10"
@@ -1295,7 +1295,7 @@
   revision = "39cb288412c48cb533ba4be5d6c28620b9a0c1b4"
 
 [[projects]]
-  digest = "1:c73bedc5f3feb2435fb026cf3ad18b69bb31d61dc443ecb1bea319ccf286de56"
+  digest = "1:d532afc6587e5cab989817836523c340ec8b7312c3b8c4124320bae21f8035f1"
   name = "k8s.io/kubernetes"
   packages = [
     "pkg/api/events",
@@ -1462,8 +1462,8 @@
     "pkg/volume/util/types",
   ]
   pruneopts = "NUT"
-  revision = "637c7e288581ee40ab4ca210618a89a555b6e7e9"
-  version = "v1.10.11"
+  revision = "c757b93cf034d49af3a3b8ecee3b9639a7a11df7"
+  version = "v1.10.12"
 
 [[projects]]
   digest = "1:5271b4ee2724d8c2ad7df650a5f9db46d01ce558769469713feba0e3e6079292"
@@ -1504,6 +1504,8 @@
     "k8s.io/apimachinery/pkg/api/resource",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/runtime",
+    "k8s.io/apimachinery/pkg/runtime/schema",
+    "k8s.io/apimachinery/pkg/util/intstr",
     "k8s.io/apimachinery/pkg/watch",
     "k8s.io/client-go/kubernetes",
     "k8s.io/client-go/kubernetes/fake",
