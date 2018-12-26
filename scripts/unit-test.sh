@@ -22,5 +22,7 @@
 
 set -euo pipefail
 
-echo -e "\\nUnit Testing packages..."
+export GO111MODULE=on
+
+echo -e '\nUnit Testing packages...'
 ginkgo -r --randomizeAllSpecs --randomizeSuites --failOnPending --nodes=4 --compilers=2 --race --trace

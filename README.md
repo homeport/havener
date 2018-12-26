@@ -127,7 +127,7 @@ The `version` command pretty much does what it says on the tin: it gives out the
 
 We are happy to have other people contributing to the project. If you decide to do that, here's how to:
 
-- get Go (`havener` requires Go version 1.8 or greater)
+- get Go (`havener` requires Go version 1.11 or greater)
 - fork the project
 - create a new branch
 - make your changes
@@ -142,29 +142,6 @@ Git commit messages should be meaningful and follow the rules nicely written dow
 > 1. Use the imperative mood in the subject line
 > 1. Wrap the body at 72 characters
 > 1. Use the body to explain what and why vs. how
-
-### Vendoring
-
-It seems that vendoring via `dep` is currently a mess when you need to pull in `client-go`. We use [kubegodep2dep](https://github.com/ash2k/kubegodep2dep) to help with this. It is a very nice tool that takes the `Godep` JSON file from the Kubernetes repository on GitHub and figures out the main constraints and overrides for the `dep` TOML file.
-
-```sh
-go get -u github.com/ash2k/kubegodep2dep
-
-( cat Gopkg.boilerplate.toml && kubegodep2dep -kube-branch release-1.10 -client-go-branch release-7.0 ) >Gopkg.toml
-dep ensure -v -update && make clean test build
-```
-
-The `dep` command will run for quite some time before it finishes. Grab a cup of coffee, five or ten minutes runtime are not unheard of. The make targets `test` and `build` are both required to make absolutely sure we have all the dependencies we need.
-
-For no reasons other than an undiagnosed OCD, we do not fancy the files in the `vendor` directory attributed to a user and therefore use a fake user to perform the Git commit for us. In case you introduce new dependencies, use the following command to add them:
-
-```sh
-cat <<'EOF' | ( git add Gopkg.* vendor && git commit --file - --author "Mr. Vendor <mrvendor@foobar.com>" )
-Update vendor directory
-
-Update dependency files in `vendor` directory.
-EOF
-```
 
 ### Running test cases and binaries generation
 
@@ -185,7 +162,7 @@ docker run \
   --rm \
   --volume $GOPATH/src/github.com/homeport/havener:/go/src/github.com/homeport/havener \
   --workdir /go/src/github.com/homeport/havener \
-  golang /bin/bash
+  golang:1.11.2 /bin/bash
 ```
 
 ## License

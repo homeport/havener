@@ -1,19 +1,17 @@
 ---
 language: go
 go:
-- 1.8.x
-- 1.9.x
-- 1.10.x
-- 1.11.x
+- 1.11.2
 
 install:
-- curl -sL https://goo.gl/g1CpPX | bash -s v1.0.4 # Golang dev tools including pre-compiled Ginkgo and other useful tools
+- curl -sL https://goo.gl/g1CpPX | bash -s v1.0.5 # Golang dev tools including pre-compiled Ginkgo and other useful tools
 
 script:
+- GO111MODULE=on go mod download
+- GO111MODULE=on go mod verify
 - make test
 
 before_deploy:
-- curl -sL https://raw.githubusercontent.com/HeavyWombat/ytbx/master/scripts/download-latest.sh | bash -s v0.7-alpha
 - make build
 
 deploy:

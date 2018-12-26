@@ -22,8 +22,10 @@
 
 set -euo pipefail
 
-echo -e "\\nGolinting packages..."
-golint -set_exit_status $(go list ./... | grep -v vendor/)
+export GO111MODULE=on
 
-echo -e "\\nVetting packages..."
-go vet $(go list ./... | grep -v vendor/)
+echo -e '\nGolinting packages...'
+go list ./... | xargs golint -set_exit_status
+
+echo -e '\nVetting packages...'
+go list ./... | xargs go vet
