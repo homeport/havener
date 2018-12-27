@@ -2,7 +2,8 @@ module github.com/homeport/havener
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20170629204627-19f72df4d05d // indirect
-	github.com/BurntSushi/toml v0.3.1 // indirect
+	github.com/HeavyWombat/dyff v0.6.0
+	github.com/HeavyWombat/ytbx v0.9.0
 	github.com/MakeNowJust/heredoc v0.0.0-20170808103936-bb23615498cd // indirect
 	github.com/Masterminds/semver v1.4.2 // indirect
 	github.com/PuerkitoBio/purell v1.0.0 // indirect
@@ -47,7 +48,6 @@ require (
 	github.com/homeport/gonvenience v1.6.0
 	github.com/howeyc/gopass v0.0.0-20170109162249-bf9dde6d0d2c // indirect
 	github.com/imdario/mergo v0.0.0-20141206190957-6633656539c1 // indirect
-	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jonboulle/clockwork v0.1.0 // indirect
 	github.com/json-iterator/go v0.0.0-20180612202835-f2b4162afba3 // indirect
 	github.com/kr/fs v0.0.0-20131111012553-2788f0dbd169 // indirect
@@ -79,9 +79,8 @@ require (
 	github.com/soheilhy/cmux v0.1.4 // indirect
 	github.com/spf13/afero v0.0.0-20160816080757-b28a7effac97 // indirect
 	github.com/spf13/cast v0.0.0-20160730092037-e31f36ffc91a // indirect
-	github.com/spf13/cobra v0.0.0-20180228053838-6644d46b81fa
+	github.com/spf13/cobra v0.0.3
 	github.com/spf13/jwalterweatherman v0.0.0-20160311093646-33c24e77fb80 // indirect
-	github.com/spf13/pflag v1.0.1 // indirect
 	github.com/spf13/viper v0.0.0-20160820190039-7fb2782df3d8
 	github.com/stretchr/objx v0.1.1 // indirect
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20171017195756-830351dc03c6 // indirect
@@ -91,7 +90,7 @@ require (
 	go.uber.org/atomic v1.3.2 // indirect
 	go.uber.org/multierr v1.1.0 // indirect
 	go.uber.org/zap v1.9.1 // indirect
-	golang.org/x/crypto v0.0.0-20181127143415-eb0de9b17e85
+	golang.org/x/crypto v0.0.0-20181203042331-505ab145d0a9
 	golang.org/x/oauth2 v0.0.0-20170412232759-a6bd8cefa181 // indirect
 	golang.org/x/sync v0.0.0-20181221193216-37e7f081c4d4 // indirect
 	golang.org/x/time v0.0.0-20161028155119-f51c12702a4d // indirect

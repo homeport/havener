@@ -28,9 +28,10 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/homeport/gonvenience/pkg/v1/wait"
 	"gopkg.in/yaml.v2"
 
+	"github.com/homeport/gonvenience/pkg/v1/wait"
+	"github.com/homeport/havener/internal/hvnr"
 	"github.com/homeport/havener/pkg/havener"
 )
 
@@ -101,6 +102,10 @@ func upgradeViaHavenerConfig() {
 		overridesData, err := yaml.Marshal(overrides)
 		if err != nil {
 			exitWithError("failed to marshal overrides structure into bytes", err)
+		}
+
+		if err := hvnr.ShowHelmReleaseDiff(release.ChartName, release.ChartLocation, overridesData, reuseValues); err != nil {
+			exitWithError("failed to show differences before upgrade", err)
 		}
 
 		pi := wait.NewProgressIndicator(fmt.Sprintf("Upgrading Helm Release for %s", release.ChartName))

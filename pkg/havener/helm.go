@@ -77,11 +77,16 @@ func ListHelmReleases() (*rls.ListReleasesResponse, error) {
 // and hand off to the appropriate chart reader.
 // TODO: other options for loading the chart, e.g. downloading
 func GetHelmChart(path string) (requestedChart *chart.Chart, err error) {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
+	helmChartPath, err := PathToHelmChart(path)
+	if err != nil {
 		return nil, err
 	}
 
-	return chartutil.Load(path)
+	if _, err := os.Stat(helmChartPath); os.IsNotExist(err) {
+		return nil, err
+	}
+
+	return chartutil.Load(helmChartPath)
 }
 
 //UpdateHelmRelease will upgrade an existing release with provided override values
