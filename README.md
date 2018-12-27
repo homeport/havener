@@ -41,28 +41,35 @@ There are different ways to get `havener`. You are free to pick the one that mak
 
 Like `kubectl` and `helm`, `havener` relies on the Kubernetes configuration that can be set via the `KUBECONFIG` environment variable. It can also be provided with the `--kubeconfig` flag, which takes the path to the YAML file (for example `$HOME/.kube/config`).
 
-```sh
-A proof of concept tool to verify if a Kubernetes releases
-helper tool can be done in Golang
+```text
+A convenience tool to handle tasks around Containerized CF workloads on a Kubernetes cluster, for example:
+- Deploy a new series of Helm Charts
+- Remove all Helm Releases
+- Retrieve log and configuration files from all pods
+
+See the individual commands to get the complete overview.
 
 Usage:
   havener [command]
 
 Available Commands:
   certs       Check certificates
-  deploy      Deploy Helm Charts to Kubernetes
+  deploy      Deploy to Kubernetes
+  events      Shows Cluster events
   help        Help about any command
   logs        Retrieve log files from pods
   node-exec   Execute command on Kubernetes node
   purge       Deletes Helm Releases
   top         Shows CPU and Memory usage
-  upgrade     Upgrade Kubernetes with new Helm Charts
+  upgrade     Upgrade Helm Release in Kubernetes
   version     Shows the version
 
 Flags:
-  -h, --help                help for havener
-      --kubeconfig string   kubeconfig file (default is $HOME/.kube/config)
-  -v, --verbose             verbose output
+      --kubeconfig string     Kubernetes configuration file (default "/Users/mdiester/.kube/config")
+      --terminal-width int    disable autodetection and specify an explicit terminal width (default -1)
+      --terminal-height int   disable autodetection and specify an explicit terminal height (default -1)
+  -v, --verbose               verbose output
+  -h, --help                  help for havener
 
 Use "havener [command] --help" for more information about a command.
 ```

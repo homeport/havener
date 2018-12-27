@@ -29,7 +29,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/homeport/gonvenience/pkg/v1/term"
-	"github.com/mitchellh/go-homedir"
+	homedir "github.com/mitchellh/go-homedir"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -76,7 +76,7 @@ func init() {
 	rootCmd.Flags().SortFlags = false
 	rootCmd.PersistentFlags().SortFlags = false
 
-	rootCmd.PersistentFlags().String("kubeconfig", filepath.Join(home, ".kube", "config"), "kubeconfig file (default is $HOME/.kube/config)")
+	rootCmd.PersistentFlags().String("kubeconfig", filepath.Join(home, ".kube", "config"), "Kubernetes configuration file")
 	rootCmd.PersistentFlags().Int("terminal-width", -1, "disable autodetection and specify an explicit terminal width")
 	rootCmd.PersistentFlags().Int("terminal-height", -1, "disable autodetection and specify an explicit terminal height")
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "verbose output")
