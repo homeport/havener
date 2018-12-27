@@ -31,10 +31,9 @@ import (
 	"runtime/debug"
 	"strings"
 
-	"github.com/lucasb-eyer/go-colorful"
-
 	"github.com/homeport/gonvenience/pkg/v1/bunt"
 	"github.com/homeport/havener/pkg/havener"
+	colorful "github.com/lucasb-eyer/go-colorful"
 )
 
 // NoUserPrompt defines whether a user confirmation is required or should be omitted
@@ -205,6 +204,18 @@ func printStyledMessage(head string, body string, headColor colorful.Color, body
 		bunt.Printf("%s %s\n",
 			bunt.Colorize("│", headColor),
 			bunt.Colorize(line, bodyColor),
+		)
+	}
+
+	bunt.Println()
+}
+
+func printStatusMessage(head string, body string, headColor colorful.Color) {
+	bunt.Printf("*%s*\n", bunt.Colorize(head, headColor))
+	for _, line := range strings.Split(body, "\n") {
+		fmt.Printf("%s %s\n",
+			bunt.Colorize("│", headColor),
+			line,
 		)
 	}
 

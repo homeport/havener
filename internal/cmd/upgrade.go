@@ -27,9 +27,9 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	yaml "gopkg.in/yaml.v2"
 
-	"gopkg.in/yaml.v2"
-
+	"github.com/homeport/gonvenience/pkg/v1/bunt"
 	"github.com/homeport/gonvenience/pkg/v1/wait"
 	"github.com/homeport/havener/internal/hvnr"
 	"github.com/homeport/havener/pkg/havener"
@@ -112,18 +112,28 @@ func upgradeViaHavenerConfig() {
 		pi.SetTimeout(time.Duration(timeoutInMin) * time.Minute)
 		pi.Start()
 
-		_, err = havener.UpdateHelmRelease(
+		result, err := havener.UpdateHelmRelease(
 			release.ChartName,
 			release.ChartLocation,
 			overridesData,
 			reuseValues)
 
+		pi.Stop()
+
 		if err != nil {
-			pi.Stop()
 			exitWithError("failed to upgrade via havener configuration", err)
 		}
 
-		pi.Done("Successfully upgraded helm chart *%s* in namespace *_%s_*.", release.ChartName, release.ChartNamespace)
+		message := bunt.Sprintf("Successfully upgraded helm chart *%s* in namespace *_%s_*.",
+			release.ChartName,
+			release.ChartNamespace,
+		)
+
+		if notes := result.GetRelease().GetInfo().GetStatus().GetNotes(); len(notes) > 0 {
+			message = message + "\n\n" + notes
+		}
+
+		printStatusMessage("Upgrade", message, bunt.Gray)
 
 		if err := processTask("After Chart "+release.ChartName, release.After); err != nil {
 			exitWithError("failed to evaluate after release steps", err)
