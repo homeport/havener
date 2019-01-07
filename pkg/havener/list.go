@@ -21,6 +21,7 @@
 package havener
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -80,6 +81,28 @@ func ListSecretsInNamespace(client kubernetes.Interface, namespace string) ([]st
 	result := make([]string, len(secretList.Items))
 	for i, secret := range secretList.Items {
 		result[i] = secret.Name
+	}
+
+	return result, nil
+}
+
+// ListPods lists all pods in all namespaces
+func ListPods(client kubernetes.Interface) ([]*corev1.Pod, error) {
+	namespaces, err := ListNamespaces(client)
+	if err != nil {
+		return nil, err
+	}
+
+	result := []*corev1.Pod{}
+	for _, namespace := range namespaces {
+		listResp, err := client.CoreV1().Pods(namespace).List(metav1.ListOptions{})
+		if err != nil {
+			return nil, err
+		}
+
+		for i := range listResp.Items {
+			result = append(result, &listResp.Items[i])
+		}
 	}
 
 	return result, nil
