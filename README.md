@@ -59,6 +59,7 @@ Available Commands:
   help        Help about any command
   logs        Retrieve log files from pods
   node-exec   Execute command on Kubernetes node
+  pod-exec    Execute command on Kubernetes pod
   purge       Deletes Helm Releases
   top         Shows CPU and Memory usage
   upgrade     Upgrade Helm Release in Kubernetes
