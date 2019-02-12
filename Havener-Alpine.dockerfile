@@ -21,7 +21,7 @@
 FROM golang:1.11.2-alpine AS build
 COPY . /go/src/github.com/homeport/havener
 RUN apk add --update make git bash file curl jq && \
-  curl -sL https://raw.githubusercontent.com/HeavyWombat/ytbx/master/scripts/download-latest.sh | bash && \
+  curl -sL https://raw.githubusercontent.com/homeport/ytbx/master/scripts/download-latest.sh | bash && \
   cd /go/src/github.com/homeport/havener && \
   make build && \
   cp -p binaries/havener-kube-*-linux-amd64 /usr/local/bin/havener

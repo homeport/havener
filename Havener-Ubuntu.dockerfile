@@ -22,7 +22,7 @@ FROM golang:1.11.2 AS build
 COPY . /go/src/github.com/homeport/havener
 RUN apt-get update >/dev/null && \
   apt-get install -y file jq >/dev/null && \
-  curl -sL https://raw.githubusercontent.com/HeavyWombat/ytbx/master/scripts/download-latest.sh | bash && \
+  curl -sL https://raw.githubusercontent.com/homeport/ytbx/master/scripts/download-latest.sh | bash && \
   cd /go/src/github.com/homeport/havener && \
   make build && \
   cp -p binaries/havener-kube-*-linux-amd64 /usr/local/bin/havener
