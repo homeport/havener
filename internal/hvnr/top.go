@@ -1,4 +1,4 @@
-// Copyright © 2018 The Havener
+// Copyright © 2019 The Havener
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,9 +18,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package havener
+package hvnr
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -30,14 +31,19 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/homeport/gonvenience/pkg/v1/bunt"
-	"github.com/homeport/gonvenience/pkg/v1/term"
-	colorful "github.com/lucasb-eyer/go-colorful"
-
+	"k8s.io/apimachinery/pkg/api/resource"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/homeport/gonvenience/pkg/v1/bunt"
+	"github.com/homeport/gonvenience/pkg/v1/neat"
+	"github.com/homeport/gonvenience/pkg/v1/term"
+)
+
+const (
+	nodeCaption      = "Node"
+	processorCaption = "CPU"
+	memoryCaption    = "Memory"
 )
 
 var (
@@ -91,22 +97,14 @@ type usageData struct {
 	Memory usageEntry
 }
 
-// ShowTopStats prints cluster usage statistics
-func ShowTopStats(client kubernetes.Interface) error {
-	const nodeCaption = "Node "
-	const processorCaption = "CPU "
-	const memoryCaption = "Memory "
-
-	var delimiter = "  "
-	if term.GetTerminalWidth() <= 80 {
-		delimiter = " "
-	}
-
-	// --- --- ---
+// CompileNodeStats renders a string with node usage statistics
+func CompileNodeStats(client kubernetes.Interface) (string, error) {
+	var buf bytes.Buffer
+	out := bufio.NewWriter(&buf)
 
 	usageData, err := getNodeUsageData(client)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	maxLength := 0
@@ -116,45 +114,66 @@ func ShowTopStats(client kubernetes.Interface) error {
 		}
 	}
 
-	barLength := float64(term.GetTerminalWidth()-
-		len(nodeCaption)-
-		maxLength-
-		len(delimiter)-
-		len(processorCaption)-
-		len(delimiter)-
-		len(memoryCaption)) / 2.0
+	barLength := 0.5 * float64(term.GetTerminalWidth()-
+		len(nodeCaption)-1- // node caption (and space)
+		maxLength- // longest node name
+		3- // delimiter
+		len(processorCaption)-1- // processor caption (and space)
+		3- // delimiter
+		len(memoryCaption)-1) // memory caption (and space)
 
 	firstBarLength, secondBarLength := int(math.Ceil(barLength)), int(math.Floor(barLength))
 
-	fmt.Print(bunt.Style("Usage by Node\n", bunt.Bold, bunt.Italic))
+	data := [][]string{}
 	for _, nodeName := range sortedKeyList(usageData) {
 		usage := usageData[nodeName]
 
-		fmt.Print(nodeCaption)
-		fmt.Print(padRight(bunt.Colorize(nodeName, bunt.DimGray), maxLength))
-		fmt.Print(delimiter)
+		data = append(data, []string{
+			bunt.Sprintf("%s DimGray{%s}",
+				nodeCaption,
+				nodeName,
+			),
 
-		fmt.Print(processorCaption)
-		fmt.Print(progressBar(firstBarLength, usage.CPU, func(used, max int64) string {
-			return fmt.Sprintf(" %5.1f%%", float64(used)/float64(max)*100.0)
+			bunt.Sprintf("%s %s",
+				processorCaption,
+				progressBar(firstBarLength, usage.CPU, func(used, max int64) string {
+					return fmt.Sprintf(" %5.1f%%", float64(used)/float64(max)*100.0)
+				}),
+			),
 
-		}))
-		fmt.Print(delimiter)
-
-		fmt.Print(memoryCaption)
-		fmt.Print(progressBar(secondBarLength, usage.Memory, func(used, max int64) string {
-			return fmt.Sprintf(" %s/%s",
-				HumanReadableSize(used/1000),
-				HumanReadableSize(max/1000))
-		}))
-		fmt.Print("\n")
+			bunt.Sprintf("%s %s",
+				memoryCaption,
+				progressBar(secondBarLength, usage.Memory, func(used, max int64) string {
+					return fmt.Sprintf(" %s/%s",
+						humanReadableSize(used/1000),
+						humanReadableSize(max/1000))
+				}),
+			),
+		})
 	}
 
-	// --- --- ---
+	table, err := neat.Table(data, neat.CustomSeparator("  "))
+	if err != nil {
+		return "", err
+	}
 
+	bunt.Fprintf(out, "_*Usage by Node*_\n%s\n", table)
+
+	out.Flush()
+	return buf.String(), nil
+}
+
+// CompilePodStats renders a string with pod usage statistics
+func CompilePodStats(client kubernetes.Interface) (string, error) {
 	podUsage, err := getPodUsageData(client)
 	if err != nil {
-		return err
+		return "", err
+	}
+
+	type consumer struct {
+		name string
+		cpu  int64
+		mem  int64
 	}
 
 	splitKey := func(key string) (string, string, string) {
@@ -162,62 +181,123 @@ func ShowTopStats(client kubernetes.Interface) error {
 		return split[0], split[1], split[2]
 	}
 
-	usedCPUOfNamespace := map[string]int64{}
-	usedMemOfNamespace := map[string]int64{}
-	for key, value := range podUsage {
-		namespace, _, _ := splitKey(key)
-		if _, ok := usedCPUOfNamespace[namespace]; !ok {
-			usedCPUOfNamespace[namespace] = 0
-			usedMemOfNamespace[namespace] = 0
+	usageByNamespace := func() []consumer {
+		totalcpu, totalmem := map[string]int64{}, map[string]int64{}
+		for key, value := range podUsage {
+			namespace, _, _ := splitKey(key)
+			if _, ok := totalcpu[namespace]; !ok {
+				totalcpu[namespace] = 0
+				totalmem[namespace] = 0
+			}
+
+			totalcpu[namespace] += value.CPU.Used
+			totalmem[namespace] += value.Memory.Used
 		}
 
-		usedCPUOfNamespace[namespace] += value.CPU.Used
-		usedMemOfNamespace[namespace] += value.Memory.Used
-	}
-
-	names := []string{}
-	for key := range usedCPUOfNamespace {
-		names = append(names, key)
-	}
-	sort.Strings(names)
-
-	fmt.Print("\n")
-	fmt.Print(bunt.Style("Usage by Namespace\n", bunt.Bold, bunt.Italic))
-	fmt.Print(usageChart(names, usedCPUOfNamespace, usedMemOfNamespace))
-
-	availableLines := term.GetTerminalHeight() -
-		2 - len(usageData) - // usage by node section
-		4 - len(names) - // usage by namespace section
-		2 - // usage by pod section
-		1 // reserve
-
-	if availableLines > 0 {
-		data := [][]string{}
-		for _, key := range getTopX(availableLines, podUsage) {
-			namespace, name, container := splitKey(key)
-			data = append(data, []string{
-				namespace,
-				name,
-				container,
-				fmt.Sprintf("%.2f cores", float64(podUsage[key].CPU.Used)/1000.0),
-				HumanReadableSize(podUsage[key].Memory.Used / 1000),
+		result := []consumer{}
+		for namespace, cpu := range totalcpu {
+			result = append(result, consumer{
+				name: namespace,
+				cpu:  cpu,
+				mem:  totalmem[namespace],
 			})
 		}
 
-		fmt.Print("\n")
-		fmt.Print(bunt.Style("Usage by Pod\n", bunt.Bold, bunt.Italic))
-		for _, entry := range data {
-			line := fmt.Sprintf("%s, %s %s/%s/%s", entry[3], entry[4], entry[0], entry[1], entry[2])
+		sort.Slice(result, func(i, j int) bool {
+			return result[i].mem > result[j].mem
+		})
 
-			if len(line) > term.GetTerminalWidth() {
-				line = line[:term.GetTerminalWidth()-5] + "[...]"
-			}
+		return result
+	}()
 
-			fmt.Println(line)
+	usageByPod := func() []consumer {
+		result := []consumer{}
+		for key, value := range podUsage {
+			result = append(result, consumer{
+				name: key,
+				cpu:  value.CPU.Used,
+				mem:  value.Memory.Used,
+			})
 		}
+
+		sort.Slice(result, func(i, j int) bool {
+			return result[i].mem > result[j].mem
+		})
+
+		return result
+	}()
+
+	usageToData := func(list []consumer) [][]string {
+		result := [][]string{}
+		for _, consumer := range list {
+			result = append(result, []string{
+				consumer.name,
+				fmt.Sprintf("%.1f cores", float64(consumer.cpu)/1000.0),
+				humanReadableSize(consumer.mem / 1000),
+			})
+		}
+
+		return result
 	}
 
-	return nil
+	var buf bytes.Buffer
+	out := bufio.NewWriter(&buf)
+
+	namespaceUsageStats, err := neat.Table(usageToData(usageByNamespace),
+		neat.CustomSeparator(bunt.Sprintf("DimGray{ │ }")),
+		neat.AlignRight(1, 2),
+	)
+	if err != nil {
+		return "", err
+	}
+
+	podUsageStats, err := neat.Table(usageToData(usageByPod),
+		neat.CustomSeparator(bunt.Sprintf("DimGray{ │ }")),
+		neat.AlignRight(1, 2),
+	)
+	if err != nil {
+		return "", err
+	}
+
+	namespaceOutput := bunt.Sprintf("_*Usage by Namespace*_\n%s\n", namespaceUsageStats)
+	podOutput := bunt.Sprintf("_*Usage by Pod*_\n%s\n", podUsageStats)
+
+	if term.GetTerminalWidth() > getTextWidth(namespaceOutput)+getTextWidth(podOutput) {
+		leftLines, rightLines := strings.Split(podOutput, "\n"), strings.Split(namespaceOutput, "\n")
+		maxLines := int(math.Max(float64(len(leftLines)), float64(len(rightLines))))
+
+		data := [][]string{}
+		for i := 0; i < maxLines; i++ {
+			var (
+				left  string
+				right string
+			)
+
+			if i < len(leftLines) {
+				left = leftLines[i]
+			}
+
+			if i < len(rightLines) {
+				right = rightLines[i]
+			}
+
+			data = append(data, []string{left, right})
+		}
+
+		output, err := neat.Table(data, neat.CustomSeparator("    "))
+		if err != nil {
+			return "", err
+		}
+
+		out.WriteString(output)
+
+	} else {
+		out.WriteString(namespaceOutput)
+		out.WriteString(podOutput)
+	}
+
+	out.Flush()
+	return buf.String(), nil
 }
 
 func getNodeUsageData(client kubernetes.Interface) (map[string]usageData, error) {
@@ -368,16 +448,6 @@ func centerText(text string, length int) string {
 	return strings.Repeat(" ", left) + text + strings.Repeat(" ", right)
 }
 
-func padRight(text string, length int) string {
-	strLen := plainTextLength(text)
-
-	if strLen > length {
-		return text
-	}
-
-	return text + strings.Repeat(" ", length-strLen)
-}
-
 func sortedKeyList(data map[string]usageData) []string {
 	result := make([]string, len(data), len(data))
 
@@ -439,85 +509,26 @@ func progressBar(length int, usageEntry usageEntry, textDetails func(used, max i
 	return buf.String()
 }
 
-func usageChart(names []string, cpu map[string]int64, memory map[string]int64) string {
-	var cpuSum int64
-	for _, used := range cpu {
-		cpuSum += used
-	}
-
-	var memSum int64
-	for _, used := range memory {
-		memSum += used
-	}
-
-	colors := []colorful.Color{
-		bunt.OrangeRed,
-		bunt.Aqua,
-		bunt.Moccasin,
-		bunt.DeepPink,
-		bunt.DarkSlateGray,
-		bunt.PaleGreen,
-		bunt.SeaGreen,
-		bunt.Olive,
-		bunt.PaleGreen,
-		bunt.Purple,
-	}
-
-	const symbol = "■"
-	var buf bytes.Buffer
-
-	chart := func(caption string, input map[string]int64, totalSum int64) {
-		possibleRunes := term.GetTerminalWidth() - len(caption) - 3
-
-		var chartBuf bytes.Buffer
-		for idx, namespace := range names {
-			if idx > len(colors) {
-				panic("ran out of colors")
-			}
-
-			count := int(math.Floor(float64(input[namespace]) / float64(totalSum) * float64(possibleRunes)))
-			chartBuf.WriteString(bunt.Colorize(strings.Repeat(symbol, count), colors[idx]))
+func getTextWidth(text string) int {
+	var max int
+	for _, line := range strings.Split(text, "\n") {
+		if len := plainTextLength(line); len > max {
+			max = len
 		}
-
-		buf.WriteString(caption)
-		buf.WriteString(" [")
-		buf.WriteString(centerText(chartBuf.String(), possibleRunes))
-		buf.WriteString("]\n")
 	}
 
-	chart("CPU", cpu, cpuSum)
-	chart("Memory", memory, memSum)
-
-	for idx, namespace := range names {
-		buf.WriteString(fmt.Sprintf("  %s %-16s  CPU %s, Memory %s\n",
-			bunt.Colorize(symbol, colors[idx]),
-			namespace,
-			fmt.Sprintf("%.1f cores (%.1f%%)", float64(cpu[namespace])/1000.0, float64(cpu[namespace])/float64(cpuSum)*100.0),
-			fmt.Sprintf("%s (%.1f%%)", HumanReadableSize(memory[namespace]/1000), float64(memory[namespace])/float64(memSum)*100.0),
-		))
-	}
-
-	return buf.String()
+	return max
 }
 
-func getTopX(num int, data map[string]usageData) []string {
-	list := make([]string, len(data), len(data))
+func humanReadableSize(bytes int64) string {
+	var mods = []string{"Byte", "KiB", "MiB", "GiB", "TiB"}
 
+	value := float64(bytes)
 	i := 0
-	for key := range data {
-		list[i] = key
+	for value > 1023.99999 {
+		value /= 1024.0
 		i++
 	}
 
-	sort.Slice(list, func(i, j int) bool {
-		return data[list[i]].CPU.Used > data[list[j]].CPU.Used
-	})
-
-	switch {
-	case len(list) < num:
-		return list
-
-	default:
-		return list[:num]
-	}
+	return fmt.Sprintf("%.1f %s", value, mods[i])
 }
