@@ -21,9 +21,14 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
+	"fmt"
+	"strings"
+	"time"
 
+	"github.com/homeport/gonvenience/pkg/v1/term"
+	"github.com/homeport/havener/internal/hvnr"
 	"github.com/homeport/havener/pkg/havener"
+	"github.com/spf13/cobra"
 )
 
 // topCmd represents the top command
@@ -32,15 +37,36 @@ var topCmd = &cobra.Command{
 	Short: "Shows CPU and Memory usage",
 	Long:  `Shows more detailed CPU and Memory usage details`,
 	Run: func(cmd *cobra.Command, args []string) {
-
-		havener.VerboseMessage("Accessing Kubernetes cluster...")
+		// TODO Check if terminal is a dumb terminal or Garden container to decide whether to enter a for-ever loop.
 
 		clientSet, _, err := havener.OutOfClusterAuthentication("")
 		if err != nil {
 			exitWithError("unable to get access to cluster", err)
 		}
 
-		havener.ShowTopStats(clientSet)
+		term.HideCursor()
+
+		interval := 2
+		for range time.Tick(time.Duration(interval) * time.Second) {
+			// TODO Get stats for nodes and pods at the same time
+			nodeStats, err := hvnr.CompileNodeStats(clientSet)
+			if err != nil {
+				exitWithError("failed to compile node usage stats", err)
+			}
+
+			podStats, err := hvnr.CompilePodStats(clientSet)
+			if err != nil {
+				exitWithError("failed to compile pod usage stats", err)
+			}
+
+			podLineLimit := term.GetTerminalHeight() - len(strings.Split(nodeStats, "\n")) - 1
+			podStats = strings.Join(strings.Split(podStats, "\n")[:podLineLimit], "\n")
+
+			fmt.Print("\x1b[H")
+			fmt.Print("\x1b[2J")
+			fmt.Print(nodeStats)
+			fmt.Print(podStats)
+		}
 	},
 }
 

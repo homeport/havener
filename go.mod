@@ -2,8 +2,7 @@ module github.com/homeport/havener
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20170629204627-19f72df4d05d // indirect
-	github.com/HeavyWombat/dyff v0.6.0
-	github.com/HeavyWombat/ytbx v0.9.0
+	github.com/HeavyWombat/dyff v0.7.0
 	github.com/MakeNowJust/heredoc v0.0.0-20170808103936-bb23615498cd // indirect
 	github.com/Masterminds/semver v1.4.2 // indirect
 	github.com/PuerkitoBio/purell v1.0.0 // indirect
@@ -45,13 +44,14 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.6.3 // indirect
 	github.com/hashicorp/golang-lru v0.0.0-20160207214719-a0d98a5f2880 // indirect
 	github.com/hashicorp/hcl v0.0.0-20160711231752-d8c773c4cba1 // indirect
-	github.com/homeport/gonvenience v1.6.0
+	github.com/homeport/gonvenience v1.7.0
+	github.com/homeport/ytbx v1.0.1
 	github.com/howeyc/gopass v0.0.0-20170109162249-bf9dde6d0d2c // indirect
 	github.com/imdario/mergo v0.0.0-20141206190957-6633656539c1 // indirect
 	github.com/jonboulle/clockwork v0.1.0 // indirect
 	github.com/json-iterator/go v0.0.0-20180612202835-f2b4162afba3 // indirect
 	github.com/kr/fs v0.0.0-20131111012553-2788f0dbd169 // indirect
-	github.com/lucasb-eyer/go-colorful v0.0.0-20180526135729-345fbb3dbcdb
+	github.com/lucasb-eyer/go-colorful v0.0.0-20181028223441-12d3b2882a08
 	github.com/magiconair/properties v0.0.0-20160816085511-61b492c03cf4 // indirect
 	github.com/mailru/easyjson v0.0.0-20170624190925-2f5df55504eb // indirect
 	github.com/matttproud/golang_protobuf_extensions v0.0.0-20150406173934-fc2b8d3a73c4 // indirect
@@ -67,7 +67,7 @@ require (
 	github.com/pborman/uuid v0.0.0-20150603214016-ca53cad383ca // indirect
 	github.com/pelletier/go-toml v1.0.1 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
-	github.com/pkg/errors v0.8.0
+	github.com/pkg/errors v0.8.1
 	github.com/pkg/sftp v0.0.0-20160930220758-4d0e916071f6 // indirect
 	github.com/prometheus/client_golang v0.0.0-20170531130054-e7e903064f5e // indirect
 	github.com/prometheus/client_model v0.0.0-20150212101744-fa8ad6fec335 // indirect
@@ -90,7 +90,7 @@ require (
 	go.uber.org/atomic v1.3.2 // indirect
 	go.uber.org/multierr v1.1.0 // indirect
 	go.uber.org/zap v1.9.1 // indirect
-	golang.org/x/crypto v0.0.0-20181203042331-505ab145d0a9
+	golang.org/x/crypto v0.0.0-20190211182817-74369b46fc67
 	golang.org/x/oauth2 v0.0.0-20170412232759-a6bd8cefa181 // indirect
 	golang.org/x/sync v0.0.0-20181221193216-37e7f081c4d4 // indirect
 	golang.org/x/time v0.0.0-20161028155119-f51c12702a4d // indirect
@@ -112,7 +112,7 @@ require (
 	k8s.io/client-go v0.0.0-20181213030409-16a8a034ed28
 	k8s.io/helm v2.10.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20180509051136-39cb288412c4 // indirect
-	k8s.io/kubernetes v1.10.12 // indirect
+	k8s.io/kubernetes v1.10.12
 	k8s.io/utils v0.0.0-20171122000934-aedf551cdb8b // indirect
 	vbom.ml/util v0.0.0-20160121211510-db5cfe13f5cc // indirect
 )
