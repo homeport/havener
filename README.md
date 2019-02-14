@@ -143,6 +143,7 @@ We are happy to have other people contributing to the project. If you decide to 
 
 Git commit messages should be meaningful and follow the rules nicely written down by [Chris Beams](https://chris.beams.io/posts/git-commit/):
 > The seven rules of a great Git commit message
+>
 > 1. Separate subject from body with a blank line
 > 1. Limit the subject line to 50 characters
 > 1. Capitalize the subject line
@@ -170,7 +171,7 @@ docker run \
   --rm \
   --volume $GOPATH/src/github.com/homeport/havener:/go/src/github.com/homeport/havener \
   --workdir /go/src/github.com/homeport/havener \
-  golang:1.11.2 /bin/bash
+  golang:1.11 /bin/bash
 ```
 
 ## License
