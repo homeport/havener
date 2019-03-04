@@ -2,9 +2,10 @@
 language: go
 go:
 - 1.11.x
+- 1.12.x
 
 install:
-- curl -sL https://goo.gl/g1CpPX | bash -s v1.0.5 # Golang dev tools including pre-compiled Ginkgo and other useful tools
+- curl -sL https://goo.gl/g1CpPX | bash -s v1.0.6 # Golang dev tools including pre-compiled Ginkgo and other useful tools
 
 script:
 - GO111MODULE=on go mod download
