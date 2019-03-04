@@ -51,6 +51,8 @@ var (
 	heapsterService   = "heapster"
 	heapsterScheme    = "http"
 	heapsterPort      = ""
+
+	topX = 20
 )
 
 type nodeMetrics struct {
@@ -223,6 +225,10 @@ func CompilePodStats(client kubernetes.Interface) (string, error) {
 		sort.Slice(result, func(i, j int) bool {
 			return result[i].mem > result[j].mem
 		})
+
+		if len(result) > topX {
+			result = result[:topX]
+		}
 
 		return result
 	}()

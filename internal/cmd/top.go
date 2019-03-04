@@ -60,7 +60,9 @@ var topCmd = &cobra.Command{
 			}
 
 			podLineLimit := term.GetTerminalHeight() - len(strings.Split(nodeStats, "\n")) - 1
-			podStats = strings.Join(strings.Split(podStats, "\n")[:podLineLimit], "\n")
+			if lines := strings.Split(podStats, "\n"); len(lines) > podLineLimit {
+				podStats = strings.Join(lines[:podLineLimit], "\n")
+			}
 
 			fmt.Print("\x1b[H")
 			fmt.Print("\x1b[2J")
