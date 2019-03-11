@@ -31,13 +31,26 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	cycles   = -1
+	interval = 2
+)
+
 // topCmd represents the top command
 var topCmd = &cobra.Command{
 	Use:   "top",
 	Short: "Shows CPU and Memory usage",
 	Long:  `Shows more detailed CPU and Memory usage details`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// TODO Check if terminal is a dumb terminal or Garden container to decide whether to enter a for-ever loop.
+		// Fall back to default interval if unsupported interval was specified
+		if interval <= 0 {
+			interval = 2
+		}
+
+		// Restrict the output to one single measurement in case of a dumb terminal or used inside Concourse
+		if term.IsDumbTerminal() || term.IsGardenContainer() {
+			cycles = 1
+		}
 
 		clientSet, _, err := havener.OutOfClusterAuthentication("")
 		if err != nil {
@@ -45,8 +58,9 @@ var topCmd = &cobra.Command{
 		}
 
 		term.HideCursor()
+		defer term.ShowCursor()
 
-		interval := 2
+		iterations := 0
 		for range time.Tick(time.Duration(interval) * time.Second) {
 			// TODO Get stats for nodes and pods at the same time
 			nodeStats, err := hvnr.CompileNodeStats(clientSet)
@@ -68,10 +82,20 @@ var topCmd = &cobra.Command{
 			fmt.Print("\x1b[2J")
 			fmt.Print(nodeStats)
 			fmt.Print(podStats)
+
+			if iterations++; cycles > 0 && iterations > cycles {
+				break
+			}
 		}
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(topCmd)
+
+	topCmd.PersistentFlags().IntVarP(&cycles, "cycles", "c", -1, "number of cycles to run, negative numbers means infinite cycles")
+	topCmd.PersistentFlags().IntVarP(&interval, "interval", "i", 2, "interval between measurements in seconds")
+
+	topCmd.Flags().SortFlags = false
+	topCmd.PersistentFlags().SortFlags = false
 }

@@ -29,9 +29,9 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/HeavyWombat/dyff/pkg/v1/dyff"
-	"github.com/homeport/ytbx/pkg/v1/ytbx"
 	"github.com/homeport/gonvenience/pkg/v1/bunt"
 	"github.com/homeport/havener/pkg/havener"
+	"github.com/homeport/ytbx/pkg/v1/ytbx"
 	"gopkg.in/yaml.v2"
 	"k8s.io/helm/pkg/helm"
 )
@@ -77,7 +77,7 @@ func ShowHelmReleaseDiff(chartname string, chartPath string, valueOverrides []by
 		return err
 	}
 
-	// Perform a standard two-way comparision based on the filename-data maps
+	// Perform a standard two-way comparison based on the filename-data maps
 	for filename, fromData := range from {
 		if toData, ok := to[filename]; ok {
 			// Both from and to have an entry for the filename
