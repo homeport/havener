@@ -24,8 +24,5 @@ set -euo pipefail
 
 export GO111MODULE=on
 
-echo -e '\nGolinting packages...'
-go list ./... | xargs golint -set_exit_status
-
-echo -e '\nVetting packages...'
-go list ./... | xargs go vet
+echo -e 'Spellchecking files'
+find . -type f \( -name "*.go" -o -name "*.md" \) -print0 | xargs -0 misspell -error

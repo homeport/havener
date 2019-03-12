@@ -31,11 +31,19 @@ clean:
 todo-list:
 	@grep -InHR --exclude-dir=vendor --exclude-dir=.git '[T]ODO' $(shell pwd)
 
-sanity-check:
-	@scripts/sanity-check.sh
+lint:
+	@scripts/lint.sh
 
-test: sanity-check
+misspell:
+	@scripts/misspell.sh
+
+vet:
+	@scripts/vet.sh
+
+unit-test:
 	@scripts/unit-test.sh
+
+test: lint misspell vet unit-test
 
 build:
 	@scripts/build-binaries.sh
