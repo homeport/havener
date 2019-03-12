@@ -24,12 +24,5 @@ set -euo pipefail
 
 export GO111MODULE=on
 
-echo -e 'Testing packages'
-ginkgo -r \
-  --randomizeAllSpecs \
-  --randomizeSuites \
-  --failOnPending \
-  --nodes=4 \
-  --compilers=2 \
-  --race \
-  --trace
+echo -e 'Vetting packages'
+go list ./... | xargs go vet
