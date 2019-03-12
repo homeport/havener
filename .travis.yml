@@ -10,7 +10,7 @@ install:
 script:
 - GO111MODULE=on go mod download
 - GO111MODULE=on go mod verify
-- make test
+- make -j test
 
 before_deploy:
 - make build
