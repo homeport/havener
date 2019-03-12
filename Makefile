@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-.PHONY: all clean todo-list test build
+.PHONY: all clean todo-list lint misspell vet unit-test test build
 
 default: build
 
@@ -46,4 +46,4 @@ unit-test:
 test: lint misspell vet unit-test
 
 build:
-	@scripts/build-binaries.sh
+	@scripts/build.sh
