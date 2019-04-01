@@ -23,6 +23,8 @@ package havener
 import (
 	"fmt"
 
+	pkgerr "github.com/pkg/errors"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -44,46 +46,28 @@ var defaultHelmDeleteTimeout = int64(15 * 60)
 
 // PurgeHelmRelease removes the given helm release including all its resources.
 func PurgeHelmRelease(kubeClient kubernetes.Interface, helmClient *helm.Client, helmRelease string) error {
-	statusResp, err := helmClient.ReleaseStatus(helmRelease)
+	release, err := helmClient.ReleaseStatus(helmRelease)
 	if err != nil {
 		return err
 	}
 
-	VerboseMessage("Purging deployments in namespace...")
-
-	if err := PurgeDeploymentsInNamespace(kubeClient, statusResp.Namespace); err != nil {
+	if err := PurgeDeploymentsInNamespace(kubeClient, release.Namespace); err != nil {
 		return err
 	}
 
-	VerboseMessage("Purging stateful sets in namespace...")
-
-	if err := PurgeStatefulSetsInNamespace(kubeClient, statusResp.Namespace); err != nil {
+	if err := PurgeStatefulSetsInNamespace(kubeClient, release.Namespace); err != nil {
 		return err
 	}
 
-	VerboseMessage("Purging namespaces and helm releases...")
-
-	results := make(chan error, 2)
-	go func(namespace string) { results <- PurgeNamespace(kubeClient, namespace) }(statusResp.Namespace)
-	go func(helmRelease string) {
-		_, err := helmClient.DeleteRelease(helmRelease,
-			helm.DeletePurge(true),
-			helm.DeleteTimeout(defaultHelmDeleteTimeout))
-		results <- err
-	}(helmRelease)
-
-	errors := []error{}
-	for i := 0; i < 2; i++ {
-		if err := <-results; err != nil {
-			errors = append(errors, err)
-		}
+	if _, err := helmClient.DeleteRelease(
+		helmRelease,
+		helm.DeletePurge(true),
+		helm.DeleteTimeout(defaultHelmDeleteTimeout),
+	); err != nil {
+		return err
 	}
 
-	if len(errors) > 0 {
-		return &MultipleErrors{errors}
-	}
-
-	return nil
+	return PurgeNamespace(kubeClient, release.Namespace)
 }
 
 // PurgeDeploymentsInNamespace removes all deployments in the given namespace.
@@ -156,7 +140,7 @@ func PurgeNamespace(kubeClient kubernetes.Interface, namespace string) error {
 			watcher.Stop()
 
 		case watch.Error:
-			return fmt.Errorf("failed to delete namespace %s", namespace)
+			return pkgerr.Wrapf(err, "failed to watch namespace %s during deletion", namespace)
 		}
 	}
 
