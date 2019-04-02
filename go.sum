@@ -1,8 +1,6 @@
 github.com/Azure/go-ansiterm v0.0.0-20170629204627-19f72df4d05d/go.mod h1:LmzpDX56iTiv29bbRTIsUNlaFfuhWRQBWjQdVyAevI8=
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
-github.com/HeavyWombat/dyff v0.7.0 h1:I0tKT3cjcdTGrAYEWDu39o0sRK7e4gqLSGvwH4BAh5s=
-github.com/HeavyWombat/dyff v0.7.0/go.mod h1:UfIB0kgcWnKIRnLQ5ARY59o1l9eI2fF5ebRRww2/OXY=
 github.com/MakeNowJust/heredoc v0.0.0-20170808103936-bb23615498cd h1:sjQovDkwrZp8u+gxLtPgKGjk5hCxuy2hrRejBTA9xFU=
 github.com/MakeNowJust/heredoc v0.0.0-20170808103936-bb23615498cd/go.mod h1:64YHyfSL2R96J44Nlwm39UHepQbyR5q10x7iYa1ks2E=
 github.com/Masterminds/semver v1.4.2 h1:WBLTQ37jOCzSLtXNdoo8bNM8876KhNqOKvrlGITgsTc=
@@ -86,6 +84,8 @@ github.com/hashicorp/golang-lru v0.0.0-20160207214719-a0d98a5f2880 h1:OaRuzt9oCK
 github.com/hashicorp/golang-lru v0.0.0-20160207214719-a0d98a5f2880/go.mod h1:/m3WP610KZHVQ1SGc6re/UDhFvYD7pJ4Ao+sR/qLZy8=
 github.com/hashicorp/hcl v0.0.0-20160711231752-d8c773c4cba1 h1:9j16AiR0R5hDbDBMzfUfIP9CUbbw6T8nYN4iZz3/wjg=
 github.com/hashicorp/hcl v0.0.0-20160711231752-d8c773c4cba1/go.mod h1:oZtUIOe8dh44I2q6ScRibXws4Ajl+d+nod3AaR9vL5w=
+github.com/homeport/dyff v0.8.0 h1:rb7ltU8QW7wbaoCEzFH38/UEoyO4a92zu51r9VgrLrM=
+github.com/homeport/dyff v0.8.0/go.mod h1:jgnnAx0m08AE+LyyVjZSGQr8FTgbhEmW7SmiVQuGYik=
 github.com/homeport/gonvenience v1.7.0 h1:w41b0ehw45R6OR6NxgHKrNdfsQV8QN6kX7P8xNlD7GQ=
 github.com/homeport/gonvenience v1.7.0/go.mod h1:G2NH1mGKb2RtQ/xy7Axv5Tnnwzq4yE6NoYyINd1Lvuk=
 github.com/homeport/ytbx v1.0.1 h1:h4pTIbknMb/Q+y0GZOF3zI5Do0WaX0h9o4e0PllhoBo=
