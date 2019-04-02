@@ -2,7 +2,6 @@ module github.com/homeport/havener
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20170629204627-19f72df4d05d // indirect
-	github.com/HeavyWombat/dyff v0.7.0
 	github.com/MakeNowJust/heredoc v0.0.0-20170808103936-bb23615498cd // indirect
 	github.com/Masterminds/semver v1.4.2 // indirect
 	github.com/PuerkitoBio/purell v1.0.0 // indirect
@@ -44,6 +43,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.6.3 // indirect
 	github.com/hashicorp/golang-lru v0.0.0-20160207214719-a0d98a5f2880 // indirect
 	github.com/hashicorp/hcl v0.0.0-20160711231752-d8c773c4cba1 // indirect
+	github.com/homeport/dyff v0.8.0
 	github.com/homeport/gonvenience v1.7.0
 	github.com/homeport/ytbx v1.0.1
 	github.com/howeyc/gopass v0.0.0-20170109162249-bf9dde6d0d2c // indirect
