@@ -23,7 +23,9 @@ package havener
 import (
 	"fmt"
 	"os"
+	"os/exec"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
@@ -35,6 +37,10 @@ import (
 	"k8s.io/helm/pkg/proto/hapi/chart"
 	"k8s.io/helm/pkg/proto/hapi/release"
 	rls "k8s.io/helm/pkg/proto/hapi/services"
+)
+
+var (
+	helmBinary = "helm"
 )
 
 // Hardcode tiller image because version.Version is overwritten when build helm release
@@ -187,6 +193,28 @@ func GetHelmClient(kubeConfig string) (*helm.Client, error) {
 	hClient := helm.NewClient(helm.Host(tillerTunnelAddress))
 
 	return hClient, nil
+}
+
+// RunHelmBinary will execute helm with the provided
+// arguments.
+func RunHelmBinary(args ...string) error {
+	cmd := exec.Command(helmBinary, args...)
+	stdOutput, err := cmd.Output()
+	if err != nil {
+		output := string(stdOutput)
+		return errors.Wrapf(err, "helm failed: %s", output)
+	}
+	return nil
+}
+
+// VerifyHelmBinary checks if the helm binary is
+// available on your host.
+func VerifyHelmBinary() error {
+	_, err := exec.LookPath(helmBinary)
+	if err != nil {
+		return errors.Wrap(err, "Helm binary not found, please install it in order to proceed.")
+	}
+	return nil
 }
 
 // InitTiller installs Tiller or upgrade if needed

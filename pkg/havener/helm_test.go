@@ -21,13 +21,14 @@
 package havener_test
 
 import (
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"reflect"
+
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/homeport/havener/pkg/havener"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -51,6 +52,21 @@ func releaseWithChart(opts *helm.MockReleaseOptions) *release.Release {
 }
 
 var _ = Describe("Helm Operations", func() {
+	Context("Getting local helm binary", func() {
+		It("should exit with error if not present", func() {
+			err := havener.VerifyHelmBinary()
+			Expect(err).To(BeNil())
+
+		})
+		It("should be able to use the helm binary cmds", func() {
+			err := havener.RunHelmBinary("list", "--help")
+			Expect(err).To(BeNil())
+
+			err = havener.RunHelmBinary("version")
+			Expect(err).To(BeNil())
+
+		})
+	})
 	Context("Getting releases", func() {
 		releaseCf := helm.ReleaseMock(&helm.MockReleaseOptions{Name: "cf-release", Namespace: "cf"})
 		releaseUaa := helm.ReleaseMock(&helm.MockReleaseOptions{Name: "uaa-release", Namespace: "cf"})
