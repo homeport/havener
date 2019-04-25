@@ -25,8 +25,8 @@ default: build
 all: test build
 
 clean:
-	@go clean -r -cache
 	@rm -rf binaries
+	@go clean -cache $(shell go list ./...)
 
 todo-list:
 	@grep -InHR --exclude-dir=vendor --exclude-dir=.git '[T]ODO' $(shell pwd)
