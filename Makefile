@@ -43,6 +43,9 @@ vet:
 unit-test:
 	@scripts/unit-test.sh
 
+e2e-test:
+	@scripts/e2e-test.sh
+
 test: lint misspell vet unit-test
 
 build:

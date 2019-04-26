@@ -18,36 +18,30 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package havener_test
+package e2e
 
 import (
-	"github.com/homeport/havener/pkg/havener"
+	"testing"
+
+	"github.com/homeport/havener/e2e/environment"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"k8s.io/helm/pkg/helm"
-	"k8s.io/helm/pkg/proto/hapi/chart"
-	"k8s.io/helm/pkg/proto/hapi/release"
 )
 
-var installChart *chart.Chart
-
-func releaseWithChart(opts *helm.MockReleaseOptions) *release.Release {
-	if opts.Chart == nil {
-		opts.Chart = installChart
-	}
-	return helm.ReleaseMock(opts)
+func TestIntegration(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Integration Suite")
 }
 
-var _ = Describe("Helm Operations", func() {
-	Context("Getting local helm binary", func() {
-		It("should exit with error if not present", func() {
-			err := havener.VerifyHelmBinary()
-			Expect(err).To(BeNil())
-		})
+var _ = BeforeSuite(func() {
+	env := environment.NewEnvironment()
+	err := env.SetUpEnvironment()
+	Expect(err).NotTo(HaveOccurred())
+})
 
-		It("should be able to use the helm binary cmds", func() {
-			_, err := havener.RunHelmBinary("list", "--help")
-			Expect(err).To(BeNil())
-		})
-	})
+var _ = AfterSuite(func() {
+	err := env.SetUpEnvironment()
+	Expect(err).NotTo(HaveOccurred())
+	// err = env.RunBinary(env.HelmBinary, "delete", "mysql-release", "--purge")
+	// Expect(err).NotTo(HaveOccurred())
 })

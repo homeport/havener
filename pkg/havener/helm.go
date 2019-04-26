@@ -21,63 +21,24 @@
 package havener
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"strconv"
 
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/helm/cmd/helm/installer"
 	"k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/helm"
 	"k8s.io/helm/pkg/helm/portforwarder"
 	"k8s.io/helm/pkg/kube"
 	"k8s.io/helm/pkg/proto/hapi/chart"
-	"k8s.io/helm/pkg/proto/hapi/release"
-	rls "k8s.io/helm/pkg/proto/hapi/services"
 )
 
 var (
 	helmBinary = "helm"
 )
-
-// Hardcode tiller image because version.Version is overwritten when build helm release
-// https://github.com/helm/helm/blob/99199c975236430fdf7599c69a956c6eb73b44e9/versioning.mk#L16-L19
-const (
-	ImageSpec = "gcr.io/kubernetes-helm/tiller:v2.10.0"
-)
-
-// ListHelmReleases returns a list of releases
-// Based on https://github.com/helm/helm/blob/7cad59091a9451b2aa4f95aa882ea27e6b195f98/pkg/proto/hapi/services/tiller.pb.go
-func ListHelmReleases() (*rls.ListReleasesResponse, error) {
-	cfg := viper.GetString("kubeconfig")
-
-	helmClient, _ := GetHelmClient(cfg)
-	var sortBy = int32(2)  //LAST_RELEASED
-	var sortOrd = int32(1) //descendent
-
-	ops := []helm.ReleaseListOption{
-		helm.ReleaseListSort(sortBy),
-		helm.ReleaseListOrder(sortOrd),
-		helm.ReleaseListStatuses([]release.Status_Code{
-			release.Status_DEPLOYED,
-			release.Status_FAILED,
-			release.Status_DELETING,
-			release.Status_PENDING_INSTALL,
-			release.Status_PENDING_UPGRADE,
-			release.Status_PENDING_ROLLBACK}),
-		// helm.ReleaseListNamespace("cf"),
-	}
-
-	resp, err := helmClient.ListReleases(ops...)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
-}
 
 // GetHelmChart loads a chart from file. It will discover the chart encoding
 // and hand off to the appropriate chart reader.
@@ -95,91 +56,89 @@ func GetHelmChart(path string) (requestedChart *chart.Chart, err error) {
 	return chartutil.Load(helmChartPath)
 }
 
-//UpdateHelmRelease will upgrade an existing release with provided override values
-func UpdateHelmRelease(chartname string, chartPath string, valueOverrides []byte, reuseVal bool) (*rls.UpdateReleaseResponse, error) {
-	cfg := viper.GetString("kubeconfig")
+// UpdateHelmRelease will upgrade an existing release with provided override values
+func UpdateHelmRelease(chartname string, chartPath string, valueOverrides []byte, reuseVal bool) error {
+	err := VerifyHelmBinary()
+	if err != nil {
+		return err
+	}
+
+	_, err = RunHelmBinary("version")
+	if err != nil {
+		return err
+	}
 
 	helmChartPath, err := PathToHelmChart(chartPath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	chartRequested, err := GetHelmChart(helmChartPath)
+	overridesFile, err := GenerateConfigFile(valueOverrides)
 	if err != nil {
-		return nil, fmt.Errorf("error loading chart: %v", err)
+		return err
 	}
 
-	helmClient, _ := GetHelmClient(cfg)
+	_, err = RunHelmBinary("upgrade", chartname, helmChartPath,
+		"--timeout", strconv.Itoa(MinutesToSeconds(3)),
+		"--wait",
+		"--reuse-values",
+		"-f", overridesFile)
+
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return helmClient.UpdateReleaseFromChart(
-		chartname,
-		chartRequested,
-		helm.UpdateValueOverrides(valueOverrides),
-		helm.UpgradeDryRun(false),
-		helm.UpgradeTimeout(30*60),
-		helm.ReuseValues(reuseVal),
-	)
+	os.Remove(overridesFile)
+
+	return nil
 }
 
-//DeployHelmRelease will initialize a helm in both client and server
-func DeployHelmRelease(chartname string, namespace string, chartPath string, timeOut int, valueOverrides []byte) (*rls.InstallReleaseResponse, error) {
+// DeployHelmRelease will initialize a helm in both client and server
+func DeployHelmRelease(chartname string, namespace string, chartPath string, timeOut int, valueOverrides []byte) error {
+	err := VerifyHelmBinary()
+	if err != nil {
+		return err
+	}
 
-	VerboseMessage("Reading kube config file...")
-
-	cfg := viper.GetString("kubeconfig")
+	_, err = RunHelmBinary("version")
+	if err != nil {
+		return err
+	}
 
 	VerboseMessage("Locating helm chart location...")
 
 	helmChartPath, err := PathToHelmChart(chartPath)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	VerboseMessage("Loading chart in namespace %s...", namespace)
-
-	chartRequested, err := GetHelmChart(helmChartPath)
-	if err != nil {
-		return nil, fmt.Errorf("error loading chart: %v", err)
-	}
-
-	VerboseMessage("Getting helm client...")
-
-	helmClient, _ := GetHelmClient(cfg)
-	if err != nil {
-		return nil, err
-	}
-
 	VerboseMessage("Installing release in namespace %s...", namespace)
 
-	//cast timeout to int64, as required by InstallReleaseFromChart
-	timeOutInt64 := int64(MinutesToSeconds(timeOut))
+	overridesFile, err := GenerateConfigFile(valueOverrides)
+	if err != nil {
+		return err
+	}
 
-	return helmClient.InstallReleaseFromChart(
-		chartRequested,
-		namespace,
-		helm.ValueOverrides(valueOverrides), // ValueOverrides specifies a list of values to include when installing.
-		helm.ReleaseName(chartname),
-		helm.InstallDryRun(false),
-		helm.InstallReuseName(false),
-		helm.InstallDisableHooks(false),
-		helm.InstallTimeout(timeOutInt64),
-		helm.InstallWait(true),
-	)
+	_, err = RunHelmBinary("install", helmChartPath, "--name", chartname,
+		"--namespace", namespace,
+		"--timeout", strconv.Itoa(MinutesToSeconds(5)),
+		"--wait",
+		"-f", overridesFile)
+
+	if err != nil {
+		return err
+	}
+
+	os.Remove(overridesFile)
+
+	return nil
 }
 
 // GetHelmClient creates a new client for the Helm-Tiller protocol
+// TODO: this should go away
 func GetHelmClient(kubeConfig string) (*helm.Client, error) {
 	var tillerTunnel *kube.Tunnel
 
 	clientSet, config, err := OutOfClusterAuthentication(kubeConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	err = InitTiller("kube-system", clientSet)
 	if err != nil {
 		return nil, err
 	}
@@ -197,14 +156,14 @@ func GetHelmClient(kubeConfig string) (*helm.Client, error) {
 
 // RunHelmBinary will execute helm with the provided
 // arguments.
-func RunHelmBinary(args ...string) error {
+func RunHelmBinary(args ...string) ([]byte, error) {
 	cmd := exec.Command(helmBinary, args...)
-	stdOutput, err := cmd.Output()
+	stdOutput, err := cmd.CombinedOutput()
 	if err != nil {
 		output := string(stdOutput)
-		return errors.Wrapf(err, "helm failed: %s", output)
+		return nil, errors.Wrapf(err, "helm failed: %s", output)
 	}
-	return nil
+	return stdOutput, nil
 }
 
 // VerifyHelmBinary checks if the helm binary is
@@ -217,22 +176,70 @@ func VerifyHelmBinary() error {
 	return nil
 }
 
-// InitTiller installs Tiller or upgrade if needed
-func InitTiller(namespace string, clientSet kubernetes.Interface) error {
-	VerboseMessage("Installing Tiller in namespace %s...", namespace)
-	if err := installer.Install(clientSet, &installer.Options{Namespace: namespace, ImageSpec: ImageSpec}); err != nil {
-		if !apierrors.IsAlreadyExists(err) {
-			return fmt.Errorf("error when installing: %s", err)
-		}
-		if err := installer.Upgrade(clientSet, &installer.Options{Namespace: namespace, ForceUpgrade: true, ImageSpec: ImageSpec}); err != nil {
-			return fmt.Errorf("error when upgrading: %s", err)
-		}
-
-		VerboseMessage("Tiller has been upgraded to the current version.")
-
-	} else {
-		VerboseMessage("Tiller has been installed.")
+// GenerateConfigFile wil dump config bytes into a tmp file
+func GenerateConfigFile(valueOverrides []byte) (string, error) {
+	tmpFile, err := ioutil.TempFile("", "value-overrides")
+	if err != nil {
+		return "", err
 	}
 
-	return nil
+	if _, err := tmpFile.Write(valueOverrides); err != nil {
+		return "", err
+	}
+
+	if err := tmpFile.Close(); err != nil {
+		return "", err
+	}
+
+	return tmpFile.Name(), nil
+}
+
+// HelmReleases defines the struct when
+// listing releases via helm in json format
+type HelmReleases struct {
+	Next     string     `json:"Next"`
+	Releases []Releases `json:"Releases"`
+}
+
+// Releases defines the release metadata
+type Releases struct {
+	Name       string `json:"Name"`
+	Revision   int    `json:"Revision"`
+	Updated    string `json:"Updated"`
+	Status     string `json:"Status"`
+	Chart      string `json:"Chart"`
+	AppVersion string `json:"AppVersion"`
+	Namespace  string `json:"Namespace"`
+}
+
+// ReleaseExist returns true for an existing release
+func ReleaseExist(list HelmReleases, releaseName string) bool {
+	for _, release := range list.Releases {
+		if release.Name == releaseName {
+			return true
+		}
+	}
+	return false
+}
+
+// GetReleaseByName returns true for an existing release
+func GetReleaseByName(releaseName string) (Releases, error) {
+	releasesList := HelmReleases{}
+
+	stdOutput, err := RunHelmBinary("list", "-a", "--output", "json")
+	if err != nil {
+		return Releases{}, err
+	}
+
+	err = json.Unmarshal(stdOutput, &releasesList)
+	if err != nil {
+		return Releases{}, err
+	}
+
+	for _, release := range releasesList.Releases {
+		if release.Name == releaseName {
+			return release, nil
+		}
+	}
+	return Releases{}, errors.New("Release not found")
 }
