@@ -38,55 +38,13 @@ var (
 
 // topCmd represents the top command
 var topCmd = &cobra.Command{
-	Use:   "top",
-	Short: "Shows CPU and Memory usage",
-	Long:  `Shows more detailed CPU and Memory usage details`,
-	Run: func(cmd *cobra.Command, args []string) {
-		// Fall back to default interval if unsupported interval was specified
-		if interval <= 0 {
-			interval = 2
-		}
-
-		// Restrict the output to one single measurement in case of a dumb terminal or used inside Concourse
-		if term.IsDumbTerminal() || term.IsGardenContainer() {
-			cycles = 1
-		}
-
-		clientSet, _, err := havener.OutOfClusterAuthentication("")
-		if err != nil {
-			exitWithError("unable to get access to cluster", err)
-		}
-
-		term.HideCursor()
-		defer term.ShowCursor()
-
-		iterations := 0
-		for range time.Tick(time.Duration(interval) * time.Second) {
-			// TODO Get stats for nodes and pods at the same time
-			nodeStats, err := hvnr.CompileNodeStats(clientSet)
-			if err != nil {
-				exitWithError("failed to compile node usage stats", err)
-			}
-
-			podStats, err := hvnr.CompilePodStats(clientSet)
-			if err != nil {
-				exitWithError("failed to compile pod usage stats", err)
-			}
-
-			podLineLimit := term.GetTerminalHeight() - len(strings.Split(nodeStats, "\n")) - 1
-			if lines := strings.Split(podStats, "\n"); len(lines) > podLineLimit {
-				podStats = strings.Join(lines[:podLineLimit], "\n")
-			}
-
-			fmt.Print("\x1b[H")
-			fmt.Print("\x1b[2J")
-			fmt.Print(nodeStats)
-			fmt.Print(podStats)
-
-			if iterations++; cycles > 0 && iterations > cycles {
-				break
-			}
-		}
+	Use:           "top",
+	Short:         "Shows CPU and Memory usage",
+	Long:          `Shows more detailed CPU and Memory usage details`,
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return retrieveClusterStats()
 	},
 }
 
@@ -98,4 +56,53 @@ func init() {
 
 	topCmd.Flags().SortFlags = false
 	topCmd.PersistentFlags().SortFlags = false
+}
+
+func retrieveClusterStats() error {
+	// Fall back to default interval if unsupported interval was specified
+	if interval <= 0 {
+		interval = 2
+	}
+
+	// Restrict the output to one single measurement in case of a dumb terminal or used inside Concourse
+	if term.IsDumbTerminal() || term.IsGardenContainer() {
+		cycles = 1
+	}
+
+	clientSet, _, err := havener.OutOfClusterAuthentication("")
+	if err != nil {
+		return &ErrorWithMsg{"unable to get access to cluster", err}
+	}
+
+	term.HideCursor()
+	defer term.ShowCursor()
+
+	iterations := 0
+	for range time.Tick(time.Duration(interval) * time.Second) {
+		// TODO Get stats for nodes and pods at the same time
+		nodeStats, err := hvnr.CompileNodeStats(clientSet)
+		if err != nil {
+			return &ErrorWithMsg{"failed to compile node usage stats", err}
+		}
+
+		podStats, err := hvnr.CompilePodStats(clientSet)
+		if err != nil {
+			return &ErrorWithMsg{"failed to compile pod usage stats", err}
+		}
+
+		podLineLimit := term.GetTerminalHeight() - len(strings.Split(nodeStats, "\n")) - 1
+		if lines := strings.Split(podStats, "\n"); len(lines) > podLineLimit {
+			podStats = strings.Join(lines[:podLineLimit], "\n")
+		}
+
+		fmt.Print("\x1b[H")
+		fmt.Print("\x1b[2J")
+		fmt.Print(nodeStats)
+		fmt.Print(podStats)
+
+		if iterations++; cycles > 0 && iterations > cycles {
+			break
+		}
+	}
+	return nil
 }

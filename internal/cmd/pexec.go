@@ -60,60 +60,10 @@ In case no container name is given, havener will assume you want to
 execute the command in the first container found in the pod.
 
 `,
-	Run: func(cmd *cobra.Command, args []string) {
-		client, restconfig, err := havener.OutOfClusterAuthentication("")
-		if err != nil {
-			exitWithError("failed to connect to Kubernetes cluster", err)
-		}
-
-		var (
-			pod       *corev1.Pod
-			container string
-			command   string
-		)
-
-		switch {
-		case len(args) >= 2: // pod and command is given
-			command = strings.Join(args[1:], " ")
-			pod, container, err = lookupPodByName(client, args[0])
-			if err != nil {
-				exitWithError("failed to find pod by name", err)
-			}
-
-		case len(args) == 1: // only pod is given
-			command = defaultCommand
-			pod, container, err = lookupPodByName(client, args[0])
-			if err != nil {
-				exitWithError("failed to find pod by name", err)
-			}
-
-		default:
-			pods, err := havener.ListPods(client)
-			if err != nil {
-				exitWithError("failed to list all pods in cluster", err)
-			}
-
-			list := []string{}
-			for _, pod := range pods {
-				for i := range pod.Spec.Containers {
-					list = append(list, fmt.Sprintf("%s/%s/%s",
-						pod.ObjectMeta.Namespace,
-						pod.Name,
-						pod.Spec.Containers[i].Name,
-					))
-				}
-			}
-
-			exitWithError("no pod name specified",
-				fmt.Errorf("List of available pods:\n%s",
-					strings.Join(list, "\n"),
-				),
-			)
-		}
-
-		if err := havener.PodExec(client, restconfig, pod, container, command, os.Stdin, os.Stdout, os.Stderr, podExecTty); err != nil {
-			exitWithError("failed to execute command on pod", err)
-		}
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return execInClusterPod(args)
 	},
 }
 
@@ -121,6 +71,61 @@ func init() {
 	rootCmd.AddCommand(podExecCmd)
 
 	podExecCmd.PersistentFlags().BoolVarP(&podExecTty, "tty", "t", false, "allocate pseudo-terminal for command execution")
+}
+
+func execInClusterPod(args []string) error {
+	client, restconfig, err := havener.OutOfClusterAuthentication("")
+	if err != nil {
+		return &ErrorWithMsg{"failed to connect to Kubernetes cluster", err}
+	}
+
+	var (
+		pod       *corev1.Pod
+		container string
+		command   string
+	)
+
+	switch {
+	case len(args) >= 2: // pod and command is given
+		command = strings.Join(args[1:], " ")
+		pod, container, err = lookupPodByName(client, args[0])
+		if err != nil {
+			return &ErrorWithMsg{"failed to find pod by name", err}
+		}
+
+	case len(args) == 1: // only pod is given
+		command = defaultCommand
+		pod, container, err = lookupPodByName(client, args[0])
+		if err != nil {
+			return &ErrorWithMsg{"failed to find pod by name", err}
+		}
+
+	default:
+		pods, err := havener.ListPods(client)
+		if err != nil {
+			return &ErrorWithMsg{"failed to list all pods in cluster", err}
+		}
+
+		list := []string{}
+		for _, pod := range pods {
+			for i := range pod.Spec.Containers {
+				list = append(list, fmt.Sprintf("%s/%s/%s",
+					pod.ObjectMeta.Namespace,
+					pod.Name,
+					pod.Spec.Containers[i].Name,
+				))
+			}
+		}
+		return &ErrorWithMsg{"no pod name specified",
+			fmt.Errorf("List of available pods:\n%s",
+				strings.Join(list, "\n"),
+			)}
+	}
+
+	if err := havener.PodExec(client, restconfig, pod, container, command, os.Stdin, os.Stdout, os.Stderr, podExecTty); err != nil {
+		return &ErrorWithMsg{"failed to execute command on pod", err}
+	}
+	return nil
 }
 
 func lookupPodByName(client kubernetes.Interface, input string) (*corev1.Pod, string, error) {

@@ -112,7 +112,7 @@ require (
 	k8s.io/client-go v0.0.0-20181213030409-16a8a034ed28
 	k8s.io/helm v2.10.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20180509051136-39cb288412c4 // indirect
-	k8s.io/kubernetes v1.10.12
+	k8s.io/kubernetes v1.10.12 // indirect
 	k8s.io/utils v0.0.0-20171122000934-aedf551cdb8b // indirect
 	vbom.ml/util v0.0.0-20160121211510-db5cfe13f5cc // indirect
 )

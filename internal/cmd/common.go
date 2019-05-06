@@ -36,6 +36,17 @@ import (
 	colorful "github.com/lucasb-eyer/go-colorful"
 )
 
+// ErrorWithMsg defines a custom msg together
+// with an error
+type ErrorWithMsg struct {
+	Msg string
+	Err error
+}
+
+func (e *ErrorWithMsg) Error() string {
+	return fmt.Sprintf("%v\n", e.Err)
+}
+
 // NoUserPrompt defines whether a user confirmation is required or should be omitted
 var NoUserPrompt = false
 

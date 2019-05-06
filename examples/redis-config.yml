@@ -1,0 +1,18 @@
+name: redis deployment
+releases:
+- chart_name: redis
+  chart_namespace: redis
+  chart_location: stable/redis
+  before: [echo "$(date) before release"]
+  after: [echo "$(date) after release"]
+
+before:
+- cmd: /bin/bash
+  args:
+  - -c
+  - |
+    #!/bin/bash
+    echo "$(date) before deployment"
+
+after:
+- echo "$(date) after deployment"
