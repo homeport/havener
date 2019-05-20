@@ -43,17 +43,22 @@ const (
 
 // upgradeCmd represents the upgrade command
 var upgradeCmd = &cobra.Command{
-	Use:   "upgrade",
-	Short: "Upgrade Helm Release in Kubernetes",
-	Long:  `Upgrade Helm Release based on havener configuration`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Use:           "upgrade",
+	Short:         "Upgrade Helm Release in Kubernetes",
+	Long:          `Upgrade Helm Release based on havener configuration`,
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		havenerUpgradeConfig := viper.GetString(envVarUpgradeConfig)
+
 		switch {
-		case len(viper.GetString(envVarUpgradeConfig)) > 0:
-			upgradeViaHavenerConfig()
+		case len(havenerUpgradeConfig) > 0:
+			return upgradeViaHavenerConfig(havenerUpgradeConfig)
 
 		default:
 			cmd.Usage()
 		}
+		return nil
 	},
 }
 
@@ -70,42 +75,41 @@ func init() {
 	viper.BindPFlag(envVarUpgradeValueReuse, upgradeCmd.PersistentFlags().Lookup("reuse-values"))
 }
 
-func upgradeViaHavenerConfig() {
-	havenerConfig := viper.GetString(envVarUpgradeConfig)
+func upgradeViaHavenerConfig(havenerConfig string) error {
 	timeoutInMin := viper.GetInt(envVarUpgradeTimeout)
 	reuseValues := viper.GetBool(envVarUpgradeValueReuse)
 
 	cfgdata, err := ioutil.ReadFile(havenerConfig)
 	if err != nil {
-		exitWithError("unable to read havener configuration", err)
+		return &ErrorWithMsg{"unable to read havener configuration", err}
 	}
 
 	var config havener.Config
 	if err := yaml.Unmarshal(cfgdata, &config); err != nil {
-		exitWithError("failed to unmarshal havener configuration", err)
+		return &ErrorWithMsg{"failed to unmarshal havener configuration", err}
 	}
 
 	if err := processTask("Pre-upgrade Steps", config.Before); err != nil {
-		exitWithError("failed to evaluate pre-upgrade steps", err)
+		return &ErrorWithMsg{"failed to evaluate pre-upgrade steps", err}
 	}
 
 	for _, release := range config.Releases {
 		overrides, err := havener.TraverseStructureAndProcessShellOperators(release.Overrides)
 		if err != nil {
-			exitWithError("failed to process overrides section", err)
+			return &ErrorWithMsg{"failed to process overrides section", err}
 		}
 
 		if err := processTask("Before Chart "+release.ChartName, release.Before); err != nil {
-			exitWithError("failed to evaluate before release steps", err)
+			return &ErrorWithMsg{"failed to evaluate before release steps", err}
 		}
 
 		overridesData, err := yaml.Marshal(overrides)
 		if err != nil {
-			exitWithError("failed to marshal overrides structure into bytes", err)
+			return &ErrorWithMsg{"failed to marshal overrides structure into bytes", err}
 		}
 
 		if err := hvnr.ShowHelmReleaseDiff(release.ChartName, release.ChartLocation, overridesData, reuseValues); err != nil {
-			exitWithError("failed to show differences before upgrade", err)
+			return &ErrorWithMsg{"failed to show differences before upgrade", err}
 		}
 
 		pi := wait.NewProgressIndicator(fmt.Sprintf("Upgrading Helm Release for %s", release.ChartName))
@@ -121,7 +125,7 @@ func upgradeViaHavenerConfig() {
 		pi.Stop()
 
 		if err != nil {
-			exitWithError("failed to upgrade via havener configuration", err)
+			return &ErrorWithMsg{"failed to upgrade via havener configuration", err}
 		}
 
 		message := bunt.Sprintf("Successfully upgraded helm chart *%s* in namespace *_%s_*.",
@@ -136,11 +140,12 @@ func upgradeViaHavenerConfig() {
 		printStatusMessage("Upgrade", message, bunt.Gray)
 
 		if err := processTask("After Chart "+release.ChartName, release.After); err != nil {
-			exitWithError("failed to evaluate after release steps", err)
+			return &ErrorWithMsg{"failed to evaluate after release steps", err}
 		}
 	}
 
 	if err := processTask("Post-upgrade Steps", config.After); err != nil {
-		exitWithError("failed to evaluate post-upgrade steps", err)
+		return &ErrorWithMsg{"failed to evaluate post-upgrade steps", err}
 	}
+	return nil
 }

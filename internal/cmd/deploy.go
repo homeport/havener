@@ -41,17 +41,22 @@ const (
 
 // deployCmd represents the deploy command
 var deployCmd = &cobra.Command{
-	Use:   "deploy",
-	Short: "Deploy to Kubernetes",
-	Long:  `Deploy to Kubernetes based on havener configuration`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Use:           "deploy",
+	Short:         "Deploy to Kubernetes",
+	Long:          `Deploy to Kubernetes based on havener configuration`,
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		havenerConfig := viper.GetString(envVarDeployConfig)
+
 		switch {
-		case len(viper.GetString(envVarDeployConfig)) > 0:
-			deployViaHavenerConfig()
+		case len(havenerConfig) > 0:
+			return deployViaHavenerConfig(havenerConfig)
 
 		default:
 			cmd.Usage()
 		}
+		return nil
 	},
 }
 
@@ -66,37 +71,36 @@ func init() {
 	viper.BindPFlag(envVarDeployTimeout, deployCmd.PersistentFlags().Lookup("timeout"))
 }
 
-func deployViaHavenerConfig() {
-	havenerConfig := viper.GetString(envVarDeployConfig)
+func deployViaHavenerConfig(havenerConfig string) error {
 	timeoutInMin := viper.GetInt(envVarDeployTimeout)
 
 	cfgdata, err := ioutil.ReadFile(havenerConfig)
 	if err != nil {
-		exitWithError("unable to read havener configuration", err)
+		return &ErrorWithMsg{"unable to read havener configuration", err}
 	}
 
 	var config havener.Config
 	if err := yaml.Unmarshal(cfgdata, &config); err != nil {
-		exitWithError("failed to unmarshal havener configuration", err)
+		return &ErrorWithMsg{"failed to unmarshal havener configuration", err}
 	}
 
 	if err := processTask("Predeployment Steps", config.Before); err != nil {
-		exitWithError("failed to evaluate predeployment steps", err)
+		return &ErrorWithMsg{"failed to evaluate predeployment steps", err}
 	}
 
 	for _, release := range config.Releases {
 		overrides, err := havener.TraverseStructureAndProcessShellOperators(release.Overrides)
 		if err != nil {
-			exitWithError("failed to process overrides section", err)
+			return &ErrorWithMsg{"failed to process overrides section", err}
 		}
 
 		if err := processTask("Before Chart "+release.ChartName, release.Before); err != nil {
-			exitWithError("failed to evaluate before release steps", err)
+			return &ErrorWithMsg{"failed to evaluate before release steps", err}
 		}
 
 		overridesData, err := yaml.Marshal(overrides)
 		if err != nil {
-			exitWithError("failed to marshal overrides structure into bytes", err)
+			return &ErrorWithMsg{"failed to marshal overrides structure into bytes", err}
 		}
 
 		pi := wait.NewProgressIndicator(fmt.Sprintf("Creating Helm Release for %s", release.ChartName))
@@ -113,7 +117,7 @@ func deployViaHavenerConfig() {
 		pi.Stop()
 
 		if err != nil {
-			exitWithError("failed to deploy via havener configuration", err)
+			return &ErrorWithMsg{"failed to deploy via havener configuration", err}
 		}
 
 		message := bunt.Sprintf("Successfully created new helm chart *%s* in namespace *_%s_*.",
@@ -128,11 +132,12 @@ func deployViaHavenerConfig() {
 		printStatusMessage("Upgrade", message, bunt.Gray)
 
 		if err := processTask("After Chart "+release.ChartName, release.After); err != nil {
-			exitWithError("failed to evaluate after release steps", err)
+			return &ErrorWithMsg{"failed to evaluate after release steps", err}
 		}
 	}
 
 	if err := processTask("Postdeployment Steps", config.After); err != nil {
-		exitWithError("failed to evaluate postdeployment steps", err)
+		return &ErrorWithMsg{"failed to evaluate postdeployment steps", err}
 	}
+	return nil
 }

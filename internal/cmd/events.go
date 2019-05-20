@@ -46,78 +46,94 @@ type note struct {
 
 // eventsCmd represents the top command
 var eventsCmd = &cobra.Command{
-	Use:   "events",
-	Short: "Shows Cluster events",
-	Long:  `Creates listeners for each namespace and displays all incoming events`,
-	Run: func(cmd *cobra.Command, args []string) {
-		client, _, err := havener.OutOfClusterAuthentication(viper.GetString("kubeconfig"))
-		if err != nil {
-			exitWithError("failed to access cluster", err)
+	Use:           "events",
+	Short:         "Shows Cluster events",
+	Long:          `Creates listeners for each namespace and displays all incoming events`,
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		kubeConfig := viper.GetString("kubeconfig")
+		switch {
+		case len(kubeConfig) > 0:
+			return retrieveClusterEvents(kubeConfig)
+
+		default:
+			cmd.Usage()
 		}
-
-		namespaces, err := havener.ListNamespaces(client)
-		if err != nil {
-			exitWithError("failed to get a list of namespaces", err)
-		}
-
-		notes := make(chan note)
-
-		// Start one Go routine per namespace to watch for events
-		for i := range namespaces {
-			namespace := namespaces[i]
-
-			go func() {
-				watcher, err := client.CoreV1().Events(namespace).Watch(metav1.ListOptions{})
-				if err != nil {
-					exitWithError("failed to setup event watcher", err)
-				}
-
-				for event := range watcher.ResultChan() {
-					switch event.Type {
-					case watch.Added, watch.Modified:
-						switch event.Object.(type) {
-						case *corev1.Event:
-							data := *(event.Object.(*corev1.Event))
-
-							resourceName := data.Name
-							if strings.Contains(resourceName, ".") {
-								parts := strings.Split(resourceName, ".")
-								resourceName = strings.Join(parts[:len(parts)-1], ".")
-							}
-
-							notes <- note{
-								namespace: namespace,
-								time:      data.FirstTimestamp.Time,
-								noteType:  data.Type,
-								resource:  resourceName,
-								reason:    data.Reason,
-								message:   strings.TrimSuffix(data.Message, "\n"),
-							}
-						}
-					}
-				}
-			}()
-		}
-
-		// Show the generated notes until the user stops the application
-		for note := range notes {
-			var noteColor = bunt.LightSteelBlue
-			if note.noteType == "Warning" {
-				noteColor = bunt.FireBrick
-			}
-
-			bunt.Printf("DimGray{%s} %-7s _%s_/%s  *%s*  AntiqueWhite{%s}\n",
-				note.time,
-				bunt.Colorize(note.noteType, noteColor),
-				note.namespace,
-				note.resource,
-				note.reason,
-				note.message,
-			)
-		}
+		return nil
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(eventsCmd)
+}
+
+func retrieveClusterEvents(kubeConfig string) error {
+	client, _, err := havener.OutOfClusterAuthentication(kubeConfig)
+	if err != nil {
+		return &ErrorWithMsg{"failed to access cluster", err}
+	}
+
+	namespaces, err := havener.ListNamespaces(client)
+	if err != nil {
+		return &ErrorWithMsg{"failed to get a list of namespaces", err}
+	}
+
+	notes := make(chan note)
+
+	// Start one Go routine per namespace to watch for events
+	for i := range namespaces {
+		namespace := namespaces[i]
+
+		go func() error {
+			watcher, err := client.CoreV1().Events(namespace).Watch(metav1.ListOptions{})
+			if err != nil {
+				return &ErrorWithMsg{"failed to setup event watcher", err}
+			}
+
+			for event := range watcher.ResultChan() {
+				switch event.Type {
+				case watch.Added, watch.Modified:
+					switch event.Object.(type) {
+					case *corev1.Event:
+						data := *(event.Object.(*corev1.Event))
+
+						resourceName := data.Name
+						if strings.Contains(resourceName, ".") {
+							parts := strings.Split(resourceName, ".")
+							resourceName = strings.Join(parts[:len(parts)-1], ".")
+						}
+
+						notes <- note{
+							namespace: namespace,
+							time:      data.FirstTimestamp.Time,
+							noteType:  data.Type,
+							resource:  resourceName,
+							reason:    data.Reason,
+							message:   strings.TrimSuffix(data.Message, "\n"),
+						}
+					}
+				}
+			}
+			return nil
+		}()
+	}
+
+	// Show the generated notes until the user stops the application
+	for note := range notes {
+		var noteColor = bunt.LightSteelBlue
+		if note.noteType == "Warning" {
+			noteColor = bunt.FireBrick
+		}
+
+		bunt.Printf("DimGray{%s} %-7s _%s_/%s  *%s*  AntiqueWhite{%s}\n",
+			note.time,
+			bunt.Colorize(note.noteType, noteColor),
+			note.namespace,
+			note.resource,
+			note.reason,
+			note.message,
+		)
+	}
+	return nil
 }

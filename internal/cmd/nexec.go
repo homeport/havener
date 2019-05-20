@@ -43,24 +43,10 @@ is like running the command as you would run it on the node itself. The job
 and respective pod will be deleted after the command was executed.
 
 `,
-	Run: func(cmd *cobra.Command, args []string) {
-		nodeName, command := args[0], strings.Join(args[1:], " ")
-
-		havener.VerboseMessage("Connecting to Kubernetes cluster...")
-
-		client, restconfig, err := havener.OutOfClusterAuthentication("")
-		if err != nil {
-			exitWithError("failed to connect to Kubernetes cluster", err)
-		}
-
-		havener.VerboseMessage("Executing command on node...")
-
-		if err := havener.NodeExec(client, restconfig, nodeName, command, os.Stdin, os.Stdout, os.Stderr, nodeExecTty); err != nil {
-			exitWithError("failed to execute command on node", err)
-		}
-
-		havener.VerboseMessage("Successfully executed command.")
-
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return execInClusterNode(args)
 	},
 }
 
@@ -68,4 +54,25 @@ func init() {
 	rootCmd.AddCommand(nodeExecCmd)
 
 	nodeExecCmd.PersistentFlags().BoolVar(&nodeExecTty, "tty", false, "allocate pseudo-terminal for command execution")
+}
+
+func execInClusterNode(args []string) error {
+	nodeName, command := args[0], strings.Join(args[1:], " ")
+
+	havener.VerboseMessage("Connecting to Kubernetes cluster...")
+
+	client, restconfig, err := havener.OutOfClusterAuthentication("")
+	if err != nil {
+		return &ErrorWithMsg{"failed to connect to Kubernetes cluster", err}
+	}
+
+	havener.VerboseMessage("Executing command on node...")
+
+	if err := havener.NodeExec(client, restconfig, nodeName, command, os.Stdin, os.Stdout, os.Stderr, nodeExecTty); err != nil {
+		return &ErrorWithMsg{"failed to execute command on node", err}
+	}
+
+	havener.VerboseMessage("Successfully executed command.")
+
+	return nil
 }

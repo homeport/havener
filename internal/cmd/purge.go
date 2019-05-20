@@ -51,21 +51,29 @@ in parallel to the deletion of the Helm Release itself.
 
 If multiple Helm Releases are specified, then they will deleted concurrently.
 `,
-	Run: func(cmd *cobra.Command, args []string) {
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
 		havener.VerboseMessage("Accessing cluster...")
 
 		client, _, err := havener.OutOfClusterAuthentication("")
 		if err != nil {
-			exitWithError("unable to get access to cluster", err)
+			return &ErrorWithMsg{"unable to get access to cluster", err}
 		}
 
-		if err := purgeHelmReleases(client, getConfiguredHelmClient(), args...); err != nil {
-			exitWithError("failed to purge helm releases", err)
+		helmClient, err := getConfiguredHelmClient()
+		if err != nil {
+			return &ErrorWithMsg{"failed to get helm client", err}
 		}
+
+		if err := purgeHelmReleases(client, helmClient, args...); err != nil {
+			return &ErrorWithMsg{"failed to purge helm releases", err}
+		}
+		return nil
 	},
 }
 
-func getConfiguredHelmClient() *helm.Client {
+func getConfiguredHelmClient() (*helm.Client, error) {
 
 	havener.VerboseMessage("Reading kube config file...")
 
@@ -75,10 +83,10 @@ func getConfiguredHelmClient() *helm.Client {
 
 	helmClient, err := havener.GetHelmClient(cfg)
 	if err != nil {
-		exitWithError("failed to get helm client", err)
+		return nil, err
 	}
 
-	return helmClient
+	return helmClient, nil
 }
 
 func purgeHelmReleases(kubeClient kubernetes.Interface, helmClient *helm.Client, helmReleaseNames ...string) error {

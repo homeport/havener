@@ -24,10 +24,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/homeport/gonvenience/pkg/v1/bunt"
 	"github.com/homeport/gonvenience/pkg/v1/term"
 	homedir "github.com/mitchellh/go-homedir"
 )
@@ -62,8 +64,19 @@ func Execute() {
 	}()
 
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		switch err := err.(type) {
+		case *ErrorWithMsg:
+			bunt.Printf("Coral{*%s*}\n", err.Msg)
+			if err.Err != nil {
+				for _, line := range strings.Split(err.Error(), "\n") {
+					bunt.Printf("Coral{│} DimGray{%s}\n", line)
+				}
+			}
+			os.Exit(1)
+		default:
+			fmt.Println(err)
+			os.Exit(1)
+		}
 	}
 }
 
