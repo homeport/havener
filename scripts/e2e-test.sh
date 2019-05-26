@@ -24,7 +24,7 @@ set -euo pipefail
 
 export GO111MODULE=on
 
-echo -e 'Testing integration package'
+echo -e 'Testing e2e package'
 
 ginkgo -r \
   e2e/ \

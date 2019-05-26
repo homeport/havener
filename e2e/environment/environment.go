@@ -21,6 +21,7 @@
 package environment
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"os/exec"
 
@@ -85,6 +86,26 @@ func (e *Environment) RunBinaryWithStdOutput(binaryName string, args ...string) 
 		return []byte{}, errors.Wrapf(err, "%s cmd, failed with the following error: %s", cmd.Args, string(stdOutput))
 	}
 	return stdOutput, nil
+}
+
+// DeleteAllReleases remove all
+func (e *Environment) DeleteAllReleases() error {
+	releasesList := havener.HelmReleases{}
+	stdOutput, err := e.RunBinaryWithStdOutput(e.HelmBinary, "list", "--output", "json")
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(stdOutput, &releasesList)
+	if err != nil {
+		return err
+	}
+	for _, release := range releasesList.Releases {
+		err := e.RunBinary(e.HelmBinary, "delete", release.Name, "--purge")
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // GenerateConfigFile wil dump config bytes into a tmp file

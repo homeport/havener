@@ -25,6 +25,8 @@ import (
 	"io/ioutil"
 	"time"
 
+	"github.com/homeport/havener/internal/hvnr"
+
 	"github.com/homeport/gonvenience/pkg/v1/bunt"
 	"github.com/homeport/gonvenience/pkg/v1/wait"
 	"github.com/homeport/havener/pkg/havener"
@@ -107,10 +109,9 @@ func UpgradeViaHavenerConfig(havenerConfig string) error {
 			return &ErrorWithMsg{"failed to marshal overrides structure into bytes", err}
 		}
 
-		// TODO: the comparison needs to be fixed, by using pure helm binary
-		// if err := hvnr.ShowHelmReleaseDiff(release.ChartName, release.ChartLocation, overridesData, reuseValues); err != nil {
-		// 	return &ErrorWithMsg{"failed to show differences before upgrade", err}
-		// }
+		if err := hvnr.ShowHelmReleaseDiff(release.ChartName, release.ChartLocation, overridesData, reuseValues); err != nil {
+			return &ErrorWithMsg{"failed to show differences before upgrade", err}
+		}
 
 		pi := wait.NewProgressIndicator(fmt.Sprintf("Upgrading Helm Release for %s", release.ChartName))
 		pi.SetTimeout(time.Duration(timeoutInMin) * time.Minute)

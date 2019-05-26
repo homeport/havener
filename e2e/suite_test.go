@@ -28,9 +28,9 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestIntegration(t *testing.T) {
+func TestE2E(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Integration Suite")
+	RunSpecs(t, "E2E Suite")
 }
 
 var _ = BeforeSuite(func() {
@@ -42,6 +42,6 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	err := env.SetUpEnvironment()
 	Expect(err).NotTo(HaveOccurred())
-	// err = env.RunBinary(env.HelmBinary, "delete", "mysql-release", "--purge")
-	// Expect(err).NotTo(HaveOccurred())
+	err = env.DeleteAllReleases()
+	Expect(err).NotTo(HaveOccurred())
 })

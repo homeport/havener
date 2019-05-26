@@ -6,6 +6,8 @@ go:
 
 install:
 - curl -sL https://goo.gl/g1CpPX | bash -s v1.0.6 # Golang dev tools including pre-compiled Ginkgo and other useful tools
+- curl --progress-bar --location https://storage.googleapis.com/kubernetes-helm/helm-v2.13.1-linux-amd64.tar.gz | tar -xzf - -C /tmp linux-amd64/helm && sudo mv /tmp/linux-amd64/helm /usr/bin/helm && rm -rf /tmp/linux-amd64/
+
 
 script:
 - GO111MODULE=on go mod download

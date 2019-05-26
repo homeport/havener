@@ -46,6 +46,9 @@ unit-test:
 e2e-test:
 	@scripts/e2e-test.sh
 
+# e2e-test is not used in target test,
+# while we do not have a proper place
+# to test them, e.g. proper CI.
 test: lint misspell vet unit-test
 
 build:

@@ -23,56 +23,64 @@ package hvnr
 import (
 	"bufio"
 	"bytes"
+	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 
 	"github.com/homeport/dyff/pkg/v1/dyff"
 	"github.com/homeport/gonvenience/pkg/v1/bunt"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/homeport/ytbx/pkg/v1/ytbx"
 	"gopkg.in/yaml.v2"
-	"k8s.io/helm/pkg/helm"
+)
+
+const (
+	beginManifestMatch = "HOOKS:\n---"
+	endManifestMatch   = "Release \".+\" .*"
 )
 
 // ShowHelmReleaseDiff provides a difference report using the packages of the `dyff` tool.
 func ShowHelmReleaseDiff(chartname string, chartPath string, valueOverrides []byte, reuseVal bool) error {
-	helmClient, err := havener.GetHelmClient(viper.GetString("kubeconfig"))
+	manifestBytes, err := havener.RunHelmBinary("get", chartname)
 	if err != nil {
 		return err
 	}
 
-	// Grab the current version of the Helm Release
-	contentResp, err := helmClient.ReleaseContent(chartname)
+	overridesFile, err := havener.GenerateConfigFile(valueOverrides)
 	if err != nil {
 		return err
 	}
 
-	// Perform a dry-run to get the fully rendered new version of the Helm Release
-	helmChart, err := havener.GetHelmChart(chartPath)
+	helmChartPath, err := havener.PathToHelmChart(chartPath)
 	if err != nil {
 		return err
 	}
 
-	updateResp, err := helmClient.UpdateReleaseFromChart(
-		chartname,
-		helmChart,
-		helm.UpdateValueOverrides(valueOverrides),
-		helm.ReuseValues(reuseVal),
-		helm.UpgradeDryRun(true))
+	dryRunBytes, err := havener.RunHelmBinary("upgrade", chartname, helmChartPath,
+		"--dry-run",
+		"--reuse-values",
+		"--debug",
+		"-f", overridesFile)
 	if err != nil {
-		return errors.Wrap(err, "failed to do the dry-run")
+		return err
 	}
 
-	// By definition, from means the current/old version
-	from, err := ListManifestFiles(contentResp.GetRelease())
+	// Only way to extract the manifest content when running the helm binary
+	// is to clean up the stdout data, by using the "HOOK:" as the starting point
+	// and the  "Release "release-name" has been upgraded" text as the end point.
+	// All other data outside of this delimiters, is not needed for the comparison.
+	manifestBeginning := strings.Split(string(dryRunBytes), beginManifestMatch)
+	manifestEnd := regexp.MustCompile(endManifestMatch)
+	manifestNewChart := manifestEnd.Split(manifestBeginning[1], 2)
+
+	from, err := ListManifestFiles(string(manifestBytes))
 	if err != nil {
 		return err
 	}
 
 	// And, to references the next/new version
-	to, err := ListManifestFiles(updateResp.GetRelease())
+	to, err := ListManifestFiles(string(manifestNewChart[0]))
 	if err != nil {
 		return err
 	}

@@ -9,7 +9,6 @@ import (
 	. "github.com/homeport/havener/internal/hvnr"
 
 	"gopkg.in/yaml.v2"
-	"k8s.io/helm/pkg/proto/hapi/release"
 )
 
 var exampleService = `apiVersion: v1
@@ -101,7 +100,8 @@ func mrshll(obj yaml.MapSlice) string {
 var _ = Describe("Helm Release details", func() {
 	Context("Given a Helm Release", func() {
 		It("should break-up the manifest string into individual YAML files", func() {
-			output, err := ListManifestFiles(&release.Release{Manifest: exampleManifest})
+			// output, err := ListManifestFiles(&release.Release{Manifest: exampleManifest})
+			output, err := ListManifestFiles(exampleManifest)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(output).ToNot(BeNil())
 

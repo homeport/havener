@@ -8,7 +8,7 @@
 
 ## Introducing Havener
 
-Convenience tool to handle tasks around [Containerized CF](https://www.pivotaltracker.com/n/projects/2192232) workloads on a Kubernetes cluster. It deploys multiple Helm Charts using a configuration file, which is used to add in a tiny amount of glue code that is sometimes needed to make things work. Under to cover, `havener` does the same calls that `helm` and `kubectl` do, nothing special. That means that at the end you have a Helm Release just like you would have using `helm` alone.
+Convenience tool to handle tasks around [Containerized CF](https://www.pivotaltracker.com/n/projects/2192232) workloads on a Kubernetes cluster. It deploys multiple Helm Charts using a configuration file, which is used to add in a tiny amount of glue code that is sometimes needed to make things work. Under to cover, `havener` does the same calls that `kubectl` do, nothing special. That means that at the end you have a Helm Release just like you would have using `helm` alone.
 
 ## How do I get started
 
@@ -39,8 +39,8 @@ There are different ways to get `havener`. You are free to pick the one that mak
 
 ## Quick Command Overview
 
-Like `kubectl` and `helm`, `havener` relies on the Kubernetes configuration that can be set via the `KUBECONFIG` environment variable. It can also be provided with the `--kubeconfig` flag, which takes the path to the YAML file (for example `$HOME/.kube/config`).
-
+Like `kubectl`, `havener` relies on the Kubernetes configuration that can be set via the `KUBECONFIG` environment variable. It can also be provided with the `--kubeconfig` flag, which takes the path to the YAML file (for example `$HOME/.kube/config`). `Havener` will use your local `helm` binary, so it is the user reponsability, to keep the `helm` binary in sync with tiller.
+ 
 ```text
 A convenience tool to handle tasks around Containerized CF workloads on a Kubernetes cluster, for example:
 - Deploy a new series of Helm Charts
