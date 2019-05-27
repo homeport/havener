@@ -57,7 +57,7 @@ func PromptUser(message string) bool {
 		return true
 	}
 
-	fmt.Printf(message)
+	fmt.Println(message)
 
 	scanner := bufio.NewScanner(os.Stdin)
 	if scanner.Scan() {
@@ -126,12 +126,12 @@ func processTask(title string, task *havener.Task) error {
 		var args []string
 		var err error
 
-		switch taskEntry.(type) {
+		switch taskEntry := taskEntry.(type) {
 		case string:
-			cmd, args = "/bin/sh", append(args, "-c", taskEntry.(string))
+			cmd, args = "/bin/sh", append(args, "-c", taskEntry)
 
 		case map[interface{}]interface{}:
-			cmd, args, err = parseCommandFromMap(taskEntry.(map[interface{}]interface{}))
+			cmd, args, err = parseCommandFromMap(taskEntry)
 
 		default:
 			return fmt.Errorf("unsupported command specification (type %T):\n%v", taskEntry, taskEntry)
@@ -176,9 +176,9 @@ func parseCommandFromMap(data map[interface{}]interface{}) (string, []string, er
 		return "", nil, fmt.Errorf("failed to find mandatory entry 'cmd'")
 	}
 
-	switch cmd.(type) {
+	switch cmd := cmd.(type) {
 	case string:
-		command = cmd.(string)
+		command = cmd
 
 	default:
 		return "", nil, fmt.Errorf("incompatible types, mandatory entry 'cmd' must be of type string")
@@ -188,9 +188,9 @@ func parseCommandFromMap(data map[interface{}]interface{}) (string, []string, er
 		switch args.(type) {
 		case []interface{}:
 			for _, entry := range args.([]interface{}) {
-				switch entry.(type) {
+				switch entry := entry.(type) {
 				case string:
-					arguments = append(arguments, entry.(string))
+					arguments = append(arguments, entry)
 
 				default:
 					return "", nil, fmt.Errorf("incompatible types, the 'args' entries must be of type string")

@@ -24,19 +24,7 @@ import (
 	"github.com/homeport/havener/pkg/havener"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"k8s.io/helm/pkg/helm"
-	"k8s.io/helm/pkg/proto/hapi/chart"
-	"k8s.io/helm/pkg/proto/hapi/release"
 )
-
-var installChart *chart.Chart
-
-func releaseWithChart(opts *helm.MockReleaseOptions) *release.Release {
-	if opts.Chart == nil {
-		opts.Chart = installChart
-	}
-	return helm.ReleaseMock(opts)
-}
 
 var _ = Describe("Helm Operations", func() {
 	Context("Getting local helm binary", func() {

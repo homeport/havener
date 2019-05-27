@@ -42,8 +42,6 @@ import (
 
 var defaultPropagationPolicy = metav1.DeletePropagationForeground
 
-var defaultHelmDeleteTimeout = int64(15 * 60)
-
 // PurgeHelmRelease removes the given helm release including all its resources.
 func PurgeHelmRelease(kubeClient kubernetes.Interface, release Releases, helmRelease string) error {
 	if err := PurgeDeploymentsInNamespace(kubeClient, release.Namespace); err != nil {

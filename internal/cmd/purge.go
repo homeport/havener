@@ -28,9 +28,7 @@ import (
 	"github.com/homeport/gonvenience/pkg/v1/wait"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/helm/pkg/helm"
 )
 
 /* TODO Currently, purge will ignore all non-existing helm releases that were
@@ -67,22 +65,6 @@ If multiple Helm Releases are specified, then they will deleted concurrently.
 		}
 		return nil
 	},
-}
-
-func getConfiguredHelmClient() (*helm.Client, error) {
-
-	havener.VerboseMessage("Reading kube config file...")
-
-	cfg := viper.GetString("kubeconfig")
-
-	havener.VerboseMessage("Getting helm client...")
-
-	helmClient, err := havener.GetHelmClient(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	return helmClient, nil
 }
 
 // PurgeHelmReleases delete releases via helm

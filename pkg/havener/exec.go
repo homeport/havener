@@ -63,27 +63,25 @@ func ProcessConfigFile(path string) (*Config, error) {
 func TraverseStructureAndProcessShellOperators(input interface{}) (interface{}, error) {
 	var err error
 
-	switch input.(type) {
+	switch obj := input.(type) {
 	case map[interface{}]interface{}:
-		newmap := input.(map[interface{}]interface{})
-		for key, value := range newmap {
-			newmap[key], err = TraverseStructureAndProcessShellOperators(value)
+		for key, value := range obj {
+			obj[key], err = TraverseStructureAndProcessShellOperators(value)
 			if err != nil {
 				return nil, err
 			}
 		}
 
 	case []interface{}:
-		newarr := input.([]interface{})
-		for idx, value := range newarr {
-			newarr[idx], err = TraverseStructureAndProcessShellOperators(value)
+		for idx, value := range obj {
+			obj[idx], err = TraverseStructureAndProcessShellOperators(value)
 			if err != nil {
 				return nil, err
 			}
 		}
 
 	case string:
-		input, err = processShellOperator(input.(string))
+		input, err = processShellOperator(obj)
 		if err != nil {
 			return nil, err
 		}
