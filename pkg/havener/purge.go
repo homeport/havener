@@ -22,6 +22,7 @@ package havener
 
 import (
 	"fmt"
+	"strconv"
 
 	pkgerr "github.com/pkg/errors"
 
@@ -31,7 +32,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/helm/pkg/helm"
 )
 
 /* TODO Currently, purge will ignore all non-existing helm releases that were
@@ -42,15 +42,8 @@ import (
 
 var defaultPropagationPolicy = metav1.DeletePropagationForeground
 
-var defaultHelmDeleteTimeout = int64(15 * 60)
-
 // PurgeHelmRelease removes the given helm release including all its resources.
-func PurgeHelmRelease(kubeClient kubernetes.Interface, helmClient *helm.Client, helmRelease string) error {
-	release, err := helmClient.ReleaseStatus(helmRelease)
-	if err != nil {
-		return err
-	}
-
+func PurgeHelmRelease(kubeClient kubernetes.Interface, release Releases, helmRelease string) error {
 	if err := PurgeDeploymentsInNamespace(kubeClient, release.Namespace); err != nil {
 		return err
 	}
@@ -58,12 +51,11 @@ func PurgeHelmRelease(kubeClient kubernetes.Interface, helmClient *helm.Client, 
 	if err := PurgeStatefulSetsInNamespace(kubeClient, release.Namespace); err != nil {
 		return err
 	}
-
-	if _, err := helmClient.DeleteRelease(
+	_, err := RunHelmBinary("delete",
 		helmRelease,
-		helm.DeletePurge(true),
-		helm.DeleteTimeout(defaultHelmDeleteTimeout),
-	); err != nil {
+		"--purge",
+		"--timeout", strconv.Itoa(MinutesToSeconds(15)))
+	if err != nil {
 		return err
 	}
 

@@ -81,11 +81,11 @@ func MinutesToSeconds(minutes int) int {
 // VerboseMessage prints a message if the flag --verbose/-v is set to true
 func VerboseMessage(message string, vargs ...interface{}) {
 	if viper.GetBool("verbose") {
-		fmt.Printf(bunt.BoldText("[DEBUG] " + fmt.Sprintf(message, vargs...) + "\n"))
+		bunt.Printf("*[DEBUG]* %s\n", fmt.Sprintf(message, vargs...))
 	}
 }
 
 // InfoMessage prints out an info message, in bold
 func InfoMessage(message string, vargs ...interface{}) {
-	fmt.Printf(bunt.BoldText("[INFO] " + fmt.Sprintf(message, vargs...) + "\n"))
+	bunt.Printf("*[INFO]* %s\n", fmt.Sprintf(message, vargs...))
 }

@@ -18,35 +18,30 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package havener
+package e2e
 
 import (
-	"math/rand"
-	"time"
+	"testing"
+
+	"github.com/homeport/havener/e2e/environment"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
-const chars = "abcdefghijklmnopqrstuvwxyz"
-
-func init() {
-	rand.Seed(time.Now().UTC().UnixNano())
+func TestE2E(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "E2E Suite")
 }
 
-// RandomString creates a string with random content and a given length
-func RandomString(length int) string {
-	tmp := make([]byte, length, length)
-	for i := range tmp {
-		tmp[i] = chars[rand.Intn(len(chars))]
-	}
+var _ = BeforeSuite(func() {
+	env := environment.NewEnvironment()
+	err := env.SetUpEnvironment()
+	Expect(err).NotTo(HaveOccurred())
+})
 
-	return string(tmp)
-}
-
-// RandomStringWithPrefix creates a string with the provided prefix and
-// additional random content so that the whole string has the given length.
-func RandomStringWithPrefix(prefix string, length int) string {
-	if len(prefix) > length {
-		return prefix
-	}
-
-	return prefix + RandomString(length-len(prefix))
-}
+var _ = AfterSuite(func() {
+	err := env.SetUpEnvironment()
+	Expect(err).NotTo(HaveOccurred())
+	err = env.DeleteAllReleases()
+	Expect(err).NotTo(HaveOccurred())
+})

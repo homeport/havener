@@ -31,6 +31,7 @@ import (
 	"time"
 
 	"golang.org/x/crypto/ssh/terminal"
+	"github.com/homeport/gonvenience/pkg/v1/text"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -93,10 +94,10 @@ func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.P
 	}
 
 	if err = executor.Stream(remotecommand.StreamOptions{Stdin: stdin, Stdout: stdout, Stderr: stderr, Tty: tty}); err != nil {
-		switch err.(type) {
+		switch err := err.(type) {
 		case exec.CodeExitError:
 			// In case this needs to be refactored in a way where the exit code of the remote command is interesting
-			return fmt.Errorf("remote command failed with exit code %d", err.(exec.CodeExitError).Code)
+			return fmt.Errorf("remote command failed with exit code %d", err.Code)
 
 		default:
 			return fmt.Errorf("could not execute: %v", err)
@@ -113,7 +114,7 @@ func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string,
 	containerName := "runon"
 	containerImage := "debian:jessie"
 
-	jobName := strings.ToLower(RandomStringWithPrefix("node-runner-", 24))
+	jobName := strings.ToLower(text.RandomStringWithPrefix("node-runner-", 24))
 	trueThat := true
 	jobDef := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{

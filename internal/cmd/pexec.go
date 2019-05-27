@@ -117,7 +117,7 @@ func execInClusterPod(args []string) error {
 			}
 		}
 		return &ErrorWithMsg{"no pod name specified",
-			fmt.Errorf("List of available pods:\n%s",
+			fmt.Errorf("list of available pods:\n%s",
 				strings.Join(list, "\n"),
 			)}
 	}

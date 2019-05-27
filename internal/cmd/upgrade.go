@@ -25,14 +25,14 @@ import (
 	"io/ioutil"
 	"time"
 
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	yaml "gopkg.in/yaml.v2"
+	"github.com/homeport/havener/internal/hvnr"
 
 	"github.com/homeport/gonvenience/pkg/v1/bunt"
 	"github.com/homeport/gonvenience/pkg/v1/wait"
-	"github.com/homeport/havener/internal/hvnr"
 	"github.com/homeport/havener/pkg/havener"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	yaml "gopkg.in/yaml.v2"
 )
 
 const (
@@ -53,7 +53,7 @@ var upgradeCmd = &cobra.Command{
 
 		switch {
 		case len(havenerUpgradeConfig) > 0:
-			return upgradeViaHavenerConfig(havenerUpgradeConfig)
+			return UpgradeViaHavenerConfig(havenerUpgradeConfig)
 
 		default:
 			cmd.Usage()
@@ -75,7 +75,8 @@ func init() {
 	viper.BindPFlag(envVarUpgradeValueReuse, upgradeCmd.PersistentFlags().Lookup("reuse-values"))
 }
 
-func upgradeViaHavenerConfig(havenerConfig string) error {
+// UpgradeViaHavenerConfig override an existing helm chart
+func UpgradeViaHavenerConfig(havenerConfig string) error {
 	timeoutInMin := viper.GetInt(envVarUpgradeTimeout)
 	reuseValues := viper.GetBool(envVarUpgradeValueReuse)
 
@@ -116,7 +117,7 @@ func upgradeViaHavenerConfig(havenerConfig string) error {
 		pi.SetTimeout(time.Duration(timeoutInMin) * time.Minute)
 		pi.Start()
 
-		result, err := havener.UpdateHelmRelease(
+		err = havener.UpdateHelmRelease(
 			release.ChartName,
 			release.ChartLocation,
 			overridesData,
@@ -133,8 +134,13 @@ func upgradeViaHavenerConfig(havenerConfig string) error {
 			release.ChartNamespace,
 		)
 
-		if notes := result.GetRelease().GetInfo().GetStatus().GetNotes(); len(notes) > 0 {
-			message = message + "\n\n" + notes
+		releaseNotes, err := havener.RunHelmBinary("get", "notes", release.ChartName)
+		if err != nil {
+			return &ErrorWithMsg{"failed to get notes of release", err}
+		}
+
+		if releaseNotes != nil {
+			message = message + "\n\n" + string(releaseNotes)
 		}
 
 		printStatusMessage("Upgrade", message, bunt.Gray)

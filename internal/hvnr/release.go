@@ -24,16 +24,15 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v2"
-	"k8s.io/helm/pkg/proto/hapi/release"
 )
 
 // ListManifestFiles breaks up the manifest string of a Helm Release to return
 // a map with the template filename as the key and the unmarshaled YAML data
 // as the value.
-func ListManifestFiles(release *release.Release) (map[string]yaml.MapSlice, error) {
+func ListManifestFiles(release string) (map[string]yaml.MapSlice, error) {
 	result := make(map[string]yaml.MapSlice)
 
-	for _, document := range strings.Split(release.GetManifest(), "---\n") {
+	for _, document := range strings.Split(release, "---\n") {
 		if document == "\n" {
 			continue
 		}
@@ -43,9 +42,11 @@ func ListManifestFiles(release *release.Release) (map[string]yaml.MapSlice, erro
 				source := strings.Replace(firstLine, "# Source: ", "", -1)
 
 				var data yaml.MapSlice
-				if err := yaml.Unmarshal([]byte(strings.Join(lines[1:], "\n")), &data); err == nil {
-					result[source] = data
+				err := yaml.Unmarshal([]byte(strings.Join(lines[1:], "\n")), &data)
+				if err != nil {
+					return nil, err
 				}
+				result[source] = data
 			}
 		}
 	}

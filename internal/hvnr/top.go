@@ -455,7 +455,7 @@ func centerText(text string, length int) string {
 }
 
 func sortedKeyList(data map[string]usageData) []string {
-	result := make([]string, len(data), len(data))
+	result := make([]string, len(data))
 
 	i := 0
 	for key := range data {

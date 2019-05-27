@@ -25,13 +25,12 @@ import (
 	"io/ioutil"
 	"time"
 
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	yaml "gopkg.in/yaml.v2"
-
 	"github.com/homeport/gonvenience/pkg/v1/bunt"
 	"github.com/homeport/gonvenience/pkg/v1/wait"
 	"github.com/homeport/havener/pkg/havener"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	yaml "gopkg.in/yaml.v2"
 )
 
 const (
@@ -51,7 +50,7 @@ var deployCmd = &cobra.Command{
 
 		switch {
 		case len(havenerConfig) > 0:
-			return deployViaHavenerConfig(havenerConfig)
+			return DeployViaHavenerConfig(havenerConfig)
 
 		default:
 			cmd.Usage()
@@ -71,7 +70,8 @@ func init() {
 	viper.BindPFlag(envVarDeployTimeout, deployCmd.PersistentFlags().Lookup("timeout"))
 }
 
-func deployViaHavenerConfig(havenerConfig string) error {
+// DeployViaHavenerConfig entry function for running a helm install
+func DeployViaHavenerConfig(havenerConfig string) error {
 	timeoutInMin := viper.GetInt(envVarDeployTimeout)
 
 	cfgdata, err := ioutil.ReadFile(havenerConfig)
@@ -105,9 +105,7 @@ func deployViaHavenerConfig(havenerConfig string) error {
 
 		pi := wait.NewProgressIndicator(fmt.Sprintf("Creating Helm Release for %s", release.ChartName))
 		pi.SetTimeout(time.Duration(timeoutInMin) * time.Minute)
-		pi.Start()
-
-		result, err := havener.DeployHelmRelease(
+		err = havener.DeployHelmRelease(
 			release.ChartName,
 			release.ChartNamespace,
 			release.ChartLocation,
@@ -125,8 +123,13 @@ func deployViaHavenerConfig(havenerConfig string) error {
 			release.ChartNamespace,
 		)
 
-		if notes := result.GetRelease().GetInfo().GetStatus().GetNotes(); len(notes) > 0 {
-			message = message + "\n\n" + notes
+		releaseNotes, err := havener.RunHelmBinary("get", "notes", release.ChartName)
+		if err != nil {
+			return &ErrorWithMsg{"failed to get notes of release", err}
+		}
+
+		if releaseNotes != nil {
+			message = message + "\n\n" + string(releaseNotes)
 		}
 
 		printStatusMessage("Upgrade", message, bunt.Gray)

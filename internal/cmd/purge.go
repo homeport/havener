@@ -21,15 +21,14 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/homeport/gonvenience/pkg/v1/wait"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/helm/pkg/helm"
 )
 
 /* TODO Currently, purge will ignore all non-existing helm releases that were
@@ -61,40 +60,33 @@ If multiple Helm Releases are specified, then they will deleted concurrently.
 			return &ErrorWithMsg{"unable to get access to cluster", err}
 		}
 
-		helmClient, err := getConfiguredHelmClient()
-		if err != nil {
-			return &ErrorWithMsg{"failed to get helm client", err}
-		}
-
-		if err := purgeHelmReleases(client, helmClient, args...); err != nil {
+		if err := PurgeHelmReleases(client, args...); err != nil {
 			return &ErrorWithMsg{"failed to purge helm releases", err}
 		}
 		return nil
 	},
 }
 
-func getConfiguredHelmClient() (*helm.Client, error) {
+// PurgeHelmReleases delete releases via helm
+func PurgeHelmReleases(kubeClient kubernetes.Interface, helmReleaseNames ...string) error {
+	// Get a struct with existing releases, and access it by name
+	releasesList := havener.HelmReleases{}
 
-	havener.VerboseMessage("Reading kube config file...")
-
-	cfg := viper.GetString("kubeconfig")
-
-	havener.VerboseMessage("Getting helm client...")
-
-	helmClient, err := havener.GetHelmClient(cfg)
+	stdOutput, err := havener.RunHelmBinary("list", "-a", "--output", "json")
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return helmClient, nil
-}
+	err = json.Unmarshal(stdOutput, &releasesList)
+	if err != nil {
+		return err
+	}
 
-func purgeHelmReleases(kubeClient kubernetes.Interface, helmClient *helm.Client, helmReleaseNames ...string) error {
 	// Go through the list of actual helm releases to filter our non-existing releases.
 	toBeDeleted := []string{}
 	for _, helmReleaseName := range helmReleaseNames {
-		if statusResp, err := helmClient.ReleaseStatus(helmReleaseName); err == nil {
-			toBeDeleted = append(toBeDeleted, statusResp.Name)
+		if havener.ReleaseExist(releasesList, helmReleaseName) {
+			toBeDeleted = append(toBeDeleted, helmReleaseName)
 		}
 	}
 
@@ -111,8 +103,12 @@ func purgeHelmReleases(kubeClient kubernetes.Interface, helmClient *helm.Client,
 	// Start to purge the helm releaes in parallel
 	errors := make(chan error, len(toBeDeleted))
 	for _, name := range toBeDeleted {
+		releaseMetaData, err := havener.GetReleaseByName(name)
+		if err != nil {
+			return err
+		}
 		go func(helmRelease string) {
-			errors <- havener.PurgeHelmRelease(kubeClient, helmClient, helmRelease)
+			errors <- havener.PurgeHelmRelease(kubeClient, releaseMetaData, helmRelease)
 		}(name)
 	}
 

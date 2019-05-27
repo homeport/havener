@@ -53,9 +53,9 @@ func Execute() {
 	defer func() {
 		const panicTitle = "Well, uhm, that is something we did not cover ..."
 		if r := recover(); r != nil {
-			switch r.(type) {
+			switch r := r.(type) {
 			case error:
-				exitWithErrorAndIssue(panicTitle, r.(error))
+				exitWithErrorAndIssue(panicTitle, r)
 
 			default:
 				exitWithErrorAndIssue(panicTitle, fmt.Errorf("%v", r))

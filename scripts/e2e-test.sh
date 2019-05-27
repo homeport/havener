@@ -24,13 +24,14 @@ set -euo pipefail
 
 export GO111MODULE=on
 
-echo -e 'Testing packages'
+echo -e 'Testing e2e package'
+
 ginkgo -r \
+  e2e/ \
   --randomizeAllSpecs \
   --randomizeSuites \
   --failOnPending \
   --nodes=4 \
   --compilers=2 \
   --race \
-  -skipPackage "e2e" \
   --trace
