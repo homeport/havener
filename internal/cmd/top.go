@@ -78,6 +78,9 @@ func retrieveClusterStats() error {
 	defer term.ShowCursor()
 
 	iterations := 0
+
+	// lint:ignore SA1015 - In most cases, it is an endless function plus it is
+	// a top level command and therefore the program ends afterwards.
 	for range time.Tick(time.Duration(interval) * time.Second) {
 		// TODO Get stats for nodes and pods at the same time
 		nodeStats, err := hvnr.CompileNodeStats(clientSet)
