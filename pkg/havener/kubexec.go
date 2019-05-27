@@ -200,11 +200,13 @@ func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string,
 
 func getPodUsingListOptions(client kubernetes.Interface, namespace string, listOptions metav1.ListOptions) (*corev1.Pod, error) {
 	timeout := time.After(defaultTimeoutForGetPod * time.Second)
-	tick := time.Tick(250 * time.Millisecond)
+
+	ticker := time.NewTicker(250 * time.Millisecond)
+	defer ticker.Stop()
 
 	for {
 		select {
-		case <-tick:
+		case <-ticker.C:
 			pods, err := client.CoreV1().Pods(namespace).List(listOptions)
 			if err != nil {
 				return nil, err
