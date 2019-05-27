@@ -44,8 +44,8 @@ require (
 	github.com/hashicorp/golang-lru v0.0.0-20160207214719-a0d98a5f2880 // indirect
 	github.com/hashicorp/hcl v0.0.0-20160711231752-d8c773c4cba1 // indirect
 	github.com/homeport/dyff v0.8.0
-	github.com/homeport/gonvenience v1.7.6
-	github.com/homeport/ytbx v1.0.1
+	github.com/homeport/gonvenience v1.8.0
+	github.com/homeport/ytbx v1.1.1
 	github.com/howeyc/gopass v0.0.0-20170109162249-bf9dde6d0d2c // indirect
 	github.com/imdario/mergo v0.0.0-20141206190957-6633656539c1 // indirect
 	github.com/jonboulle/clockwork v0.1.0 // indirect
