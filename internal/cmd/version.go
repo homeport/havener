@@ -28,8 +28,6 @@ import (
 )
 
 var havenerVersion string
-var kubeVersion string
-var helmVersion string
 
 // versionCmd represents the top command
 var versionCmd = &cobra.Command{
@@ -37,19 +35,15 @@ var versionCmd = &cobra.Command{
 	Short: "Shows the version",
 	Long:  `Shows version details`,
 	Run: func(cmd *cobra.Command, args []string) {
-		for _, ptr := range []*string{&havenerVersion, &kubeVersion, &helmVersion} {
-			if len(*ptr) == 0 {
-				*ptr = "develop"
-			}
+		if len(havenerVersion) == 0 {
+			havenerVersion = "development"
 		}
 
-		bunt.Printf("*havener* version MintCream{_%s_}, *Go* version MintCream{_%s %s/%s_}, *Kubernetes API* version MintCream{_%s_}, *Helm* version MintCream{_%s_}\n",
+		bunt.Printf("*havener* version MintCream{_%s_}, *Go* version MintCream{_%s %s/%s_}\n",
 			havenerVersion,
 			runtime.Version(),
 			runtime.GOOS,
 			runtime.GOARCH,
-			kubeVersion,
-			helmVersion,
 		)
 	},
 }
