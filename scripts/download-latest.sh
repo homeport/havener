@@ -22,9 +22,6 @@
 
 set -euo pipefail
 
-DEFAULT_KUBE_VERSION="1.10"
-DEFAULT_HELM_VERSION="2.10"
-
 if ! hash curl 2>/dev/null; then
   echo -e 'Required tool \033[1mcurl\033[0m is not installed.'
   exit 1
@@ -65,7 +62,7 @@ fi
 # Download and install
 case "${SYSTEM_UNAME}" in
   darwin | linux)
-    DOWNLOAD_URI="https://github.com/homeport/havener/releases/download/${SELECTED_TAG}/havener-kube-${DEFAULT_KUBE_VERSION}-helm-${DEFAULT_HELM_VERSION}-${SYSTEM_UNAME}-amd64"
+    DOWNLOAD_URI="https://github.com/homeport/havener/releases/download/${SELECTED_TAG}/havener-${SYSTEM_UNAME}-amd64"
 
     echo -e "Downloading \\033[4;94m${DOWNLOAD_URI}\\033[0m to place it into \\033[1m${TARGET_DIR}\\033[0m"
     if curl --fail --progress-bar --location "${DOWNLOAD_URI}" --output "${TARGET_DIR}/havener"; then
