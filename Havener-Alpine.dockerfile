@@ -18,13 +18,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-FROM golang:1.11-alpine AS build
+FROM golang:1.12-alpine AS build
 COPY . /go/src/github.com/homeport/havener
 RUN apk add --update make git bash file curl jq && \
-  curl -sL https://raw.githubusercontent.com/homeport/ytbx/master/scripts/download-latest.sh | bash && \
   cd /go/src/github.com/homeport/havener && \
   make build && \
-  cp -p binaries/havener-kube-*-linux-amd64 /usr/local/bin/havener
+  cp -p binaries/havener-linux-amd64 /usr/local/bin/havener
 
 
 FROM alpine:3.8

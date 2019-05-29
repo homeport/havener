@@ -22,39 +22,17 @@ package havener
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"strconv"
 
 	"github.com/pkg/errors"
-	"k8s.io/helm/pkg/chartutil"
-	"k8s.io/helm/pkg/helm"
-	"k8s.io/helm/pkg/helm/portforwarder"
-	"k8s.io/helm/pkg/kube"
-	"k8s.io/helm/pkg/proto/hapi/chart"
 )
 
 var (
 	helmBinary = "helm"
 )
-
-// GetHelmChart loads a chart from file. It will discover the chart encoding
-// and hand off to the appropriate chart reader.
-// TODO: other options for loading the chart, e.g. downloading
-func GetHelmChart(path string) (requestedChart *chart.Chart, err error) {
-	helmChartPath, err := PathToHelmChart(path)
-	if err != nil {
-		return nil, err
-	}
-
-	if _, err := os.Stat(helmChartPath); os.IsNotExist(err) {
-		return nil, err
-	}
-
-	return chartutil.Load(helmChartPath)
-}
 
 // UpdateHelmRelease will upgrade an existing release with provided override values
 func UpdateHelmRelease(chartname string, chartPath string, valueOverrides []byte, reuseVal bool) error {
@@ -131,27 +109,6 @@ func DeployHelmRelease(chartname string, namespace string, chartPath string, tim
 	os.Remove(overridesFile)
 
 	return nil
-}
-
-// GetHelmClient creates a new client for the Helm-Tiller protocol
-// TODO: this should go away
-func GetHelmClient(kubeConfig string) (*helm.Client, error) {
-	var tillerTunnel *kube.Tunnel
-
-	clientSet, config, err := OutOfClusterAuthentication(kubeConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	tillerTunnel, err = portforwarder.New("kube-system", clientSet, config)
-	if err != nil {
-		return nil, err
-	}
-
-	tillerTunnelAddress := fmt.Sprintf("localhost:%d", tillerTunnel.Local)
-	hClient := helm.NewClient(helm.Host(tillerTunnelAddress))
-
-	return hClient, nil
 }
 
 // RunHelmBinary will execute helm with the provided

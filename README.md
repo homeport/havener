@@ -135,7 +135,7 @@ The `version` command pretty much does what it says on the tin: it gives out the
 
 We are happy to have other people contributing to the project. If you decide to do that, here's how to:
 
-- get Go (`havener` requires Go version 1.11 or greater)
+- get Go (`havener` requires Go version 1.12 or greater)
 - fork the project
 - create a new branch
 - make your changes
@@ -171,8 +171,24 @@ docker run \
   --rm \
   --volume $GOPATH/src/github.com/homeport/havener:/go/src/github.com/homeport/havener \
   --workdir /go/src/github.com/homeport/havener \
-  golang:1.11 /bin/bash
+  golang:1.12 /bin/bash
 ```
+
+### Package dependencies (Go modules)
+
+Go modules are in use to handle the package dependencies in `havener`. Since `k8s.io/client-go` in combination with `k8s.io/api` and others is very sensitive with respect to which exact version of one package will work with another package, it is currently not possible to solely rely on `go mod tidy` to work without issues. Therefore, the following hack is required to bump the `client-go` or Kubernetes version in the dependencies.Install `kubegodep2dep` to your local machine: `go get -u github.com/sh2k/kubegodep2dep` and then run:
+
+```sh
+rm go.mod go.sum
+kubegodep2dep -kube-branch release-1.14 -client-go-branch release-11.0 >Gopkg.toml
+dep ensure -v
+go mod init
+rm -rf Gopkg.toml Gopkg.lock vendor
+make clean test build
+go mod tidy
+```
+
+These steps will first remove the current Go modules setup to create an interim `dep` setup including the good old `vendor` directory. Once this is done, `go mod init` will migrate it to Go modules again. The test and build run are to make sure all other test and build related dependencies are on-board, too. The `kubegodep2dep` tool will do the dirty part to extract the correct package dependencies from the Kubernetes `godep` dependency setup combined with `client-go` requirements in one dependecy file.
 
 ## License
 
