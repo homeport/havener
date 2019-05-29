@@ -27,6 +27,7 @@ RUN go get -u github.com/mvdan/sh/cmd/shfmt && \
 
 RUN go get -d github.com/SUSE/stampy && \
     cd $GOPATH/src/github.com/SUSE/stampy && \
+    find . -type f -print0 | xargs -0 perl -pi -e 's:github.com/golang/lint/golint:golang.org/x/lint/golint:g' && \
     make tools && \
     make all && \
     mv $GOPATH/src/github.com/SUSE/stampy/build/linux-amd64/stampy /usr/local/bin/stampy
