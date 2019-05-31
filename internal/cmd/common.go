@@ -119,7 +119,11 @@ func processTask(title string, task *havener.Task) error {
 		return nil
 	}
 
-	var buf bytes.Buffer
+	data := make(chan string)
+	defer close(data)
+	go func() {
+		streamStyledMessageInGray(title, data)
+	}()
 
 	for _, taskEntry := range *task {
 		var cmd string
@@ -150,7 +154,10 @@ func processTask(title string, task *havener.Task) error {
 			write.Close()
 		}()
 
-		buf.ReadFrom(read)
+		scanner := bufio.NewScanner(read)
+		for scanner.Scan() {
+			data <- bunt.RemoveAllEscapeSequences(scanner.Text())
+		}
 
 		if err != nil {
 			return fmt.Errorf("failed to run command: %s %s\n%s",
@@ -158,10 +165,6 @@ func processTask(title string, task *havener.Task) error {
 				strings.Join(args, " "),
 				err.Error())
 		}
-	}
-
-	if output := buf.String(); len(output) > 0 {
-		printStyledMessageInGray(title, output)
 	}
 
 	return nil
@@ -205,20 +208,28 @@ func parseCommandFromMap(data map[interface{}]interface{}) (string, []string, er
 	return command, arguments, nil
 }
 
-func printStyledMessageInGray(head string, body string) {
-	printStyledMessage(head, body, bunt.Gray, bunt.DimGray)
+func streamStyledMessageInGray(caption string, data chan string) {
+	streamStyledMessage(caption, data, bunt.Gray, bunt.DimGray)
 }
 
-func printStyledMessage(head string, body string, headColor colorful.Color, bodyColor colorful.Color) {
-	bunt.Printf("*%s*\n", bunt.Colorize(head, headColor))
-	for _, line := range strings.Split(body, "\n") {
+func streamStyledMessage(caption string, data chan string, captionColor colorful.Color, dataColor colorful.Color) {
+	captionPrinted := false
+
+	for line := range data {
+		if !captionPrinted {
+			bunt.Printf("*%s*\n", bunt.Colorize(caption, captionColor))
+			captionPrinted = true
+		}
+
 		bunt.Printf("%s %s\n",
-			bunt.Colorize("│", headColor),
-			bunt.Colorize(line, bodyColor),
+			bunt.Colorize("│", captionColor),
+			bunt.Colorize(line, dataColor),
 		)
 	}
 
-	bunt.Println()
+	if captionPrinted {
+		bunt.Println()
+	}
 }
 
 func printStatusMessage(head string, body string, headColor colorful.Color) {
