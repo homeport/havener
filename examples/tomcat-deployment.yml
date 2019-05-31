@@ -14,6 +14,10 @@ before:
     #!/bin/bash
 
     echo "$(date) before deployment"
+    for I in $(seq 1 4); do
+      sleep 1
+      echo "Running ... $(( I * 25 ))%"
+    done
 
 after:
 - echo "$(date) after deployment"
