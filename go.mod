@@ -22,7 +22,7 @@ require (
 	github.com/onsi/gomega v1.4.3
 	github.com/pkg/errors v0.8.1
 	github.com/spf13/cobra v0.0.4
-	github.com/spf13/viper v1.3.2
+	github.com/spf13/viper v1.4.0
 	github.com/xanzy/ssh-agent v0.2.1 // indirect
 	golang.org/x/crypto v0.0.0-20190219172222-a4c6cb3142f2
 	golang.org/x/net v0.0.0-20190206173232-65e2d4e15006 // indirect
