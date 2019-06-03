@@ -30,6 +30,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/homeport/gonvenience/pkg/v1/term"
 	"github.com/homeport/gonvenience/pkg/v1/text"
 	"golang.org/x/crypto/ssh/terminal"
 
@@ -84,6 +85,12 @@ func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.P
 		return fmt.Errorf("failed to initialize remote executor: %v", err)
 	}
 
+	var tsq *terminalSizeQueue
+	if tty && term.IsTerminal() {
+		tsq = setupTerminalResizeWatcher()
+		defer tsq.stop()
+	}
+
 	// Terminal needs to run in raw mode for the actual command execution when TTY is enabled.
 	// The raw mode is the one where characters are not printed twice in the terminal. See
 	// https://en.wikipedia.org/wiki/POSIX_terminal_interface#History for a bit more details.
@@ -93,7 +100,7 @@ func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.P
 		}
 	}
 
-	if err = executor.Stream(remotecommand.StreamOptions{Stdin: stdin, Stdout: stdout, Stderr: stderr, Tty: tty}); err != nil {
+	if err = executor.Stream(remotecommand.StreamOptions{Stdin: stdin, Stdout: stdout, Stderr: stderr, Tty: tty, TerminalSizeQueue: tsq}); err != nil {
 		switch err := err.(type) {
 		case exec.CodeExitError:
 			// In case this needs to be refactored in a way where the exit code of the remote command is interesting
