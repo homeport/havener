@@ -40,7 +40,7 @@ There are different ways to get `havener`. You are free to pick the one that mak
 ## Quick Command Overview
 
 Like `kubectl`, `havener` relies on the Kubernetes configuration that can be set via the `KUBECONFIG` environment variable. It can also be provided with the `--kubeconfig` flag, which takes the path to the YAML file (for example `$HOME/.kube/config`). `Havener` will use your local `helm` binary, so it is the user reponsability, to keep the `helm` binary in sync with tiller.
- 
+
 ```text
 A convenience tool to handle tasks around Containerized CF workloads on a Kubernetes cluster, for example:
 - Deploy a new series of Helm Charts
