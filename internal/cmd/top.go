@@ -79,9 +79,9 @@ func retrieveClusterStats() error {
 
 	iterations := 0
 
-	// lint:ignore SA1015 - In most cases, it is an endless function plus it is
-	// a top level command and therefore the program ends afterwards.
-	for range time.Tick(time.Duration(interval) * time.Second) {
+	// Ignore staticcheck SA1015 since the program terminates after the loop and
+	// therefore any leaked timer is properly cleaned up anyway.
+	for range time.Tick(time.Duration(interval) * time.Second) { //lint:ignore SA1015 because
 		// TODO Get stats for nodes and pods at the same time
 		nodeStats, err := hvnr.CompileNodeStats(clientSet)
 		if err != nil {
