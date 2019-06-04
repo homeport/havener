@@ -73,7 +73,7 @@ fi
 
 ' 2>/dev/null`
 
-var parallelDownloads = 16
+var parallelDownloads = 32
 
 func createDirectory(path string) error {
 	if _, err := os.Stat(path); err != nil {
@@ -124,11 +124,12 @@ func RetrieveLogs(client kubernetes.Interface, restconfig *rest.Config, target s
 	}
 
 	type task struct {
-		pod     *corev1.Pod
-		baseDir string
+		assignment string
+		pod        *corev1.Pod
+		baseDir    string
 	}
 
-	tasks := make(chan *task, 64)
+	tasks := make(chan *task)
 	errors := []error{}
 
 	var wg sync.WaitGroup
@@ -136,13 +137,22 @@ func RetrieveLogs(client kubernetes.Interface, restconfig *rest.Config, target s
 		wg.Add(1)
 		go func() {
 			for task := range tasks {
-				for _, err := range retrieveFilesFromPod(client, restconfig, task.pod, task.baseDir, includeConfigFiles) {
-					switch err {
-					case io.EOF, gzip.ErrHeader, gzip.ErrChecksum:
-						continue
+				switch task.assignment {
+				case "cf-logs":
+					for _, err := range retrieveFilesFromPod(client, restconfig, task.pod, task.baseDir, includeConfigFiles) {
+						switch err {
+						case io.EOF, gzip.ErrHeader, gzip.ErrChecksum:
+							continue
+						}
+
+						errors = append(errors, err)
 					}
 
-					errors = append(errors, err)
+				case "container-logs":
+					errors = append(
+						errors,
+						retrieveContainerLogs(client, task.pod, task.baseDir)...,
+					)
 				}
 			}
 
@@ -150,23 +160,41 @@ func RetrieveLogs(client kubernetes.Interface, restconfig *rest.Config, target s
 		}()
 	}
 
-	if namespaces, err := ListNamespaces(client); err == nil {
-		for _, namespace := range namespaces {
-			if listResult, err := client.CoreV1().Pods(namespace).List(metav1.ListOptions{}); err == nil {
-				for p := range listResult.Items {
-					if listResult.Items[p].Status.Phase != corev1.PodRunning {
-						continue
-					}
+	namespaces, err := ListNamespaces(client)
+	if err != nil {
+		return combineErrors(append(errors, err))
+	}
 
-					baseDir := filepath.Join(
+	for _, namespace := range namespaces {
+		listResult, err := client.CoreV1().Pods(namespace).List(metav1.ListOptions{})
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+
+		for p := range listResult.Items {
+			if listResult.Items[p].Status.Phase == corev1.PodRunning {
+				tasks <- &task{
+					assignment: "cf-logs",
+					pod:        &listResult.Items[p],
+					baseDir: filepath.Join(
 						target,
 						LogDirName,
 						clusterName,
 						namespace,
-					)
-
-					tasks <- &task{&listResult.Items[p], baseDir}
+					),
 				}
+			}
+
+			tasks <- &task{
+				assignment: "container-logs",
+				pod:        &listResult.Items[p],
+				baseDir: filepath.Join(
+					target,
+					LogDirName,
+					clusterName,
+					namespace,
+				),
 			}
 		}
 	}
@@ -174,28 +202,17 @@ func RetrieveLogs(client kubernetes.Interface, restconfig *rest.Config, target s
 	close(tasks)
 	wg.Wait()
 
-	if len(errors) > 0 {
-		var buf bytes.Buffer
-		for _, err := range errors {
-			buf.WriteString(" - ")
-			buf.WriteString(err.Error())
-			buf.WriteString("\n")
-		}
-
-		return fmt.Errorf("some issues during log download:\n%s", buf.String())
-	}
-
-	return nil
+	return combineErrors(errors)
 }
 
 func retrieveFilesFromPod(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.Pod, baseDir string, includeConfigFiles bool) []error {
-	finds := []string{}
-	finds = append(finds, logFinds...)
+	errors := []error{}
+
+	finds := append([]string{}, logFinds...)
 	if includeConfigFiles {
 		finds = append(finds, cfgFinds...)
 	}
 
-	errors := []error{}
 	for _, container := range pod.Spec.Containers {
 		targetPath := filepath.Join(
 			baseDir,
@@ -204,7 +221,6 @@ func retrieveFilesFromPod(client kubernetes.Interface, restconfig *rest.Config, 
 		)
 
 		read, write := io.Pipe()
-
 		go func() {
 			PodExec(
 				client,
@@ -273,4 +289,61 @@ func untar(inputStream io.Reader, targetPath string) error {
 			file.Close()
 		}
 	}
+}
+
+func retrieveContainerLogs(client kubernetes.Interface, pod *corev1.Pod, baseDir string) []error {
+	errors := []error{}
+
+	for _, container := range pod.Spec.Containers {
+		req := client.CoreV1().RESTClient().
+			Get().
+			Namespace(pod.GetNamespace()).
+			Name(pod.Name).
+			Resource("pods").
+			SubResource("log").
+			Param("container", container.Name)
+
+		readCloser, err := req.Stream()
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+
+		defer readCloser.Close()
+
+		targetDir := filepath.Join(baseDir, pod.Name)
+		if err := createDirectory(targetDir); err != nil {
+			errors = append(errors, err)
+			continue
+		}
+
+		target := filepath.Join(targetDir, container.Name+".log")
+		file, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(0644))
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+
+		if _, err := io.Copy(file, readCloser); err != nil {
+			errors = append(errors, err)
+			continue
+		}
+	}
+
+	return errors
+}
+
+func combineErrors(errors []error) error {
+	if len(errors) > 0 {
+		var buf bytes.Buffer
+		for _, err := range errors {
+			buf.WriteString(" - ")
+			buf.WriteString(err.Error())
+			buf.WriteString("\n")
+		}
+
+		return fmt.Errorf("some issues during log download:\n%s", buf.String())
+	}
+
+	return nil
 }
