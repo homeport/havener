@@ -8,7 +8,7 @@ require (
 	github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f // indirect
 	github.com/google/gofuzz v1.0.0 // indirect
 	github.com/googleapis/gnostic v0.2.0 // indirect
-	github.com/homeport/dyff v0.10.0
+	github.com/homeport/dyff v0.10.1
 	github.com/homeport/gonvenience v1.8.0
 	github.com/homeport/ytbx v1.1.1
 	github.com/imdario/mergo v0.3.7 // indirect
