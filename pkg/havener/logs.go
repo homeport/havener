@@ -59,13 +59,21 @@ var cfgFinds = []string{
 const retrieveCommand = `/bin/sh -c '
 #!/bin/sh
 
-FILES="$(cd / && %s )"
+FILES="$(cd / && %s)"
 
 if [ ! -z "${FILES}" ]; then
-  ( cd / && ls -1Sr ${FILES} ) | while read -r FILENAME; do
-    case "$(file --brief --mime-type "${FILENAME}")" in
-      text/*)
+  (cd / && ls -1Sr ${FILES}) | while read -r FILENAME; do
+    case "${FILENAME}" in
+      *log)
         echo "${FILENAME}"
+        ;;
+
+      *)
+        case "$(file --brief --mime-type "${FILENAME}")" in
+          text/*)
+            echo "${FILENAME}"
+            ;;
+        esac
         ;;
     esac
   done | GZIP=-9 tar --create --gzip --file=- --files-from=- 2>/dev/null
