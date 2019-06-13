@@ -35,6 +35,8 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 )
 
+var namespaceFilter string
+
 type note struct {
 	time      time.Time
 	noteType  string
@@ -66,6 +68,8 @@ var eventsCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(eventsCmd)
+
+	eventsCmd.PersistentFlags().StringVarP(&namespaceFilter, "namespace", "n", "", "Filter events for specific namespace")
 }
 
 func retrieveClusterEvents(kubeConfig string) error {
@@ -79,6 +83,10 @@ func retrieveClusterEvents(kubeConfig string) error {
 		return &ErrorWithMsg{"failed to get a list of namespaces", err}
 	}
 
+	if namespaceFilter != "" {
+		namespaceFilter = "metadata.namespace==" + namespaceFilter
+	}
+
 	notes := make(chan note)
 
 	// Start one Go routine per namespace to watch for events
@@ -86,7 +94,7 @@ func retrieveClusterEvents(kubeConfig string) error {
 		namespace := namespaces[i]
 
 		go func() error {
-			watcher, err := client.CoreV1().Events(namespace).Watch(metav1.ListOptions{})
+			watcher, err := client.CoreV1().Events(namespace).Watch(metav1.ListOptions{FieldSelector: namespaceFilter})
 			if err != nil {
 				return &ErrorWithMsg{"failed to setup event watcher", err}
 			}
