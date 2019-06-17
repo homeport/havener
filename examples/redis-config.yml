@@ -6,6 +6,9 @@ releases:
   before: [echo "$(date) before release"]
   after: [echo "$(date) after release"]
 
+env:
+  WORD: whatever  
+
 before:
 - cmd: /bin/bash
   args:

@@ -23,6 +23,7 @@ package cmd
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/gonvenience/bunt"
@@ -82,6 +83,12 @@ func DeployViaHavenerConfig(havenerConfig string) error {
 	var config havener.Config
 	if err := yaml.Unmarshal(cfgdata, &config); err != nil {
 		return &ErrorWithMsg{"failed to unmarshal havener configuration", err}
+	}
+
+	fmt.Println(config.Env)
+
+	for key, value := range config.Env {
+		os.Setenv(key, value)
 	}
 
 	if err := processTask("Predeployment Steps", config.Before); err != nil {
