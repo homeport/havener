@@ -27,7 +27,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/homeport/gonvenience/pkg/v1/bunt"
+	"github.com/gonvenience/bunt"
 	"github.com/homeport/havener/pkg/havener"
 
 	corev1 "k8s.io/api/core/v1"
@@ -136,7 +136,7 @@ func retrieveClusterEvents(kubeConfig string) error {
 
 		bunt.Printf("DimGray{%s} %-7s _%s_/%s  *%s*  AntiqueWhite{%s}\n",
 			note.time,
-			bunt.Colorize(note.noteType, noteColor),
+			bunt.Style(note.noteType, bunt.Foreground(noteColor)),
 			note.namespace,
 			note.resource,
 			note.reason,

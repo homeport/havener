@@ -24,7 +24,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/homeport/gonvenience/pkg/v1/term"
+	"github.com/gonvenience/term"
 	"golang.org/x/sys/unix"
 	"k8s.io/client-go/tools/remotecommand"
 )

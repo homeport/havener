@@ -25,7 +25,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/homeport/gonvenience/pkg/v1/wait"
+	"github.com/gonvenience/wait"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"

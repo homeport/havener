@@ -31,7 +31,7 @@ import (
 	"runtime/debug"
 	"strings"
 
-	"github.com/homeport/gonvenience/pkg/v1/bunt"
+	"github.com/gonvenience/bunt"
 	"github.com/homeport/havener/pkg/havener"
 	colorful "github.com/lucasb-eyer/go-colorful"
 )
@@ -217,13 +217,13 @@ func streamStyledMessage(caption string, data chan string, captionColor colorful
 
 	for line := range data {
 		if !captionPrinted {
-			bunt.Printf("*%s*\n", bunt.Colorize(caption, captionColor))
+			bunt.Printf("*%s*\n", bunt.Style(caption, bunt.Foreground(captionColor)))
 			captionPrinted = true
 		}
 
 		bunt.Printf("%s %s\n",
-			bunt.Colorize("│", captionColor),
-			bunt.Colorize(line, dataColor),
+			bunt.Style("│", bunt.Foreground(captionColor)),
+			bunt.Style(line, bunt.Foreground(dataColor)),
 		)
 	}
 
@@ -233,10 +233,10 @@ func streamStyledMessage(caption string, data chan string, captionColor colorful
 }
 
 func printStatusMessage(head string, body string, headColor colorful.Color) {
-	bunt.Printf("*%s*\n", bunt.Colorize(head, headColor))
+	bunt.Printf("*%s*\n", bunt.Style(head, bunt.Foreground(headColor)))
 	for _, line := range strings.Split(body, "\n") {
 		fmt.Printf("%s %s\n",
-			bunt.Colorize("│", headColor),
+			bunt.Style("│", bunt.Foreground(headColor)),
 			line,
 		)
 	}

@@ -25,7 +25,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/homeport/gonvenience/pkg/v1/bunt"
+	"github.com/gonvenience/bunt"
 	"github.com/spf13/viper"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc" //from https://github.com/kubernetes/client-go/issues/345

@@ -35,9 +35,9 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/homeport/gonvenience/pkg/v1/bunt"
-	"github.com/homeport/gonvenience/pkg/v1/neat"
-	"github.com/homeport/gonvenience/pkg/v1/term"
+	"github.com/gonvenience/bunt"
+	"github.com/gonvenience/neat"
+	"github.com/gonvenience/term"
 )
 
 const (
@@ -489,7 +489,12 @@ func progressBar(length int, usageEntry usageEntry, textDetails func(used, max i
 				// Use smooth curved gradient:
 				// http://fooplot.com/?lang=en#W3sidHlwZSI6MCwiZXEiOiIoMS1jb3MoeF4yKjMuMTQxNSkpLzIiLCJjb2xvciI6IiMwMDAwMDAifSx7InR5cGUiOjEwMDAsIndpbmRvdyI6WyIwIiwiMSIsIjAiLCIxIl19XQ--
 				blendFactor := 0.5 * (1.0 - math.Cos(math.Pow(float64(i)/float64(length), 2)*math.Pi))
-				buf.WriteString(bunt.Colorize(symbol, bunt.LimeGreen.BlendLab(bunt.Red, blendFactor)))
+				buf.WriteString(
+					bunt.Style(
+						symbol,
+						bunt.Foreground(bunt.LimeGreen.BlendLab(bunt.Red, blendFactor)),
+					),
+				)
 
 			default:
 				buf.WriteString(symbol)
@@ -498,7 +503,7 @@ func progressBar(length int, usageEntry usageEntry, textDetails func(used, max i
 		} else {
 			switch bunt.UseColors() {
 			case true:
-				buf.WriteString(bunt.Colorize(symbol, bunt.DimGray))
+				buf.WriteString(bunt.Style(symbol, bunt.Foreground(bunt.DimGray)))
 
 			default:
 				buf.WriteString(" ")
@@ -507,7 +512,7 @@ func progressBar(length int, usageEntry usageEntry, textDetails func(used, max i
 	}
 
 	if len(details) > 0 {
-		buf.WriteString(bunt.Colorize(details, bunt.Gray))
+		buf.WriteString(bunt.Style(details, bunt.Foreground(bunt.Gray)))
 	}
 
 	buf.WriteString("]")

@@ -27,8 +27,8 @@ import (
 
 	"github.com/homeport/havener/internal/hvnr"
 
-	"github.com/homeport/gonvenience/pkg/v1/bunt"
-	"github.com/homeport/gonvenience/pkg/v1/wait"
+	"github.com/gonvenience/bunt"
+	"github.com/gonvenience/wait"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

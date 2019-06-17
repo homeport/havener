@@ -29,8 +29,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/homeport/gonvenience/pkg/v1/bunt"
-	"github.com/homeport/gonvenience/pkg/v1/term"
+	"github.com/gonvenience/bunt"
+	"github.com/gonvenience/term"
 	homedir "github.com/mitchellh/go-homedir"
 )
 
