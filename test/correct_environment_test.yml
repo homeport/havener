@@ -1,0 +1,22 @@
+name: minikube
+releases:
+- chart_name: thgh
+  chart_namespace: abcd
+  chart_location: abcd
+  chart_version: 1
+  overrides:
+    env:
+      DOMAIN: (( env SERVICE_DOMAIN ))
+    image:
+      pullPolicy: Always
+    kube:
+      external_ips:
+      - ((   env SERVICE_IP   ))
+      hostpath_available: true
+      storage_class:
+        persistent: standard
+    secrets:
+      UAA_ADMIN_CLIENT_SECRET: secret
+env:
+  SERVICE_IP: 192.168.99.100
+  SERVICE_DOMAIN: ((env SERVICE_IP   )).xip.io
