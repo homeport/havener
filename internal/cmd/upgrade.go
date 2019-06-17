@@ -95,7 +95,7 @@ func UpgradeViaHavenerConfig(havenerConfig string) error {
 	}
 
 	for _, release := range config.Releases {
-		overrides, err := havener.TraverseStructureAndProcessShellOperators(release.Overrides)
+		overrides, err := havener.TraverseStructureAndProcessOperators(release.Overrides)
 		if err != nil {
 			return &ErrorWithMsg{"failed to process overrides section", err}
 		}

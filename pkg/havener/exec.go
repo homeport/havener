@@ -24,6 +24,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -49,7 +50,7 @@ func ProcessConfigFile(path string) (*Config, error) {
 			continue
 		}
 
-		config.Releases[idx].Overrides, err = TraverseStructureAndProcessShellOperators(release.Overrides)
+		config.Releases[idx].Overrides, err = TraverseStructureAndProcessOperators(release.Overrides)
 		if err != nil {
 			return nil, err
 		}
@@ -58,15 +59,15 @@ func ProcessConfigFile(path string) (*Config, error) {
 	return &config, nil
 }
 
-// TraverseStructureAndProcessShellOperators traverses the provided generic structure
+// TraverseStructureAndProcessOperators traverses the provided generic structure
 // and processes all string leafs.
-func TraverseStructureAndProcessShellOperators(input interface{}) (interface{}, error) {
+func TraverseStructureAndProcessOperators(input interface{}) (interface{}, error) {
 	var err error
 
 	switch obj := input.(type) {
 	case map[interface{}]interface{}:
 		for key, value := range obj {
-			obj[key], err = TraverseStructureAndProcessShellOperators(value)
+			obj[key], err = TraverseStructureAndProcessOperators(value)
 			if err != nil {
 				return nil, err
 			}
@@ -74,14 +75,14 @@ func TraverseStructureAndProcessShellOperators(input interface{}) (interface{}, 
 
 	case []interface{}:
 		for idx, value := range obj {
-			obj[idx], err = TraverseStructureAndProcessShellOperators(value)
+			obj[idx], err = TraverseStructureAndProcessOperators(value)
 			if err != nil {
 				return nil, err
 			}
 		}
 
 	case string:
-		input, err = processShellOperator(obj)
+		input, err = ProcessOperators(obj)
 		if err != nil {
 			return nil, err
 		}
@@ -91,6 +92,23 @@ func TraverseStructureAndProcessShellOperators(input interface{}) (interface{}, 
 	}
 
 	return input, err
+}
+
+// processOperator processes the input string and calls
+// all operator checks.
+func ProcessOperators(s string) (string, error) {
+	var err error
+
+	inputString := s
+
+	inputString, err = processShellOperator(inputString)
+	if err != nil {
+		return "", err
+	}
+
+	inputString = processEnvOperator(inputString)
+
+	return inputString, nil
 }
 
 // processShellOperator processes the input string and evaluates any shell
@@ -118,4 +136,27 @@ func processShellOperator(s string) (string, error) {
 	}
 
 	return s, nil
+}
+
+// processShellOperator processes the input string and resolves any
+// environment variable in it.
+func processEnvOperator(s string) string {
+	// https://regex101.com/r/SZ5CDH/2
+	shellRegexp := regexp.MustCompile(`\({2}\s*env\s*(([\w]+).+?)\s*\B\){2}`)
+	if matches := shellRegexp.FindAllStringSubmatch(s, -1); len(matches) > 0 {
+		for _, match := range matches {
+			/* #0 is the whole string,
+			 * #1 env name
+			 * #2 rest
+			 */
+
+			variableName := strings.TrimSpace(match[1])
+
+			variable := os.Getenv(variableName)
+
+			s = strings.Replace(s, match[0], variable, 1)
+		}
+	}
+
+	return s
 }
