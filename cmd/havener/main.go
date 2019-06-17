@@ -25,7 +25,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/homeport/gonvenience/pkg/v1/term"
+	"github.com/gonvenience/term"
 	"github.com/homeport/havener/internal/cmd"
 )
 

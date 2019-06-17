@@ -28,7 +28,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/homeport/gonvenience/pkg/v1/wait"
+	"github.com/gonvenience/wait"
 
 	"github.com/homeport/havener/pkg/havener"
 )

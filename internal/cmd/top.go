@@ -25,7 +25,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/homeport/gonvenience/pkg/v1/term"
+	"github.com/gonvenience/term"
 	"github.com/homeport/havener/internal/hvnr"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"

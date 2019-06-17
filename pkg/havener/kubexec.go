@@ -30,8 +30,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/homeport/gonvenience/pkg/v1/term"
-	"github.com/homeport/gonvenience/pkg/v1/text"
+	"github.com/gonvenience/term"
+	"github.com/gonvenience/text"
 	"golang.org/x/crypto/ssh/terminal"
 
 	batchv1 "k8s.io/api/batch/v1"
