@@ -85,9 +85,11 @@ func DeployViaHavenerConfig(havenerConfig string) error {
 		return &ErrorWithMsg{"failed to unmarshal havener configuration", err}
 	}
 
-	fmt.Println(config.Env)
-
 	for key, value := range config.Env {
+		value, err := havener.ProcessOperators(value)
+		if err != nil {
+			return &ErrorWithMsg{"failed to process env section", err}
+		}
 		os.Setenv(key, value)
 	}
 
@@ -96,7 +98,7 @@ func DeployViaHavenerConfig(havenerConfig string) error {
 	}
 
 	for _, release := range config.Releases {
-		overrides, err := havener.TraverseStructureAndProcessShellOperators(release.Overrides)
+		overrides, err := havener.TraverseStructureAndProcessOperators(release.Overrides)
 		if err != nil {
 			return &ErrorWithMsg{"failed to process overrides section", err}
 		}
