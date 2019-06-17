@@ -13,7 +13,7 @@ releases:
 
 env:
   VERSION: 2
-  USERNAME: shell echo "m-lukas"
+  USERNAME: shell echo "user"
   PASSWORD: 12345678
   DATABASE: admin
 
