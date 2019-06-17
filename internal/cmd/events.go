@@ -83,18 +83,18 @@ func retrieveClusterEvents(kubeConfig string) error {
 		return &ErrorWithMsg{"failed to get a list of namespaces", err}
 	}
 
-	if namespaceFilter != "" {
-		namespaceFilter = "metadata.namespace==" + namespaceFilter
-	}
-
 	notes := make(chan note)
 
 	// Start one Go routine per namespace to watch for events
 	for i := range namespaces {
 		namespace := namespaces[i]
 
+		if namespaceFilter != "" && namespace != namespaceFilter {
+			continue
+		}
+
 		go func() error {
-			watcher, err := client.CoreV1().Events(namespace).Watch(metav1.ListOptions{FieldSelector: namespaceFilter})
+			watcher, err := client.CoreV1().Events(namespace).Watch(metav1.ListOptions{})
 			if err != nil {
 				return &ErrorWithMsg{"failed to setup event watcher", err}
 			}
