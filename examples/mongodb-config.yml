@@ -1,0 +1,30 @@
+name: mongo deployment
+releases:
+- chart_name: mongodb
+  chart_namespace: mongodb
+  chart_versiion: (( shell echo $VERSION ))
+  chart_location: stable/mongodb
+  overrides:
+    mongodbUsername: (( shell echo $USERNAME ))
+    mongodbPassword: (( shell echo $PASSWORD ))
+    mongodbDatabase: (( shell echo $DATABASE ))
+  before: [echo "$(date) before release"]
+  after: [echo "Installed mongoDB instance with credentials $USERNAME/$PASSWORD"]
+
+env:
+  VERSION: 2
+  USERNAME: shell echo "m-lukas"
+  PASSWORD: 12345678
+  DATABASE: admin
+
+before:
+- cmd: /bin/bash
+  args:
+  - -c
+  - |
+    #!/bin/bash
+    echo "$(date) before deployment"
+
+after:
+- echo "$(date) after deployment"
+  
