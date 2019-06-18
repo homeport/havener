@@ -1,9 +1,9 @@
 name: minikube
 releases:
-- chart_name: uaa
-  chart_namespace: uaa
-  chart_location: abcd
-  chart_version: 1
+- name: uaa
+  namespace: uaa
+  location: abcd
+  version: 1
   overrides:
     env:
       DOMAIN: 192.168.99.100.xip.io

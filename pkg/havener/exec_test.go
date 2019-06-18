@@ -1,10 +1,11 @@
 package havener
 
 import (
+	"os"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"gopkg.in/yaml.v2"
-	"os"
 )
 
 var _ = Describe("Exec", func() {
@@ -18,10 +19,10 @@ var _ = Describe("Exec", func() {
 
 		expected := `name: minikube
 releases:
-- chart_name: thgh
-  chart_namespace: abcd
-  chart_location: abcd
-  chart_version: 1
+- name: thgh
+  namespace: abcd
+  location: abcd
+  version: 1
   overrides:
     env:
       DOMAIN: 192.168.99.100.xip.io
@@ -49,10 +50,10 @@ releases:
 
 		expected := `name: minikube
 releases:
-- chart_name: thgh
-  chart_namespace: abcd
-  chart_location: abcd
-  chart_version: 1
+- name: thgh
+  namespace: abcd
+  location: abcd
+  version: 1
   overrides: null
 `
 		Expect(string(input2)).To(BeEquivalentTo(expected))
@@ -79,10 +80,10 @@ error message: exit status 127`
 
 		expected := `name: minikube
 releases:
-- chart_name: uaa
-  chart_namespace: uaa
-  chart_location: abcd
-  chart_version: 1
+- name: uaa
+  namespace: uaa
+  location: abcd
+  version: 1
   overrides:
     env:
       DOMAIN: 192.168.99.100.xip.io

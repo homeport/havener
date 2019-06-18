@@ -3,10 +3,10 @@
 # The 192.168.99.100 comes from doing a $(minikube ip) from the cmd line
 name: minikube
 releases:
-- chart_name: uaa
-  chart_namespace: uaa
-  chart_version: 0
-  chart_location: helm/uaa-opensuse@https://github.com/SUSE/scf/releases/download/2.13.3/scf-opensuse-2.13.3+cf2.7.0.0.gf95d9aed.zip
+- name: uaa
+  namespace: uaa
+  version: 0
+  location: helm/uaa-opensuse@https://github.com/SUSE/scf/releases/download/2.13.3/scf-opensuse-2.13.3+cf2.7.0.0.gf95d9aed.zip
   overrides:
     secrets:
       UAA_ADMIN_CLIENT_SECRET: foobar
@@ -20,10 +20,10 @@ releases:
       - (( shell dig +short $(minikube ip).xip.io ))
       storage_class:
         persistent: "standard"
-- chart_name: cf
-  chart_namespace: cf
-  chart_version: 0
-  chart_location: helm/cf-opensuse@https://github.com/SUSE/scf/releases/download/2.13.3/scf-opensuse-2.13.3+cf2.7.0.0.gf95d9aed.zip
+- name: cf
+  namespace: cf
+  version: 0
+  location: helm/cf-opensuse@https://github.com/SUSE/scf/releases/download/2.13.3/scf-opensuse-2.13.3+cf2.7.0.0.gf95d9aed.zip
   overrides:
     secrets:
       CLUSTER_ADMIN_PASSWORD: changeme
