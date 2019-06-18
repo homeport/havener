@@ -12,9 +12,9 @@ releases:
   after: [echo "Installed mongoDB instance with credentials $USERNAME/$PASSWORD"]
 
 env:
-  VERSION: 2
-  USERNAME: shell echo "user"
-  PASSWORD: 12345678
+  VERSION: 1
+  USERNAME: (( shell echo "user" ))
+  PASSWORD: (( env USERNAME ))-12345678
   DATABASE: admin
 
 before:

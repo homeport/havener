@@ -20,13 +20,17 @@
 
 package havener
 
+import (
+	yaml "gopkg.in/yaml.v2"
+)
+
 // Config is the Havener configuration main structure contract.
 type Config struct {
-	Name     string            `yaml:"name"`
-	Releases []Release         `yaml:"releases"`
-	Env      map[string]string `yaml:"env,omitempty"`
-	Before   *Task             `yaml:"before,omitempty"`
-	After    *Task             `yaml:"after,omitempty"`
+	Name     string        `yaml:"name"`
+	Releases []Release     `yaml:"releases"`
+	Env      yaml.MapSlice `yaml:"env,omitempty"`
+	Before   *Task         `yaml:"before,omitempty"`
+	After    *Task         `yaml:"after,omitempty"`
 }
 
 // Release is the Havener configuration Helm Release abstraction, which

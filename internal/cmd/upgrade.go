@@ -23,7 +23,6 @@ package cmd
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"time"
 
 	"github.com/homeport/havener/internal/hvnr"
@@ -91,12 +90,9 @@ func UpgradeViaHavenerConfig(havenerConfig string) error {
 		return &ErrorWithMsg{"failed to unmarshal havener configuration", err}
 	}
 
-	for key, value := range config.Env {
-		value, err := havener.ProcessOperators(value)
-		if err != nil {
-			return &ErrorWithMsg{"failed to process env section", err}
-		}
-		os.Setenv(key, value)
+	err = havener.SetConfigEnv(&config)
+	if err != nil {
+		return err
 	}
 
 	if err := processTask("Pre-upgrade Steps", config.Before); err != nil {
