@@ -1,8 +1,8 @@
 name: redis deployment
 releases:
-- chart_name: redis
-  chart_namespace: redis
-  chart_location: stable/redis
+- name: redis
+  namespace: redis
+  location: stable/redis
   before: [echo "$(date) before release"]
   after: [echo "$(date) after release"]
 

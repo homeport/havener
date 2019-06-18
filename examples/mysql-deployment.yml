@@ -1,7 +1,7 @@
 name: mysql deployment
 releases:
-- chart_name: mysql-release
-  chart_namespace: mysql
-  chart_location: stable/mysql
+- name: mysql-release
+  namespace: mysql
+  location: stable/mysql
   overrides:
     foo: bar

@@ -65,9 +65,9 @@ var _ = Describe("Helm functionalities", func() {
 			installConfigBytes = []byte(`---
 name: mysql deployment
 releases:
-- chart_name: mysql-release-install-test
-  chart_namespace: install
-  chart_location: stable/mysql
+- name: mysql-release-install-test
+  namespace: install
+  location: stable/mysql
 `)
 		})
 
@@ -103,16 +103,16 @@ releases:
 			testUpgradeConfigBytes = []byte(`---
 name: mysql deployment
 releases:
-- chart_name: mysql-release-upgrade-test
-  chart_namespace: upgrade
-  chart_location: stable/mysql
+- name: mysql-release-upgrade-test
+  namespace: upgrade
+  location: stable/mysql
 `)
 			testUpdgradeOverridesBytes = []byte(`---
 name: mysql deployment
 releases:
-- chart_name: mysql-release-upgrade-test
-  chart_namespace: upgrade
-  chart_location: stable/mysql
+- name: mysql-release-upgrade-test
+  namespace: upgrade
+  location: stable/mysql
   overrides:
     imageTag: "5.6"
 `)
@@ -143,9 +143,9 @@ releases:
 			purgeConfigBytes = []byte(`---
 name: mysql deployment
 releases:
-- chart_name: mysql-release-purge-test
-  chart_namespace: purge
-  chart_location: stable/mysql
+- name: mysql-release-purge-test
+  namespace: purge
+  location: stable/mysql
 `)
 		})
 

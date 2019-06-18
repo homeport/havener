@@ -1,9 +1,9 @@
 name: armada
 releases:
-- chart_name: uaa
-  chart_namespace: uaa
-  chart_version: 0
-  chart_location: charts/uaa
+- name: uaa
+  namespace: uaa
+  version: 0
+  location: charts/uaa
   overrides:
    secrets:
      UAA_ADMIN_CLIENT_SECRET: foobar
@@ -14,10 +14,10 @@ releases:
      - (( shell dig +short $(bx cs cluster-get --cluster scf-fabric --json | jq --raw-output .ingressHostname) ))
      storage_class:
        persistent: "ibmc-file-gold"
-- chart_name: cf
-  chart_namespace: cf
-  chart_version: 0
-  chart_location: charts/cf
+- name: cf
+  namespace: cf
+  version: 0
+  location: charts/cf
   overrides:
     secrets:
       CLUSTER_ADMIN_PASSWORD: changeme

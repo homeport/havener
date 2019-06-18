@@ -36,10 +36,10 @@ type Config struct {
 // Release is the Havener configuration Helm Release abstraction, which
 // consists of the Havener specific additional details, e.g. Overrides.
 type Release struct {
-	ChartName      string      `yaml:"chart_name"`
-	ChartNamespace string      `yaml:"chart_namespace"`
-	ChartLocation  string      `yaml:"chart_location"`
-	ChartVersion   int         `yaml:"chart_version"`
+	ChartName      string      `yaml:"name"`
+	ChartNamespace string      `yaml:"namespace"`
+	ChartLocation  string      `yaml:"location"`
+	ChartVersion   int         `yaml:"version"`
 	Overrides      interface{} `yaml:"overrides"`
 	Before         *Task       `yaml:"before,omitempty"`
 	After          *Task       `yaml:"after,omitempty"`
