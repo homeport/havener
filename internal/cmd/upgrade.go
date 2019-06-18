@@ -31,7 +31,6 @@ import (
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	yaml "gopkg.in/yaml.v2"
 )
 
 const (
@@ -94,18 +93,13 @@ func UpgradeViaHavenerConfig(havenerConfig string) error {
 	}
 
 	for _, release := range config.Releases {
-		overrides, err := havener.TraverseStructureAndProcessOperators(release.Overrides)
+		overridesData, err := processOverrideSection(release)
 		if err != nil {
-			return &ErrorWithMsg{"failed to process overrides section", err}
+			return err
 		}
 
 		if err := processTask("Before Chart "+release.ChartName, release.Before); err != nil {
 			return &ErrorWithMsg{"failed to evaluate before release steps", err}
-		}
-
-		overridesData, err := yaml.Marshal(overrides)
-		if err != nil {
-			return &ErrorWithMsg{"failed to marshal overrides structure into bytes", err}
 		}
 
 		if err := hvnr.ShowHelmReleaseDiff(release.ChartName, release.ChartLocation, overridesData, reuseValues); err != nil {
@@ -133,13 +127,9 @@ func UpgradeViaHavenerConfig(havenerConfig string) error {
 			release.ChartNamespace,
 		)
 
-		releaseNotes, err := havener.RunHelmBinary("get", "notes", release.ChartName)
+		message, err = getReleaseMessage(release, message)
 		if err != nil {
-			return &ErrorWithMsg{"failed to get notes of release", err}
-		}
-
-		if releaseNotes != nil {
-			message = message + "\n\n" + string(releaseNotes)
+			return err
 		}
 
 		printStatusMessage("Upgrade", message, bunt.Gray)
