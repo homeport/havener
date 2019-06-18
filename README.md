@@ -176,7 +176,7 @@ docker run \
 
 ### Package dependencies (Go modules)
 
-Go modules are in use to handle the package dependencies in `havener`. Since `k8s.io/client-go` in combination with `k8s.io/api` and others is very sensitive with respect to which exact version of one package will work with another package, it is currently not possible to solely rely on `go mod tidy` to work without issues. Therefore, the following hack is required to bump the `client-go` or Kubernetes version in the dependencies.Install `kubegodep2dep` to your local machine: `go get -u github.com/sh2k/kubegodep2dep` and then run:
+Go modules are in use to handle the package dependencies in `havener`. Since `k8s.io/client-go` in combination with `k8s.io/api` and others is very sensitive with respect to which exact version of one package will work with another package, it is currently not possible to solely rely on `go mod tidy` to work without issues. Therefore, the following hack is required to bump the `client-go` or Kubernetes version in the dependencies. Install `kubegodep2dep` to your local machine: `go get -u github.com/sh2k/kubegodep2dep` and then run:
 
 ```sh
 rm go.mod go.sum
