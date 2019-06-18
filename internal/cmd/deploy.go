@@ -77,7 +77,7 @@ func DeployViaHavenerConfig(havenerConfig string) error {
 		return err
 	}
 
-	err = havener.SetConfigEnv(&config)
+	err = havener.SetConfigEnv(config)
 	if err != nil {
 		return err
 	}

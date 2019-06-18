@@ -23,6 +23,7 @@ package havener
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -37,7 +38,7 @@ func ProcessConfigFile(path string) (*Config, error) {
 		return nil, err
 	}
 
-	err = SetConfigEnv(&config)
+	err = SetConfigEnv(config)
 	if err != nil {
 		return nil, err
 	}
