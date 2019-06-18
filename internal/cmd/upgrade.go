@@ -22,7 +22,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"time"
 
 	"github.com/homeport/havener/internal/hvnr"
@@ -80,14 +79,9 @@ func UpgradeViaHavenerConfig(havenerConfig string) error {
 	timeoutInMin := viper.GetInt(envVarUpgradeTimeout)
 	reuseValues := viper.GetBool(envVarUpgradeValueReuse)
 
-	cfgdata, err := ioutil.ReadFile(havenerConfig)
+	config, err := havener.ParseConfigFile(havenerConfig)
 	if err != nil {
-		return &ErrorWithMsg{"unable to read havener configuration", err}
-	}
-
-	var config havener.Config
-	if err := yaml.Unmarshal(cfgdata, &config); err != nil {
-		return &ErrorWithMsg{"failed to unmarshal havener configuration", err}
+		return err
 	}
 
 	err = havener.SetConfigEnv(&config)

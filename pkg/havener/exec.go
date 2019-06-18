@@ -23,25 +23,17 @@ package havener
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"os/exec"
 	"regexp"
 	"strings"
-
-	yaml "gopkg.in/yaml.v2"
 )
 
 // ProcessConfigFile reads the havener config file from the provided path and
 // returns the processed input file. Any shell operator will be evaluated.
 func ProcessConfigFile(path string) (*Config, error) {
-	source, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
 
-	var config Config
-	if err = yaml.Unmarshal(source, &config); err != nil {
+	config, err := ParseConfigFile(path)
+	if err != nil {
 		return nil, err
 	}
 
@@ -61,7 +53,7 @@ func ProcessConfigFile(path string) (*Config, error) {
 		}
 	}
 
-	return &config, nil
+	return config, nil
 }
 
 // TraverseStructureAndProcessOperators traverses the provided generic structure
