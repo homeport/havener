@@ -245,6 +245,8 @@ func printStatusMessage(head string, body string, headColor colorful.Color) {
 	bunt.Println()
 }
 
+// processOverrideSection rewrites the override section of the havener config
+// by resolving its operators.
 func processOverrideSection(release havener.Release) ([]byte, error) {
 	overrides, err := havener.TraverseStructureAndProcessOperators(release.Overrides)
 	if err != nil {
@@ -259,6 +261,8 @@ func processOverrideSection(release havener.Release) ([]byte, error) {
 	return overridesData, nil
 }
 
+// getReleaseMessage combines a custom message with the release notes
+// from the helm binary.
 func getReleaseMessage(release havener.Release, message string) (string, error) {
 	releaseNotes, err := havener.RunHelmBinary("get", "notes", release.ChartName)
 	if err != nil {
