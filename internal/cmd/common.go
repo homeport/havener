@@ -34,6 +34,7 @@ import (
 	"github.com/gonvenience/bunt"
 	"github.com/homeport/havener/pkg/havener"
 	colorful "github.com/lucasb-eyer/go-colorful"
+	yaml "gopkg.in/yaml.v2"
 )
 
 // ErrorWithMsg defines a custom msg together
@@ -242,4 +243,31 @@ func printStatusMessage(head string, body string, headColor colorful.Color) {
 	}
 
 	bunt.Println()
+}
+
+func processOverrideSection(release havener.Release) ([]byte, error) {
+	overrides, err := havener.TraverseStructureAndProcessOperators(release.Overrides)
+	if err != nil {
+		return nil, &ErrorWithMsg{"failed to process overrides section", err}
+	}
+
+	overridesData, err := yaml.Marshal(overrides)
+	if err != nil {
+		return nil, &ErrorWithMsg{"failed to marshal overrides structure into bytes", err}
+	}
+
+	return overridesData, nil
+}
+
+func getReleaseMessage(release havener.Release, message string) (string, error) {
+	releaseNotes, err := havener.RunHelmBinary("get", "notes", release.ChartName)
+	if err != nil {
+		return "", &ErrorWithMsg{"failed to get notes of release", err}
+	}
+
+	if releaseNotes != nil {
+		message = message + "\n\n" + string(releaseNotes)
+	}
+
+	return message, nil
 }
