@@ -99,7 +99,7 @@ func TraverseStructureAndProcessOperators(input interface{}) (interface{}, error
 	return input, err
 }
 
-// processOperator processes the input string and calls
+// ProcessOperators processes the input string and calls
 // all operator checks.
 func ProcessOperators(s string) (string, error) {
 	var err error
@@ -143,7 +143,7 @@ func processShellOperator(s string) (string, error) {
 	return s, nil
 }
 
-// processShellOperator processes the input string and resolves any
+// processEnvOperator processes the input string and resolves any
 // environment variable in it.
 func processEnvOperator(s string) string {
 	// https://regex101.com/r/SZ5CDH/2
