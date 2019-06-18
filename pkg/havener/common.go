@@ -23,12 +23,10 @@ package havener
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/gonvenience/bunt"
 	"github.com/spf13/viper"
-	yaml "gopkg.in/yaml.v2"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc" //from https://github.com/kubernetes/client-go/issues/345
 	"k8s.io/client-go/rest"
@@ -92,21 +90,8 @@ func InfoMessage(message string, vargs ...interface{}) {
 	bunt.Printf("*[INFO]* %s\n", fmt.Sprintf(message, vargs...))
 }
 
-func ParseConfigFile(path string) (*Config, error) {
-
-	source, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("unable to read configuration\nerror message: %s", err.Error())
-	}
-
-	var config Config
-	if err = yaml.Unmarshal(source, &config); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal configuration\nerror message: %s", err.Error())
-	}
-
-	return &config, nil
-}
-
+// SetConfigEnv processes the env operators of the config
+// and sets them as environmental variables
 func SetConfigEnv(config *Config) error {
 
 	for _, mapItem := range config.Env {
