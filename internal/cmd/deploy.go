@@ -22,7 +22,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"time"
 
 	"github.com/gonvenience/bunt"
@@ -74,14 +73,9 @@ func init() {
 func DeployViaHavenerConfig(havenerConfig string) error {
 	timeoutInMin := viper.GetInt(envVarDeployTimeout)
 
-	cfgdata, err := ioutil.ReadFile(havenerConfig)
+	config, err := havener.ParseConfigFile(havenerConfig)
 	if err != nil {
-		return &ErrorWithMsg{"unable to read havener configuration", err}
-	}
-
-	var config havener.Config
-	if err := yaml.Unmarshal(cfgdata, &config); err != nil {
-		return &ErrorWithMsg{"failed to unmarshal havener configuration", err}
+		return err
 	}
 
 	err = havener.SetConfigEnv(&config)
