@@ -98,8 +98,8 @@ releases:
     secrets:
       UAA_ADMIN_CLIENT_SECRET: secret
 env:
-  SERVICE_DOMAIN: ((env SERVICE_IP   )).xip.io
   SERVICE_IP: 192.168.99.100
+  SERVICE_DOMAIN: ((env SERVICE_IP   )).xip.io
 `
 		Expect(string(input2)).To(BeEquivalentTo(expected))
 

@@ -45,12 +45,9 @@ func ProcessConfigFile(path string) (*Config, error) {
 		return nil, err
 	}
 
-	for key, value := range config.Env {
-		value, err := ProcessOperators(value)
-		if err != nil {
-			return nil, fmt.Errorf("failed to process env section\nerror message: %s", err.Error())
-		}
-		os.Setenv(key, value)
+	err = SetConfigEnv(&config)
+	if err != nil {
+		return nil, err
 	}
 
 	for idx, release := range config.Releases {
