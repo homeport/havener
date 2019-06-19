@@ -65,6 +65,8 @@ github.com/gonvenience/bunt v1.0.1 h1:105azL3hzdCHh9WtrB1M+Jvs/r1fQAyHutA4vohJAQ
 github.com/gonvenience/bunt v1.0.1/go.mod h1:lsyhkmNpSAzhVx059BD0fQy5F29rWcS6AHb7UWNlT/s=
 github.com/gonvenience/bunt v1.0.2 h1:eiWx8+bO2yIlZXCZ/zNITj+F+CnXrqgXO9SpRKhL+sQ=
 github.com/gonvenience/bunt v1.0.2/go.mod h1:lsyhkmNpSAzhVx059BD0fQy5F29rWcS6AHb7UWNlT/s=
+github.com/gonvenience/bunt v1.0.5 h1:/iP7ROAPvBfpGab3eaFeyJPEOgdWJVpkkFNj8lfboZA=
+github.com/gonvenience/bunt v1.0.5/go.mod h1:lsyhkmNpSAzhVx059BD0fQy5F29rWcS6AHb7UWNlT/s=
 github.com/gonvenience/neat v1.0.0 h1:NSaMFyNBdFBBEPCWcRu92704LvpZCSySlgddkLmBDY0=
 github.com/gonvenience/neat v1.0.0/go.mod h1:AL6r79SA6Zul7jJpOYRlBDomwbKVrcFTv/EwZpd+koE=
 github.com/gonvenience/neat v1.0.1 h1:zeuWGRLEBhB0STVMEy4I0tvsrcEGYjViB/30CWYdZNs=
