@@ -139,8 +139,8 @@ func getSecretValue(namespace string, secretName string, secretKey string) (stri
 		return "", fmt.Errorf("failed to get secret: '%s' of namespace: '%s'\nerror message: %s", secretName, namespace, err.Error())
 	}
 
-	secretValue := secret.Data[secretKey]
-	if len(secretValue) <= 0 {
+	secretValue, ok := secret.Data[secretKey]
+	if !ok {
 		return "", fmt.Errorf("secret: '%s' has no key: '%s'", secretName, secretKey)
 	}
 
