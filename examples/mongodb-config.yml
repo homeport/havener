@@ -1,9 +1,9 @@
 name: mongo deployment
 releases:
-- chart_name: mongodb
-  chart_namespace: mongodb
-  chart_versiion: (( env VERSION ))
-  chart_location: stable/mongodb
+- name: mongodb
+  namespace: mongodb
+  versiion: (( env VERSION ))
+  location: stable/mongodb
   overrides:
     mongodbUsername: (( env USERNAME ))
     mongodbPassword: (( env PASSWORD ))

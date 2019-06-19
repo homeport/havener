@@ -80,10 +80,10 @@ error message: exit status 127`
 
 		expected := `name: minikube
 releases:
-- chart_name: thgh
-  chart_namespace: abcd
-  chart_location: abcd
-  chart_version: 1
+- name: thgh
+  namespace: abcd
+  location: abcd
+  version: 1
   overrides:
     env:
       DOMAIN: 192.168.99.100.xip.io
