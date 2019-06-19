@@ -29,7 +29,7 @@ require (
 	golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8
 	golang.org/x/sys v0.0.0-20190412213103-97732733099d
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	gopkg.in/src-d/go-git.v4 v4.11.0
+	gopkg.in/src-d/go-git.v4 v4.12.0
 	gopkg.in/yaml.v2 v2.2.2
 	k8s.io/api v0.0.0-20190313235455-40a48860b5ab
 	k8s.io/apimachinery v0.0.0-20190404173353-6a84e37a896d
