@@ -157,7 +157,7 @@ func processEnvOperator(s string) string {
 
 			variableName := strings.TrimSpace(match[1])
 			variable := os.Getenv(variableName)
-			s = strings.Replace(s, match[0], variable, 1)
+			s = strings.Replace(s, match[0], variable, -1)
 		}
 	}
 

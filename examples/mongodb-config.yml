@@ -2,7 +2,7 @@ name: mongo deployment
 releases:
 - name: mongodb
   namespace: mongodb
-  versiion: (( env VERSION ))
+  version: (( env VERSION ))
   location: stable/mongodb
   overrides:
     mongodbUsername: (( env USERNAME ))
