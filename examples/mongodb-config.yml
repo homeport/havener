@@ -2,12 +2,12 @@ name: mongo deployment
 releases:
 - chart_name: mongodb
   chart_namespace: mongodb
-  chart_versiion: (( shell echo $VERSION ))
+  chart_versiion: (( env VERSION ))
   chart_location: stable/mongodb
   overrides:
-    mongodbUsername: (( shell echo $USERNAME ))
-    mongodbPassword: (( shell echo $PASSWORD ))
-    mongodbDatabase: (( shell echo $DATABASE ))
+    mongodbUsername: (( env USERNAME ))
+    mongodbPassword: (( env PASSWORD ))
+    mongodbDatabase: (( env DATABASE ))
   before: [echo "$(date) before release"]
   after: [echo "Installed mongoDB instance with credentials $USERNAME/$PASSWORD"]
 

@@ -27,8 +27,10 @@ import (
 	"os"
 
 	"github.com/gonvenience/bunt"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	yaml "gopkg.in/yaml.v2"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc" //from https://github.com/kubernetes/client-go/issues/345
 	"k8s.io/client-go/rest"
@@ -122,4 +124,25 @@ func ParseConfigFile(path string) (*Config, error) {
 	}
 
 	return &config, nil
+}
+
+// getSecretValue returns the value of the provided key of the given value.
+// It returns the value as decoded string.
+func getSecretValue(namespace string, secretName string, secretKey string) (string, error) {
+	client, _, err := OutOfClusterAuthentication("")
+	if err != nil {
+		return "", errors.Wrap(err, "unable to get access to cluster")
+	}
+
+	secret, err := client.CoreV1().Secrets(namespace).Get(secretName, v1.GetOptions{})
+	if err != nil {
+		return "", fmt.Errorf("failed to get secret: '%s' of namespace: '%s'\nerror message: %s", secretName, namespace, err.Error())
+	}
+
+	secretValue := secret.Data[secretKey]
+	if len(secretValue) <= 0 {
+		return "", fmt.Errorf("secret: '%s' has no key: '%s'", secretName, secretKey)
+	}
+
+	return string(secretValue), nil
 }
