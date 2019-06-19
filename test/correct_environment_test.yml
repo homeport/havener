@@ -1,9 +1,9 @@
 name: minikube
 releases:
-- chart_name: thgh
-  chart_namespace: abcd
-  chart_location: abcd
-  chart_version: 1
+- name: thgh
+  namespace: abcd
+  location: abcd
+  version: 1
   overrides:
     env:
       DOMAIN: (( env SERVICE_DOMAIN ))
