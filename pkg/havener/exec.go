@@ -27,6 +27,8 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // ProcessConfigFile reads the havener config file from the provided path and
@@ -99,6 +101,11 @@ func ProcessOperators(s string) (string, error) {
 
 	inputString := s
 
+	inputString, err = processSecretOperator(inputString)
+	if err != nil {
+		return "", err
+	}
+
 	inputString, err = processShellOperator(inputString)
 	if err != nil {
 		return "", err
@@ -140,8 +147,8 @@ func processShellOperator(s string) (string, error) {
 // environment variable in it.
 func processEnvOperator(s string) string {
 	// https://regex101.com/r/SZ5CDH/2
-	shellRegexp := regexp.MustCompile(`\({2}\s*env\s*(([\w]+).+?)\s*\B\){2}`)
-	if matches := shellRegexp.FindAllStringSubmatch(s, -1); len(matches) > 0 {
+	envRegexp := regexp.MustCompile(`\({2}\s*env\s*(([\w]+).+?)\s*\B\){2}`)
+	if matches := envRegexp.FindAllStringSubmatch(s, -1); len(matches) > 0 {
 		for _, match := range matches {
 			/* #0 is the whole string,
 			 * #1 env name
@@ -149,12 +156,43 @@ func processEnvOperator(s string) string {
 			 */
 
 			variableName := strings.TrimSpace(match[1])
-
 			variable := os.Getenv(variableName)
-
 			s = strings.Replace(s, match[0], variable, -1)
 		}
 	}
 
 	return s
+}
+
+// processSecretOperator processes the input string and resolves any
+// secret from the provided namespace, name and key in it.
+func processSecretOperator(s string) (string, error) {
+	// https://regex101.com/r/GnyRAa/2/
+	secretRegexp := regexp.MustCompile(`\({2}\s*secret\s*(\S*)\s*(\S*)\s*(\S*)\s*\B\){2}`)
+	if matches := secretRegexp.FindAllStringSubmatch(s, -1); len(matches) > 0 {
+		for _, match := range matches {
+			/* #0 is the whole string,
+			 * #1 namespace
+			 * #2 secret name
+			 * #3 secret key
+			 */
+
+			namespace := fmt.Sprintf("%v", match[1])
+			secretName := fmt.Sprintf("%v", match[2])
+			secretKey := fmt.Sprintf("%v", match[3])
+
+			if namespace == "" || secretName == "" || secretKey == "" {
+				return "", errors.New("invalid arguments for secret operator")
+			}
+
+			secretValue, err := getSecretValue(namespace, secretName, secretKey)
+			if err != nil {
+				return "", err
+			}
+
+			s = strings.Replace(s, match[0], string(secretValue), -1)
+		}
+	}
+
+	return s, nil
 }
