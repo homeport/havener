@@ -190,7 +190,7 @@ func processSecretOperator(s string) (string, error) {
 				return "", err
 			}
 
-			s = strings.Replace(s, match[0], string(secretValue), 1)
+			s = strings.Replace(s, match[0], string(secretValue), -1)
 		}
 	}
 
