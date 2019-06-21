@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-.PHONY: all clean todo-list lint misspell vet unit-test test build
+.PHONY: all clean todo-list lint misspell vet unit-test docker-build-test test build
 
 default: build
 
@@ -45,6 +45,11 @@ unit-test:
 
 e2e-test:
 	@scripts/e2e-test.sh
+
+docker-build-test:
+	@docker build -t build-system:dev -f Build-System.dockerfile .
+	@docker build -t havener-alpine:dev -f Havener-Alpine.dockerfile .
+	@docker build -t havener-ubuntu:dev -f Havener-Ubuntu.dockerfile .
 
 # e2e-test is not used in target test,
 # while we do not have a proper place

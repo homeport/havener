@@ -27,7 +27,7 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.4.0
 	golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8
-	golang.org/x/sys v0.0.0-20190412213103-97732733099d
+	golang.org/x/sys v0.0.0-20190422165155-953cdadca894
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/src-d/go-git.v4 v4.12.0
 	gopkg.in/yaml.v2 v2.2.2
