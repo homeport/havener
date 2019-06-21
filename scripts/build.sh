@@ -23,6 +23,10 @@
 set -euo pipefail
 
 BASEDIR="$(cd "$(dirname "$0")/.." && pwd)"
+TARGET_PATH="$BASEDIR/binaries"
+
+HAVENER_NAME="havener"
+HAVENER_VERSION="$(git describe --tags 2>/dev/null || (git rev-parse HEAD | cut -c-8))"
 
 for TOOL in git sed cut jq; do
   if ! hash "${TOOL}" 2>/dev/null; then
@@ -36,30 +40,45 @@ export GO111MODULE=on
 go mod download
 go mod verify
 
-HAVENER_NAME="havener"
-HAVENER_VERSION="$(git describe --tags 2>/dev/null || (git rev-parse HEAD | cut -c-8))"
+function build-binary()
+{
+    OS="$1"
+    ARCH="$2"
 
-# GOOS options: darwin dragonfly freebsd linux nacl netbsd openbsd plan9 solaris windows
-# GOARCH options: 386 amd64 amd64p32 arm arm64 ppc64 ppc64le mips mipsle mips64 mips64le s390x
-#
-echo -e "\\n\\033[1mCompiling ${HAVENER_NAME} binaries:\\033[0m"
-while read -r OS ARCH; do
-  TARGET_FILE="${BASEDIR}/binaries/${HAVENER_NAME}-${OS}-${ARCH}"
-  if [[ ${OS} == "windows" ]]; then
-    TARGET_FILE="${TARGET_FILE}.exe"
-  fi
+    TARGET_FILE="${TARGET_PATH}/havener-${OS}-${ARCH}"
+    echo -e "Compiling havener version \\033[1;3m${HAVENER_VERSION}\\033[0m for \\033[1;91m${OS}\\033[0m/\\033[1;31m${ARCH}\\033[0m: \\033[93m$(basename "${TARGET_FILE}")\\033[0m"
+    if [[ ${OS} == "windows" ]]; then
+      TARGET_FILE="${TARGET_FILE}.exe"
+    fi
 
-  echo -e "Running go build of version \\033[1;3m${HAVENER_VERSION}\\033[0m for \\033[1;91m${OS}\\033[0m/\\033[1;31m${ARCH}\\033[0m: \\033[93m$(basename "${TARGET_FILE}")\\033[0m"
-  CGO_ENABLED=0 GOOS="${OS}" GOARCH="${ARCH}" go build \
-    -tags netgo \
-    -ldflags "-s -w -extldflags '-static' -X github.com/homeport/havener/internal/cmd.havenerVersion=${HAVENER_VERSION}" \
-    -o "${TARGET_FILE}" \
-    cmd/havener/main.go
+    CGO_ENABLED=0 GOOS="${OS}" GOARCH="${ARCH}" go build \
+      -tags netgo \
+      -ldflags "-s -w -extldflags '-static' -X github.com/homeport/havener/internal/cmd.havenerVersion=${HAVENER_VERSION}" \
+      -o "${TARGET_FILE}" \
+      cmd/havener/main.go
+}
 
-done <<EOL
-darwin amd64
-linux amd64
-EOL
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --local)
+      build-binary "$(uname | tr '[:upper:]' '[:lower:]')" "$(uname -m | sed 's/x86_64/amd64/')"
+      ;;
+
+    --all)
+      # GOOS options: darwin dragonfly freebsd linux nacl netbsd openbsd plan9 solaris windows
+      # GOARCH options: 386 amd64 amd64p32 arm arm64 ppc64 ppc64le mips mipsle mips64 mips64le s390x
+      #
+      build-binary darwin amd64
+      build-binary linux amd64
+      ;;
+    
+    *)
+      echo "unknown argument $1"
+      exit 1
+      ;;
+  esac
+  shift
+done
 
 if hash file >/dev/null 2>&1; then
   echo -e '\n\033[1mFile details of compiled binaries:\033[0m'
@@ -73,6 +92,5 @@ if hash shasum >/dev/null 2>&1; then
 elif hash sha1sum >/dev/null 2>&1; then
   echo -e '\n\033[1mSHA sum of compiled binaries:\033[0m'
   sha1sum binaries/*
+  echo
 fi
-
-echo
