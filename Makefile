@@ -52,4 +52,7 @@ e2e-test:
 test: lint misspell vet unit-test
 
 build:
-	@scripts/build.sh
+	@scripts/build.sh --local
+
+build-all:
+	@scripts/build.sh --all
