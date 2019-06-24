@@ -7,7 +7,7 @@ require (
 	github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f // indirect
 	github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f // indirect
 	github.com/gonvenience/bunt v1.0.6
-	github.com/gonvenience/neat v1.0.1
+	github.com/gonvenience/neat v1.0.3
 	github.com/gonvenience/term v1.0.0
 	github.com/gonvenience/text v1.0.1
 	github.com/gonvenience/wait v1.0.1
