@@ -27,18 +27,17 @@ package havener
 import (
 	"fmt"
 	"io"
-	"strings"
-	"time"
+
+	"github.com/gonvenience/text"
+
+	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/gonvenience/term"
-	"github.com/gonvenience/text"
 	"golang.org/x/crypto/ssh/terminal"
 
-	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -117,58 +116,51 @@ func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.P
 // NodeExec executes the provided command on the given node.
 func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
 	// TODO These fields should be made customizable using a configuration file
-	namespace := "kube-system"
-	containerName := "runon"
-	containerImage := "debian:jessie"
 
-	jobName := strings.ToLower(text.RandomStringWithPrefix("node-runner-", 24))
+	var err error
+
+	namespace := "kube-system"
+	containerName := text.RandomStringWithPrefix("node-exec-", 15) // Create unique pod/container name
+	containerImage := "alpine"
 	trueThat := true
-	jobDef := &batchv1.Job{
+
+	// Pod confoguration
+	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      jobName,
+			Name:      containerName,
 			Namespace: namespace,
 		},
-		Spec: batchv1.JobSpec{
-			Template: corev1.PodTemplateSpec{
-				Spec: corev1.PodSpec{
-					NodeSelector:  map[string]string{"kubernetes.io/hostname": node},
-					HostPID:       true,
-					RestartPolicy: corev1.RestartPolicyNever,
-					Containers: []corev1.Container{
-						{
-							Name:    containerName,
-							Image:   containerImage,
-							Command: []string{"sleep", "8h"},
-							SecurityContext: &corev1.SecurityContext{
-								Privileged: &trueThat,
-							},
-						},
+		Spec: corev1.PodSpec{
+			NodeSelector:  map[string]string{"kubernetes.io/hostname": node}, // Deploy pod on specific node using label selector
+			HostPID:       true,
+			RestartPolicy: corev1.RestartPolicyNever,
+			Containers: []corev1.Container{
+				{
+					Name:  containerName,
+					Image: containerImage,
+					SecurityContext: &corev1.SecurityContext{
+						Privileged: &trueThat,
 					},
+					Stdin: true,
 				},
 			},
 		},
 	}
 
-	job, err := client.BatchV1().Jobs(namespace).Create(jobDef)
+	// Create pod in given namespace based on configuration
+	pod, err = client.CoreV1().Pods(namespace).Create(pod)
 	if err != nil {
 		return err
 	}
-
-	// Make sure that both the job and the pod it spawned are removed
-	// from the clusters once this function reaches its end.
+	// Stop pod and container after command execution
 	defer func() {
 		jobDeletionGracePeriod := int64(10)
 		propagationPolicy := metav1.DeletePropagationForeground
-		client.BatchV1().Jobs(namespace).Delete(job.Name, &metav1.DeleteOptions{
+		client.CoreV1().Pods(namespace).Delete(containerName, &metav1.DeleteOptions{
 			GracePeriodSeconds: &jobDeletionGracePeriod,
 			PropagationPolicy:  &propagationPolicy,
 		})
 	}()
-
-	pod, err := getPodUsingListOptions(client, namespace, metav1.ListOptions{LabelSelector: fmt.Sprintf("controller-uid=%s,job-name=%s", job.ObjectMeta.UID, jobName)})
-	if err != nil {
-		return err
-	}
 
 	// The reference to the pod that was spawned for the job.
 	watcher, err := client.CoreV1().Pods(namespace).Watch(metav1.SingleObject(pod.ObjectMeta))
@@ -192,6 +184,7 @@ func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string,
 		}
 	}
 
+	// Execute command on pod and redirect output to users provided stdout and stderr
 	return PodExec(
 		client,
 		restconfig,
@@ -203,28 +196,4 @@ func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string,
 		stderr,
 		tty,
 	)
-}
-
-func getPodUsingListOptions(client kubernetes.Interface, namespace string, listOptions metav1.ListOptions) (*corev1.Pod, error) {
-	timeout := time.After(defaultTimeoutForGetPod * time.Second)
-
-	ticker := time.NewTicker(250 * time.Millisecond)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			pods, err := client.CoreV1().Pods(namespace).List(listOptions)
-			if err != nil {
-				return nil, err
-			}
-
-			if len(pods.Items) == 1 {
-				return &pods.Items[0], nil
-			}
-
-		case <-timeout:
-			return nil, fmt.Errorf("failed to get pod after %d seconds", defaultTimeoutForGetPod)
-		}
-	}
 }
