@@ -10,7 +10,7 @@ require (
 	github.com/gonvenience/neat v1.0.3
 	github.com/gonvenience/term v1.0.0
 	github.com/gonvenience/text v1.0.1
-	github.com/gonvenience/wait v1.0.1
+	github.com/gonvenience/wait v1.0.2
 	github.com/google/gofuzz v1.0.0 // indirect
 	github.com/googleapis/gnostic v0.2.0 // indirect
 	github.com/homeport/dyff v0.10.1
