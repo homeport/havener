@@ -116,8 +116,19 @@ func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.P
 // NodeExec executes the provided command on the given node.
 func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
 	// TODO These fields should be made customizable using a configuration file
-
 	var err error
+
+	nodes, err := ListNodes(client)
+	if err != nil {
+		return err
+	}
+	if !sliceContainsString(nodes, node) {
+		message := fmt.Sprintf("invalid node: node '%s' does not exist\n\nAvailable nodes:\n", node)
+		for _, availableNode := range nodes {
+			message += fmt.Sprintf("%s\n", availableNode)
+		}
+		return fmt.Errorf(message)
+	}
 
 	namespace := "kube-system"
 	containerName := text.RandomStringWithPrefix("node-exec-", 15) // Create unique pod/container name

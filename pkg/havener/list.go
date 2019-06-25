@@ -107,3 +107,18 @@ func ListPods(client kubernetes.Interface) ([]*corev1.Pod, error) {
 
 	return result, nil
 }
+
+// ListNodes lists all nodes of the cluster
+func ListNodes(client kubernetes.Interface) ([]string, error) {
+	nodeList, err := client.CoreV1().Nodes().List(metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]string, len(nodeList.Items))
+	for i, node := range nodeList.Items {
+		result[i] = node.Name
+	}
+
+	return result, nil
+}
