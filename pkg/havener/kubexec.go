@@ -27,6 +27,7 @@ package havener
 import (
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/gonvenience/text"
 
@@ -180,6 +181,7 @@ func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string,
 	}
 
 	// Wait until the pod reports Ready state
+	start := time.Now() // start time for timeout check
 	for event := range watcher.ResultChan() {
 		switch event.Type {
 		case watch.Modified:
@@ -188,6 +190,10 @@ func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string,
 				if cond.Type == corev1.PodReady && cond.Status == corev1.ConditionTrue {
 					watcher.Stop()
 				}
+			}
+			// check for timeout
+			if time.Since(start) > (10 * time.Second) {
+				return fmt.Errorf("was not able to start pod: %v - timeout", containerName)
 			}
 
 		default:
