@@ -27,6 +27,7 @@ package havener
 import (
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/gonvenience/text"
@@ -124,11 +125,10 @@ func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string,
 		return err
 	}
 	if !sliceContainsString(nodes, node) {
-		message := fmt.Sprintf("invalid node: node '%s' does not exist\n\nAvailable nodes:\n", node)
-		for _, availableNode := range nodes {
-			message += fmt.Sprintf("%s\n", availableNode)
-		}
-		return fmt.Errorf(message)
+		return fmt.Errorf("invalid node: node '%s' does not exist\n\nAvailable nodes:\n%s",
+			node,
+			strings.Join(nodes, "\n"),
+		)
 	}
 
 	namespace := "kube-system"
