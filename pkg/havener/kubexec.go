@@ -116,7 +116,7 @@ func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.P
 }
 
 // NodeExec executes the provided command on the given node.
-func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string, containerImage string, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
+func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string, containerImage string, timeoutSeconds int, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
 	// TODO These fields should be made customizable using a configuration file
 	var err error
 
@@ -173,31 +173,9 @@ func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string,
 		})
 	}()
 
-	// The reference to the pod that was spawned for the job.
-	watcher, err := client.CoreV1().Pods(namespace).Watch(metav1.SingleObject(pod.ObjectMeta))
+	err = waitForPodReadiness(client, namespace, pod, timeoutSeconds)
 	if err != nil {
 		return err
-	}
-
-	// Wait until the pod reports Ready state
-	start := time.Now() // start time for timeout check
-	for event := range watcher.ResultChan() {
-		switch event.Type {
-		case watch.Modified:
-			pod = event.Object.(*corev1.Pod)
-			for _, cond := range pod.Status.Conditions {
-				if cond.Type == corev1.PodReady && cond.Status == corev1.ConditionTrue {
-					watcher.Stop()
-				}
-			}
-			// check for timeout
-			if time.Since(start) > (10 * time.Second) {
-				return fmt.Errorf("was not able to start pod: %v - timeout", containerName)
-			}
-
-		default:
-			return fmt.Errorf("unknown event type occurred: %v", event.Type)
-		}
 	}
 
 	// Execute command on pod and redirect output to users provided stdout and stderr
@@ -212,4 +190,47 @@ func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string,
 		stderr,
 		tty,
 	)
+}
+
+func waitForPodReadiness(client kubernetes.Interface, namespace string, pod *corev1.Pod, timeoutSeconds int) error {
+	watcher, err := client.CoreV1().Pods(namespace).Watch(metav1.SingleObject(pod.ObjectMeta))
+	if err != nil {
+		return err
+	}
+
+	watcherChannel := make(chan error)
+	go func(watcher watch.Interface) {
+		for event := range watcher.ResultChan() {
+			switch event.Type {
+			case watch.Modified:
+				pod = event.Object.(*corev1.Pod)
+				for _, cond := range pod.Status.Conditions {
+					if cond.Type == corev1.PodReady && cond.Status == corev1.ConditionTrue {
+						watcher.Stop()
+						watcherChannel <- nil
+					}
+				}
+
+			default:
+				watcherChannel <- fmt.Errorf("unknown event type occurred: %v", event.Type)
+			}
+		}
+	}(watcher)
+
+	timeout := time.After(time.Duration(timeoutSeconds) * time.Second)
+
+	for {
+		select {
+		case err := <-watcherChannel:
+			if err != nil {
+				return err
+			}
+
+		case <-timeout:
+			return fmt.Errorf("was not able to start pod - timeout")
+		}
+
+		return nil
+	}
+
 }
