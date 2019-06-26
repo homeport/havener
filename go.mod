@@ -14,7 +14,7 @@ require (
 	github.com/google/gofuzz v1.0.0 // indirect
 	github.com/googleapis/gnostic v0.2.0 // indirect
 	github.com/homeport/dyff v0.10.1
-	github.com/homeport/ytbx v1.1.1
+	github.com/homeport/ytbx v1.1.2
 	github.com/imdario/mergo v0.3.7 // indirect
 	github.com/json-iterator/go v1.1.6 // indirect
 	github.com/lucasb-eyer/go-colorful v1.0.2
