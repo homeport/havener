@@ -30,40 +30,24 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gonvenience/text"
-
-	"k8s.io/apimachinery/pkg/watch"
-
 	"github.com/gonvenience/term"
+	"github.com/gonvenience/text"
 	"golang.org/x/crypto/ssh/terminal"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
-	"k8s.io/client-go/util/exec"
+	"k8s.io/utils/exec"
 )
 
 /* TODO In general, more comments and explanations are required. */
 
-/* TODO Introduce re-usable "runner" pods in case there are a series of
-   commands to be executed on a node. In this case, do do not delete the job,
-   but keep it running so that we have the pod around. Then, subsequent execs
-   can be done to this pod. */
-
 /* TODO The functions in here lack a common style and symmetry. One needs the
    the Kubernetes client and a POD reference, the other just a name. Think
    about ideas on whether it makes sense to harmonize this a little bit. */
-
-/* TODO Introduce a timeout to the wait loop that checks whether the pod
-   becomes ready. Idea would be like an additional check if N seconds elapsed
-   and no result was return to abort the execution completely. */
-
-// defaultTimeoutForGetPod is the timeout in seconds to wait until a newly created job spawned the actual pod
-const defaultTimeoutForGetPod = 5
 
 // PodExec executes the provided command in the referenced pod's container.
 func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.Pod, container string, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
@@ -117,7 +101,6 @@ func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.P
 
 // NodeExec executes the provided command on the given node.
 func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string, containerImage string, timeoutSeconds int, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
-	// TODO These fields should be made customizable using a configuration file
 	var err error
 
 	nodes, err := ListNodes(client)
@@ -132,13 +115,13 @@ func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string,
 	}
 
 	namespace := "kube-system"
-	containerName := text.RandomStringWithPrefix("node-exec-", 15) // Create unique pod/container name
+	podName := text.RandomStringWithPrefix("node-exec-", 15) // Create unique pod/container name
 	trueThat := true
 
 	// Pod confoguration
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      containerName,
+			Name:      podName,
 			Namespace: namespace,
 		},
 		Spec: corev1.PodSpec{
@@ -147,7 +130,7 @@ func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string,
 			RestartPolicy: corev1.RestartPolicyNever,
 			Containers: []corev1.Container{
 				{
-					Name:  containerName,
+					Name:  podName,
 					Image: containerImage,
 					SecurityContext: &corev1.SecurityContext{
 						Privileged: &trueThat,
@@ -167,14 +150,13 @@ func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string,
 	defer func() {
 		jobDeletionGracePeriod := int64(10)
 		propagationPolicy := metav1.DeletePropagationForeground
-		client.CoreV1().Pods(namespace).Delete(containerName, &metav1.DeleteOptions{
+		client.CoreV1().Pods(namespace).Delete(podName, &metav1.DeleteOptions{
 			GracePeriodSeconds: &jobDeletionGracePeriod,
 			PropagationPolicy:  &propagationPolicy,
 		})
 	}()
 
-	err = waitForPodReadiness(client, namespace, pod, timeoutSeconds)
-	if err != nil {
+	if err := waitForPodReadiness(client, namespace, pod, timeoutSeconds); err != nil {
 		return err
 	}
 
@@ -183,7 +165,7 @@ func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string,
 		client,
 		restconfig,
 		pod,
-		pod.Spec.Containers[0].Name,
+		podName,
 		fmt.Sprintf("nsenter --target 1 --mount --uts --ipc --net --pid -- %s", command),
 		stdin,
 		stdout,
@@ -227,10 +209,9 @@ func waitForPodReadiness(client kubernetes.Interface, namespace string, pod *cor
 			}
 
 		case <-timeout:
-			return fmt.Errorf("was not able to start pod - timeout")
+			return fmt.Errorf("failed to get pod after %d seconds", timeoutSeconds)
 		}
 
 		return nil
 	}
-
 }

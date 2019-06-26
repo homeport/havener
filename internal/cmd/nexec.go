@@ -29,12 +29,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var nodeExecTty bool
-var nodeExecImage string
-var nodeExecTimeout int
-
-var defaultImage = "alpine"
-var defaultTimeout = 10
+var (
+	nodeExecTty     bool
+	nodeExecImage   string
+	nodeExecTimeout int
+	defaultImage    = "alpine"
+	defaultTimeout  = 10
+)
 
 // nodeExecCmd represents the node-exec command
 var nodeExecCmd = &cobra.Command{
@@ -73,7 +74,6 @@ func execInClusterNode(args []string) error {
 
 	switch {
 	case len(args) >= 2: //node name and command is given
-
 		nodeName, command := args[0], strings.Join(args[1:], " ")
 
 		havener.VerboseMessage("Executing command on node...")
