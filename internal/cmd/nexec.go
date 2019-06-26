@@ -30,6 +30,8 @@ import (
 )
 
 var nodeExecTty bool
+var nodeExecImage string
+var defaultImage = "alpine"
 
 // nodeExecCmd represents the node-exec command
 var nodeExecCmd = &cobra.Command{
@@ -55,6 +57,7 @@ func init() {
 	rootCmd.AddCommand(nodeExecCmd)
 
 	nodeExecCmd.PersistentFlags().BoolVar(&nodeExecTty, "tty", false, "allocate pseudo-terminal for command execution")
+	nodeExecCmd.PersistentFlags().StringVar(&nodeExecImage, "image", defaultImage, "set image for helper pod from which the root-shell is accessed")
 }
 
 func execInClusterNode(args []string) error {
@@ -70,7 +73,7 @@ func execInClusterNode(args []string) error {
 		nodeName, command := args[0], strings.Join(args[1:], " ")
 
 		havener.VerboseMessage("Executing command on node...")
-		if err := havener.NodeExec(client, restconfig, nodeName, command, os.Stdin, os.Stdout, os.Stderr, nodeExecTty); err != nil {
+		if err := havener.NodeExec(client, restconfig, nodeName, nodeExecImage, command, os.Stdin, os.Stdout, os.Stderr, nodeExecTty); err != nil {
 			return &ErrorWithMsg{"failed to execute command on node", err}
 		}
 

@@ -116,7 +116,7 @@ func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.P
 }
 
 // NodeExec executes the provided command on the given node.
-func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
+func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string, containerImage string, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
 	// TODO These fields should be made customizable using a configuration file
 	var err error
 
@@ -133,7 +133,6 @@ func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string,
 
 	namespace := "kube-system"
 	containerName := text.RandomStringWithPrefix("node-exec-", 15) // Create unique pod/container name
-	containerImage := "alpine"
 	trueThat := true
 
 	// Pod confoguration
