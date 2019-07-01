@@ -21,6 +21,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -28,13 +29,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var nodeExecTty bool
+var (
+	nodeExecTty     bool
+	nodeExecImage   string
+	nodeExecTimeout int
+	defaultImage    = "alpine"
+	defaultTimeout  = 10
+)
 
 // nodeExecCmd represents the node-exec command
 var nodeExecCmd = &cobra.Command{
-	Use:   "node-exec [flags] <node> <command>",
-	Args:  cobra.MinimumNArgs(2),
-	Short: "Execute command on Kubernetes node",
+	Use:     "node-exec [flags] <node> <command>",
+	Aliases: []string{"ne"},
+	Short:   "Execute command on Kubernetes node",
 	Long: `Execute a shell command on a node.
 
 This will create a job to get a pod with the right settings to execute a
@@ -54,25 +61,45 @@ func init() {
 	rootCmd.AddCommand(nodeExecCmd)
 
 	nodeExecCmd.PersistentFlags().BoolVar(&nodeExecTty, "tty", false, "allocate pseudo-terminal for command execution")
+	nodeExecCmd.PersistentFlags().StringVar(&nodeExecImage, "image", defaultImage, "set image for helper pod from which the root-shell is accessed")
+	nodeExecCmd.PersistentFlags().IntVar(&nodeExecTimeout, "timeout", defaultTimeout, "set timout in seconds for the setup of the helper pod")
 }
 
 func execInClusterNode(args []string) error {
-	nodeName, command := args[0], strings.Join(args[1:], " ")
-
 	havener.VerboseMessage("Connecting to Kubernetes cluster...")
-
 	client, restconfig, err := havener.OutOfClusterAuthentication("")
 	if err != nil {
 		return &ErrorWithMsg{"failed to connect to Kubernetes cluster", err}
 	}
 
-	havener.VerboseMessage("Executing command on node...")
+	switch {
+	case len(args) >= 2: //node name and command is given
+		nodeName, command := args[0], strings.Join(args[1:], " ")
 
-	if err := havener.NodeExec(client, restconfig, nodeName, command, os.Stdin, os.Stdout, os.Stderr, nodeExecTty); err != nil {
-		return &ErrorWithMsg{"failed to execute command on node", err}
+		havener.VerboseMessage("Executing command on node...")
+		if err := havener.NodeExec(client, restconfig, nodeName, nodeExecImage, nodeExecTimeout, command, os.Stdin, os.Stdout, os.Stderr, nodeExecTty); err != nil {
+			return &ErrorWithMsg{"failed to execute command on node", err}
+		}
+
+		havener.VerboseMessage("Successfully executed command.")
+
+	case len(args) == 1: //only node name is given
+		return &ErrorWithMsg{"no command specified", fmt.Errorf(
+			"Usage:\nnode-exec [flags] <node> <command>",
+		)}
+
+	default: //no arguments
+		nodes, err := havener.ListNodes(client)
+		if err != nil {
+			return err
+		}
+
+		return &ErrorWithMsg{"no node name and command specified",
+			fmt.Errorf(
+				"Usage:\nnode-exec [flags] <node> <command>\n\nAvailable nodes:\n%s",
+				strings.Join(nodes, "\n"),
+			)}
 	}
-
-	havener.VerboseMessage("Successfully executed command.")
 
 	return nil
 }

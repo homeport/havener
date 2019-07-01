@@ -29,7 +29,7 @@ import (
 
 	"github.com/gonvenience/term"
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // VerifiedCert is a struct with a parsed X.509 and/or an error if it cannot be parsed and verification failed

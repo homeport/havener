@@ -146,3 +146,14 @@ func getSecretValue(namespace string, secretName string, secretKey string) (stri
 
 	return string(secretValue), nil
 }
+
+// sliceContainsStrings checks whether a string slice contains a certain
+// string or not.
+func sliceContainsString(slice []string, item string) bool {
+	for _, entry := range slice {
+		if entry == item {
+			return true
+		}
+	}
+	return false
+}
