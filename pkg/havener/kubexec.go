@@ -135,7 +135,7 @@ func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string,
 					SecurityContext: &corev1.SecurityContext{
 						Privileged: &trueThat,
 					},
-					Stdin: true,
+					Stdin: stdin != nil,
 				},
 			},
 		},
