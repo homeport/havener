@@ -15,7 +15,7 @@ script:
 - make -j test
 
 before_deploy:
-- make build
+- make build-all
 
 deploy:
   provider: releases
