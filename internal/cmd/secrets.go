@@ -1,4 +1,4 @@
-// Copyright © 2018 The Havener
+// Copyright © 2019 The Havener
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,38 +18,22 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package hvnr
+package cmd
 
 import (
-	"strings"
-
-	yaml "gopkg.in/yaml.v2"
+	"github.com/homeport/havener/internal/hvnr"
+	"github.com/spf13/cobra"
 )
 
-// ListManifestFiles breaks up the manifest string of a Helm Release to return
-// a map with the template filename as the key and the unmarshaled YAML data
-// as the value.
-func ListManifestFiles(release string) (map[string]yaml.MapSlice, error) {
-	result := make(map[string]yaml.MapSlice)
+var secretsCmd = &cobra.Command{
+	Use:   "secrets",
+	Short: "Check secrets",
+	Long:  `Verify secrets in all namespaces`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return hvnr.PrintSecretsAnalysis()
+	},
+}
 
-	for _, document := range strings.Split(release, "---\n") {
-		if document == "\n" {
-			continue
-		}
-
-		if lines := strings.Split(document, "\n"); len(lines) > 0 {
-			if firstLine := lines[0]; strings.HasPrefix(firstLine, "# Source: ") {
-				source := strings.Replace(firstLine, "# Source: ", "", -1)
-
-				var data yaml.MapSlice
-				err := yaml.Unmarshal([]byte(strings.Join(lines[1:], "\n")), &data)
-				if err != nil {
-					return nil, err
-				}
-				result[source] = data
-			}
-		}
-	}
-
-	return result, nil
+func init() {
+	rootCmd.AddCommand(secretsCmd)
 }

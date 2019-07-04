@@ -5,10 +5,9 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	yaml "gopkg.in/yaml.v2"
 
 	. "github.com/homeport/havener/internal/hvnr"
-
-	"gopkg.in/yaml.v2"
 )
 
 var exampleService = `apiVersion: v1
