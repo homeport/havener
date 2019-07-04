@@ -51,6 +51,8 @@ import (
 
 // PodExec executes the provided command in the referenced pod's container.
 func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.Pod, container string, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
+	logf(Verbose, "Executing command on node...")
+
 	req := client.CoreV1().RESTClient().Post().
 		Resource("pods").
 		Name(pod.Name).
@@ -95,6 +97,8 @@ func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.P
 			return fmt.Errorf("could not execute: %v", err)
 		}
 	}
+
+	logf(Trace, "Successfully executed command.")
 
 	return nil
 }

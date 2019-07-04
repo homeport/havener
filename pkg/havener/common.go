@@ -26,7 +26,6 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/gonvenience/bunt"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	yaml "gopkg.in/yaml.v2"
@@ -52,6 +51,8 @@ func getKubeConfig() string {
 
 //OutOfClusterAuthentication for kube authentication from the outside
 func OutOfClusterAuthentication(kubeConfig string) (*kubernetes.Clientset, *rest.Config, error) {
+	logf(Verbose, "Connecting to Kubernetes cluster...")
+
 	if kubeConfig == "" {
 		kubeConfig = getKubeConfig()
 	}
@@ -66,6 +67,7 @@ func OutOfClusterAuthentication(kubeConfig string) (*kubernetes.Clientset, *rest
 	// create the clientset
 	clientset, err := kubernetes.NewForConfig(config)
 
+	logf(Verbose, "Successfully connected to Kubernetes cluster.")
 	return clientset, config, err
 }
 
@@ -80,18 +82,6 @@ func HomeDir() string {
 // MinutesToSeconds returns the amount of seconds
 func MinutesToSeconds(minutes int) int {
 	return minutes * 60
-}
-
-// VerboseMessage prints a message if the flag --verbose/-v is set to true
-func VerboseMessage(message string, vargs ...interface{}) {
-	if viper.GetBool("verbose") {
-		bunt.Printf("*[DEBUG]* %s\n", fmt.Sprintf(message, vargs...))
-	}
-}
-
-// InfoMessage prints out an info message, in bold
-func InfoMessage(message string, vargs ...interface{}) {
-	bunt.Printf("*[INFO]* %s\n", fmt.Sprintf(message, vargs...))
 }
 
 // SetConfigEnv processes the env operators of the config

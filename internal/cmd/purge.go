@@ -53,7 +53,7 @@ If multiple Helm Releases are specified, then they will deleted concurrently.
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		havener.VerboseMessage("Accessing cluster...")
+		//havener.VerboseMessage("Accessing cluster...")
 
 		client, _, err := havener.OutOfClusterAuthentication("")
 		if err != nil {

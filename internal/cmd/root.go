@@ -92,13 +92,19 @@ func init() {
 	rootCmd.PersistentFlags().String("kubeconfig", filepath.Join(home, ".kube", "config"), "Kubernetes configuration file")
 	rootCmd.PersistentFlags().Int("terminal-width", -1, "disable autodetection and specify an explicit terminal width")
 	rootCmd.PersistentFlags().Int("terminal-height", -1, "disable autodetection and specify an explicit terminal height")
+
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "verbose output")
+	rootCmd.PersistentFlags().Bool("trace", false, "trace output")
+	rootCmd.PersistentFlags().Bool("debug", false, "debug output")
 
 	// Bind environment variables to CLI flags
 	viper.BindPFlag("kubeconfig", rootCmd.PersistentFlags().Lookup("kubeconfig"))
-	viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
 	viper.BindPFlag("TERMINAL_WIDTH", rootCmd.PersistentFlags().Lookup("terminal-width"))
 	viper.BindPFlag("TERMINAL_HEIGHT", rootCmd.PersistentFlags().Lookup("terminal-height"))
+
+	viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
+	viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
+	viper.BindPFlag("trace", rootCmd.PersistentFlags().Lookup("trace"))
 
 	term.FixedTerminalWidth, term.FixedTerminalHeight = viper.GetInt("TERMINAL_WIDTH"), viper.GetInt("TERMINAL_HEIGHT")
 

@@ -39,5 +39,7 @@ func main() {
 		os.Exit(1)
 	}()
 
+	go cmd.LogTask(signals)
+
 	cmd.Execute()
 }
