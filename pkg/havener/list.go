@@ -86,6 +86,16 @@ func ListSecretsInNamespace(client kubernetes.Interface, namespace string) ([]st
 	return result, nil
 }
 
+// SecretsInNamespace lists all secrets in a given namespace
+func SecretsInNamespace(client kubernetes.Interface, namespace string) ([]corev1.Secret, error) {
+	secretList, err := client.CoreV1().Secrets(namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	return secretList.Items, nil
+}
+
 // ListPods lists all pods in all namespaces
 func ListPods(client kubernetes.Interface) ([]*corev1.Pod, error) {
 	namespaces, err := ListNamespaces(client)
