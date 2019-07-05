@@ -83,13 +83,13 @@ func DeployHelmRelease(chartname string, namespace string, chartPath string, tim
 		return err
 	}
 
-	VerboseMessage("Locating helm chart location...")
+	logf(Verbose, "Locating helm chart location...")
 
 	helmChartPath, err := PathToHelmChart(chartPath)
 	if err != nil {
 		return err
 	}
-	VerboseMessage("Installing release in namespace %s...", namespace)
+	logf(Verbose, "Installing release in namespace %s...", namespace)
 
 	overridesFile, err := GenerateConfigFile(valueOverrides)
 	if err != nil {

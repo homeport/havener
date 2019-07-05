@@ -51,6 +51,8 @@ import (
 
 // PodExec executes the provided command in the referenced pod's container.
 func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.Pod, container string, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
+	logf(Verbose, "Executing command on pod...")
+
 	req := client.CoreV1().RESTClient().Post().
 		Resource("pods").
 		Name(pod.Name).
@@ -96,11 +98,14 @@ func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.P
 		}
 	}
 
+	logf(Verbose, "Successfully executed command.")
+
 	return nil
 }
 
 // NodeExec executes the provided command on the given node.
 func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string, containerImage string, timeoutSeconds int, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
+	logf(Verbose, "Executing command on node...")
 	var err error
 
 	nodes, err := ListNodes(client)
@@ -141,6 +146,8 @@ func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string,
 		},
 	}
 
+	logf(Verbose, "Creating pod...")
+
 	// Create pod in given namespace based on configuration
 	pod, err = client.CoreV1().Pods(namespace).Create(pod)
 	if err != nil {
@@ -156,6 +163,7 @@ func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string,
 		})
 	}()
 
+	logf(Verbose, "Waiting for pod to be started...")
 	if err := waitForPodReadiness(client, namespace, pod, timeoutSeconds); err != nil {
 		return err
 	}

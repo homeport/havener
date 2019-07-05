@@ -40,20 +40,20 @@ type VerifiedCert struct {
 
 // VerifyCertExpirations checks all certificates in all secrets in all namespaces
 func VerifyCertExpirations() (err error) {
-	InfoMessage("Going to check certificates...")
+	logf(Verbose, "Going to check certificates...")
 
 	var count int
 	var countEmpty int
 	var buf bytes.Buffer
 
-	VerboseMessage("Accessing cluster...")
+	logf(Verbose, "Accessing cluster...")
 
 	client, _, err := OutOfClusterAuthentication("")
 	if err != nil {
 		return errors.Wrap(err, "unable to get access to cluster")
 	}
 
-	VerboseMessage("Getting namespaces...")
+	logf(Verbose, "Getting namespaces...")
 
 	list, err := ListNamespaces(client)
 	if err != nil {
@@ -61,7 +61,7 @@ func VerifyCertExpirations() (err error) {
 	}
 
 	for _, namespace := range list {
-		VerboseMessage("Getting secrets of namespace %s...", namespace)
+		logf(Verbose, "Getting secrets of namespace %s...", namespace)
 
 		secretList, err := ListSecretsInNamespace(client, namespace)
 		if err != nil {
@@ -69,11 +69,11 @@ func VerifyCertExpirations() (err error) {
 		}
 
 		if len(list) == 0 {
-			VerboseMessage("No secrets in namespace %s", namespace)
+			logf(Verbose, "No secrets in namespace %s", namespace)
 		}
 
 		for _, secret := range secretList {
-			VerboseMessage("Accessing secret %s of namespace %s...", secret, namespace)
+			logf(Verbose, "Accessing secret %s of namespace %s...", secret, namespace)
 
 			nodeList, err := client.CoreV1().Secrets(namespace).Get(secret, v1.GetOptions{})
 			if err != nil {
@@ -104,9 +104,9 @@ func VerifyCertExpirations() (err error) {
 				buf.WriteString(line)
 			}
 			if len(results) == 0 {
-				VerboseMessage("No certificates in secret %s\n", secret)
+				logf(Verbose, "No certificates in secret %s\n", secret)
 			} else {
-				VerboseMessage("Total nr. of certs in secret %s in namespace %s: %v; valid: %v; invalid: %v; empty: %v\n", secret, namespace, len(results), len(results)-count-countEmpty, count, countEmpty)
+				logf(Verbose, "Total nr. of certs in secret %s in namespace %s: %v; valid: %v; invalid: %v; empty: %v\n", secret, namespace, len(results), len(results)-count-countEmpty, count, countEmpty)
 			}
 
 		}

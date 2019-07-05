@@ -53,7 +53,7 @@ If multiple Helm Releases are specified, then they will deleted concurrently.
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		havener.VerboseMessage("Accessing cluster...")
+		//havener.VerboseMessage("Accessing cluster...")
 
 		client, _, err := havener.OutOfClusterAuthentication("")
 		if err != nil {
@@ -97,7 +97,9 @@ func PurgeHelmReleases(kubeClient kubernetes.Interface, helmReleaseNames ...stri
 
 	// Show a wait indicator ...
 	pi := wait.NewProgressIndicator(fmt.Sprintf("Deleting Helm Releases: " + strings.Join(toBeDeleted, ",")))
+	setCurrentProgressIndicator(pi)
 	pi.Start()
+	defer setCurrentProgressIndicator(nil)
 	defer pi.Stop()
 
 	// Start to purge the helm releaes in parallel

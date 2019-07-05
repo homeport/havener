@@ -108,6 +108,7 @@ func UpgradeViaHavenerConfig(havenerConfig string) error {
 
 		pi := wait.NewProgressIndicator(fmt.Sprintf("Upgrading Helm Release for %s", release.ChartName))
 		pi.SetTimeout(time.Duration(timeoutInMin) * time.Minute)
+		setCurrentProgressIndicator(pi)
 		pi.Start()
 
 		err = havener.UpdateHelmRelease(
@@ -116,6 +117,7 @@ func UpgradeViaHavenerConfig(havenerConfig string) error {
 			overridesData,
 			reuseValues)
 
+		setCurrentProgressIndicator(nil)
 		pi.Stop()
 
 		if err != nil {
