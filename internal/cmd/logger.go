@@ -3,11 +3,15 @@ package cmd
 import (
 	"os"
 
+	"github.com/gonvenience/wait"
+
 	"github.com/gonvenience/bunt"
 
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/viper"
 )
+
+var progressIndicator *wait.ProgressIndicator
 
 // LogTask processes all log messages coming
 // from havener package.
@@ -26,37 +30,76 @@ func LogTask(signals chan os.Signal) {
 	}
 }
 
+// setCurrentProgressIndicator updates the gobal variable
+// which is used for text updates of the current indicator.
+// For resetting use nil value.
+func setCurrentProgressIndicator(pi *wait.ProgressIndicator) {
+	progressIndicator = pi
+}
+
+// translateLogLevel transates the flag boolean to
+// the associated log level.
+// Levels: Fatal < Error < Warn < Verbose < Debug < Trace
 func translateLogLevel() havener.LogLevel {
 	logLevel := havener.Off
 
-	verbose := viper.GetBool("verbose")
-	debug := viper.GetBool("debug")
-	trace := viper.GetBool("trace")
+	fatalLevel := viper.GetBool("fatal")
+	errorLevel := viper.GetBool("error")
+	warnLevel := viper.GetBool("warn")
+	verboseLevel := viper.GetBool("verbose")
+	debugLevel := viper.GetBool("debug")
+	traceLevel := viper.GetBool("trace")
 
-	if verbose && havener.Verbose > logLevel {
+	if fatalLevel && havener.Fatal > logLevel {
+		logLevel = havener.Fatal
+	}
+	if errorLevel && havener.Error > logLevel {
+		logLevel = havener.Error
+	}
+	if warnLevel && havener.Warn > logLevel {
+		logLevel = havener.Warn
+	}
+	if verboseLevel && havener.Verbose > logLevel {
 		logLevel = havener.Verbose
 	}
-	if debug && havener.Debug > logLevel {
+	if debugLevel && havener.Debug > logLevel {
 		logLevel = havener.Debug
 	}
-	if trace && havener.Trace > logLevel {
+	if traceLevel && havener.Trace > logLevel {
 		logLevel = havener.Trace
 	}
 
 	return logLevel
 }
 
+// log processes all log messages and logs them differently
+// according to their level
 func log(message havener.LogMessage, targetLevel havener.LogLevel) {
 	if targetLevel >= message.Level {
 		switch message.Level {
+		case havener.Fatal:
+			printLogf("*[FATAL]* %s\n", message.Message)
+		case havener.Error:
+			printLogf("*[ERROR]* %s\n", message.Message)
+		case havener.Warn:
+			printLogf("*[WARN]* %s\n", message.Message)
 		case havener.Verbose:
-			bunt.Printf("*[INFO]* %s\n", message.Message)
+			printLogf("*[INFO]* %s\n", message.Message)
 		case havener.Debug:
-			bunt.Printf("*[DEBUG]* %s\n", message.Message)
+			printLogf("*[DEBUG]* %s\n", message.Message)
 		case havener.Trace:
-			bunt.Printf("*[TRACE]* %s\n", message.Message)
+			printLogf("*[TRACE]* %s\n", message.Message)
 		default:
-			bunt.Printf("*[INFO]* %s\n", message.Message)
+			printLogf("*[INFO]* %s\n", message.Message)
 		}
+	}
+}
+
+// printLogf formats and prints a log message
+func printLogf(format string, args ...interface{}) {
+	if progressIndicator != nil {
+		progressIndicator.SetText(format, args...)
+	} else {
+		bunt.Printf(format, args...)
 	}
 }

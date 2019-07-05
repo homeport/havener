@@ -98,14 +98,15 @@ func DeployViaHavenerConfig(havenerConfig string) error {
 
 		pi := wait.NewProgressIndicator(fmt.Sprintf("Creating Helm Release for %s", release.ChartName))
 		pi.SetTimeout(time.Duration(timeoutInMin) * time.Minute)
+		setCurrentProgressIndicator(pi)
 		err = havener.DeployHelmRelease(
 			release.ChartName,
 			release.ChartNamespace,
 			release.ChartLocation,
 			timeoutInMin,
 			overridesData)
-
 		pi.Stop()
+		setCurrentProgressIndicator(nil)
 
 		if err != nil {
 			return &ErrorWithMsg{"failed to deploy via havener configuration", err}

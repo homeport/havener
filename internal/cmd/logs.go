@@ -74,6 +74,8 @@ func retrieveClusterLogs() error {
 
 	pi := wait.NewProgressIndicator("Downloading " + commonText + " ...")
 	pi.SetTimeout(timeout)
+	setCurrentProgressIndicator(pi)
+	defer setCurrentProgressIndicator(nil)
 	pi.Start()
 
 	resultChan := make(chan error, 1)

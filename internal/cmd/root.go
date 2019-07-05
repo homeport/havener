@@ -93,15 +93,21 @@ func init() {
 	rootCmd.PersistentFlags().Int("terminal-width", -1, "disable autodetection and specify an explicit terminal width")
 	rootCmd.PersistentFlags().Int("terminal-height", -1, "disable autodetection and specify an explicit terminal height")
 
-	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "verbose output")
-	rootCmd.PersistentFlags().Bool("trace", false, "trace output")
-	rootCmd.PersistentFlags().Bool("debug", false, "debug output")
+	rootCmd.PersistentFlags().Bool("fatal", false, "fatal output - level 1")
+	rootCmd.PersistentFlags().Bool("error", false, "error output - level 2")
+	rootCmd.PersistentFlags().Bool("warn", false, "warn output - level 3")
+	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "verbose output - level 4")
+	rootCmd.PersistentFlags().Bool("debug", false, "debug output - level 5")
+	rootCmd.PersistentFlags().Bool("trace", false, "trace output - level 6")
 
 	// Bind environment variables to CLI flags
 	viper.BindPFlag("kubeconfig", rootCmd.PersistentFlags().Lookup("kubeconfig"))
 	viper.BindPFlag("TERMINAL_WIDTH", rootCmd.PersistentFlags().Lookup("terminal-width"))
 	viper.BindPFlag("TERMINAL_HEIGHT", rootCmd.PersistentFlags().Lookup("terminal-height"))
 
+	viper.BindPFlag("fatal", rootCmd.PersistentFlags().Lookup("fatal"))
+	viper.BindPFlag("error", rootCmd.PersistentFlags().Lookup("error"))
+	viper.BindPFlag("warn", rootCmd.PersistentFlags().Lookup("warn"))
 	viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
 	viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
 	viper.BindPFlag("trace", rootCmd.PersistentFlags().Lookup("trace"))

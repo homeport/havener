@@ -97,7 +97,9 @@ func PurgeHelmReleases(kubeClient kubernetes.Interface, helmReleaseNames ...stri
 
 	// Show a wait indicator ...
 	pi := wait.NewProgressIndicator(fmt.Sprintf("Deleting Helm Releases: " + strings.Join(toBeDeleted, ",")))
+	setCurrentProgressIndicator(pi)
 	pi.Start()
+	defer setCurrentProgressIndicator(nil)
 	defer pi.Stop()
 
 	// Start to purge the helm releaes in parallel
