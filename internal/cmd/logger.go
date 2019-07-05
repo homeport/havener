@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"os"
-
 	"github.com/gonvenience/wait"
 
 	"github.com/gonvenience/bunt"
@@ -15,18 +13,13 @@ var progressIndicator *wait.ProgressIndicator
 
 // LogTask processes all log messages coming
 // from havener package.
-func LogTask(signals chan os.Signal) {
+func LogTask() {
 	channel := havener.GetLogChannel()
 
 	for {
-		select {
-		case message := <-channel:
-			targetLevel := translateLogLevel()
-			log(message, targetLevel)
-		case _ = <-signals:
-			close(channel)
-			return
-		}
+		message := <-channel
+		targetLevel := translateLogLevel()
+		log(message, targetLevel)
 	}
 }
 
