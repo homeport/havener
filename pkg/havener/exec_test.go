@@ -22,7 +22,7 @@ releases:
 - name: thgh
   namespace: abcd
   location: abcd
-  version: 1
+  version: "1"
   overrides:
     env:
       DOMAIN: 192.168.99.100.xip.io
@@ -53,7 +53,7 @@ releases:
 - name: thgh
   namespace: abcd
   location: abcd
-  version: 1
+  version: "1"
   overrides: null
 `
 		Expect(string(input2)).To(BeEquivalentTo(expected))
@@ -83,7 +83,7 @@ releases:
 - name: thgh
   namespace: abcd
   location: abcd
-  version: 1
+  version: "1"
   overrides:
     env:
       DOMAIN: 192.168.99.100.xip.io
@@ -117,7 +117,7 @@ releases:
 - name: uaa
   namespace: uaa
   location: abcd
-  version: 1
+  version: "1"
   overrides:
     env:
       DOMAIN: 192.168.99.100.xip.io
