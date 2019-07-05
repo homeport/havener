@@ -39,7 +39,7 @@ type Release struct {
 	ChartName      string      `yaml:"name"`
 	ChartNamespace string      `yaml:"namespace"`
 	ChartLocation  string      `yaml:"location"`
-	ChartVersion   int         `yaml:"version"`
+	ChartVersion   string      `yaml:"version"`
 	Overrides      interface{} `yaml:"overrides"`
 	Before         *Task       `yaml:"before,omitempty"`
 	After          *Task       `yaml:"after,omitempty"`
