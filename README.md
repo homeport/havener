@@ -8,10 +8,20 @@
 
 ![havener](.docs/logo.png?raw=true "Havener logo - four stripes symbolising the rank of a harbourmaster inside a gearwheel")
 
+## Table of Contents
+- [Introduction](#introduction)
+- [How do I get started](#getting-started)
+- [Quick Command Overview](#commands-overview)
+- [Configuration](#config)
+- [Contributing](#contributing)
+- [License](#license)
+
+<a name="introduction"></a>
 ## Introducing Havener
 
 Convenience tool to handle tasks around [Containerized CF](https://www.pivotaltracker.com/n/projects/2192232) workloads on a Kubernetes cluster. It deploys multiple Helm Charts using a configuration file, which is used to add in a tiny amount of glue code that is sometimes needed to make things work. Under to cover, `havener` does the same calls that `kubectl` do, nothing special. That means that at the end you have a Helm Release just like you would have using `helm` alone.
 
+<a name="getting-started"></a>
 ## How do I get started
 
 There are different ways to get `havener`. You are free to pick the one that makes the most sense for your use-case.
@@ -37,6 +47,7 @@ There are different ways to get `havener`. You are free to pick the one that mak
   go get github.com/homeport/havener/cmd/havener
   ```
 
+<a name="commands-overview"></a>
 ## Quick Command Overview
 
 Like `kubectl`, `havener` relies on the Kubernetes configuration that can be set via the `KUBECONFIG` environment variable. It can also be provided with the `--kubeconfig` flag, which takes the path to the YAML file (for example `$HOME/.kube/config`). `Havener` will use your local `helm` binary, so it is the user reponsability, to keep the `helm` binary in sync with tiller.
@@ -131,6 +142,70 @@ The `upgrade` command upgrades an existing helm release. A config file has to be
 
 The `version` command pretty much does what it says on the tin: it gives out the version currently used.
 
+<a name="config"></a>
+## Configuration
+
+A `havener config file` provides an easy solution for configurating and deploying one or multiple Helm Charts. The `config` is saved as a `.yml-file` and is used by the `deploy` and `upgrade` commands. Besides information about the charts, it can overide the values.yml file and can contain further pre- and post-processing steps.
+```yml
+name: mongo deployment
+releases:
+- name: mongodb
+  namespace: mongodb
+  version: (( env VERSION ))
+  location: stable/mongodb
+  overrides:
+    mongodbUsername: (( env USERNAME ))
+    mongodbPassword: (( env PASSWORD ))
+    mongodbDatabase: (( env DATABASE ))
+  before: [echo "$(date) before release"]
+  after: [echo "Installed mongoDB with credentials $USERNAME/$PASSWORD"]
+
+env:
+  VERSION: 1
+  USERNAME: (( shell echo "user" ))
+  PASSWORD: (( secret default root-password password.txt ))
+  DATABASE: admin
+
+before:
+- cmd: /bin/bash
+  args:
+  - -c
+  - |
+    #!/bin/bash
+    echo "$(date) before deployment"
+
+after:
+- echo "$(date) after deployment"
+````
+### sections
+#### releases
+Contains a list of all release items which shall be deployed. Hereby, each release contains `general data` about the deployment (name, namespace, version, location of the Chart), an `override section` which can be used for overriding values of the values.yml file of this Chart, a command to be executed `before` the deployment of this particular release and a command which is executed `after` the release.
+#### env
+The `env section` defines new environmental variables which can be used within the configuration file. This enables to build, define and use dynamic values through variables. The values can also contain operators (( ... )) which are resolved before the variable is set. If you're using the `env operator` within this section, you have to make sure that its enviromental variable was previously defined.
+
+#### before
+
+#### after
+
+### operators
+Operators are written in the format `(( <name> <args> ))` and dynamically resolve different expressions during the deployment of the config file. Operators include:
+
+### shell
+The `shell` operator executes and resolves the value of shell commands.
+</br>Usage: `(( shell COMMAND ))`
+</br>Example: `(( shell minikube ip ))`
+
+### secret
+The `secret` operator provides a short-cut solution for retrieving scret values of a namespace.
+</br>Usage: `(( secret NAMESPACE SECRETNAME SECRETKEY ))`
+</br>Example: `(( secret default root-password password.txt ))`
+
+### env
+The `secret` operator provides a short-cut solution for retrieving environmental variables.
+</br>Usage: `(( env ENVIRONMENTAL_VARIABLE_KEY ))`
+</br>Example: `(( env PWD ))`
+
+<a name="contributing"></a>
 ## Contributing
 
 We are happy to have other people contributing to the project. If you decide to do that, here's how to:
@@ -190,6 +265,7 @@ go mod tidy
 
 These steps will first remove the current Go modules setup to create an interim `dep` setup including the good old `vendor` directory. Once this is done, `go mod init` will migrate it to Go modules again. The test and build run are to make sure all other test and build related dependencies are on-board, too. The `kubegodep2dep` tool will do the dirty part to extract the correct package dependencies from the Kubernetes `godep` dependency setup combined with `client-go` requirements in one dependecy file.
 
+<a name="license"></a>
 ## License
 
 Licensed under [MIT License](https://github.com/homeport/havener/blob/master/LICENSE)
