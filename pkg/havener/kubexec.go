@@ -27,7 +27,6 @@ package havener
 import (
 	"fmt"
 	"io"
-	"strings"
 	"time"
 
 	"github.com/gonvenience/term"
@@ -104,20 +103,9 @@ func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.P
 }
 
 // NodeExec executes the provided command on the given node.
-func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string, containerImage string, timeoutSeconds int, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
+func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node *corev1.Node, containerImage string, timeoutSeconds int, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
 	logf(Verbose, "Executing command on node...")
 	var err error
-
-	nodes, err := ListNodes(client)
-	if err != nil {
-		return err
-	}
-	if !sliceContainsString(nodes, node) {
-		return fmt.Errorf("invalid node: node '%s' does not exist\n\nAvailable nodes:\n%s",
-			node,
-			strings.Join(nodes, "\n"),
-		)
-	}
 
 	namespace := "kube-system"
 	podName := text.RandomStringWithPrefix("node-exec-", 15) // Create unique pod/container name
@@ -130,7 +118,7 @@ func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node string,
 			Namespace: namespace,
 		},
 		Spec: corev1.PodSpec{
-			NodeSelector:  map[string]string{"kubernetes.io/hostname": node}, // Deploy pod on specific node using label selector
+			NodeSelector:  map[string]string{"kubernetes.io/hostname": node.Name}, // Deploy pod on specific node using label selector
 			HostPID:       true,
 			RestartPolicy: corev1.RestartPolicyNever,
 			Containers: []corev1.Container{

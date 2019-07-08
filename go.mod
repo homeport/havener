@@ -14,6 +14,7 @@ require (
 	github.com/gonvenience/wrap v1.0.0
 	github.com/google/gofuzz v1.0.0 // indirect
 	github.com/googleapis/gnostic v0.2.0 // indirect
+	github.com/hashicorp/golang-lru v0.5.1 // indirect
 	github.com/homeport/dyff v0.10.2
 	github.com/homeport/ytbx v1.1.2
 	github.com/imdario/mergo v0.3.7 // indirect
