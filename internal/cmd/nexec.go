@@ -25,9 +25,16 @@ import (
 	"os"
 	"strings"
 
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"k8s.io/client-go/kubernetes"
+
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
 )
+
+const nodeDefaultCommand = "/bin/sh"
 
 var (
 	nodeExecTty     bool
@@ -39,15 +46,17 @@ var (
 
 // nodeExecCmd represents the node-exec command
 var nodeExecCmd = &cobra.Command{
-	Use:     "node-exec [flags] <node> <command>",
+	Use:     "node-exec [flags] [<node>] [<command>]",
 	Aliases: []string{"ne"},
 	Short:   "Execute command on Kubernetes node",
 	Long: `Execute a shell command on a node.
 
-This will create a job to get a pod with the right settings to execute a
-command on the pod that is executed in the root namespace. Technically, this
-is like running the command as you would run it on the node itself. The job
-and respective pod will be deleted after the command was executed.
+This executes a command directly on the node itself. Therefore, havener
+creates a temporary pod which enables the user to access the shell
+of the node. The pod is deleted automatically afterwards.
+
+The command can be omitted which will result in the default command: ` + nodeDefaultCommand + `. For example 
+'havener node-exec api-0' will search for a node named 'api-0' and open a shell if found.
 
 `,
 	SilenceUsage:  true,
@@ -74,28 +83,53 @@ func execInClusterNode(args []string) error {
 	switch {
 	case len(args) >= 2: //node name and command is given
 		nodeName, command := args[0], strings.Join(args[1:], " ")
-
-		if err := havener.NodeExec(client, restconfig, nodeName, nodeExecImage, nodeExecTimeout, command, os.Stdin, os.Stdout, os.Stderr, nodeExecTty); err != nil {
-			return &ErrorWithMsg{"failed to execute command on node", err}
-		}
-
-	case len(args) == 1: //only node name is given
-		return &ErrorWithMsg{"no command specified", fmt.Errorf(
-			"Usage:\nnode-exec [flags] <node> <command>",
-		)}
-
-	default: //no arguments
-		nodes, err := havener.ListNodes(client)
+		node, err := lookupNodeByName(client, nodeName)
 		if err != nil {
 			return err
 		}
 
-		return &ErrorWithMsg{"no node name and command specified",
-			fmt.Errorf(
-				"Usage:\nnode-exec [flags] <node> <command>\n\nAvailable nodes:\n%s",
-				strings.Join(nodes, "\n"),
-			)}
+		if err := havener.NodeExec(client, restconfig, node, nodeExecImage, nodeExecTimeout, command, os.Stdin, os.Stdout, os.Stderr, nodeExecTty); err != nil {
+			return &ErrorWithMsg{"failed to execute command on node", err}
+		}
+
+	case len(args) == 1: //only node name is given
+		nodeName, command := args[0], nodeDefaultCommand
+		node, err := lookupNodeByName(client, nodeName)
+		if err != nil {
+			return err
+		}
+
+		if err := havener.NodeExec(client, restconfig, node, nodeExecImage, nodeExecTimeout, command, os.Stdin, os.Stdout, os.Stderr, nodeExecTty); err != nil {
+			return &ErrorWithMsg{"failed to execute command on node", err}
+		}
+
+	default: //no arguments
+		return availableNodesError(client, "no node name and command specified")
 	}
 
 	return nil
+}
+
+func lookupNodeByName(client kubernetes.Interface, input string) (*corev1.Node, error) {
+	if node, err := client.CoreV1().Nodes().Get(input, metav1.GetOptions{}); err == nil {
+		return node, nil
+	}
+
+	return nil, availableNodesError(client, "invalid node name specfied")
+}
+
+func availableNodesError(client kubernetes.Interface, title string) error {
+	nodes, err := havener.ListNodes(client)
+	if err != nil {
+		return &ErrorWithMsg{"failed to list all nodes in cluster", err}
+	}
+	nodeList := []string{}
+	for _, nodeName := range nodes {
+		nodeList = append(nodeList, nodeName)
+	}
+
+	return &ErrorWithMsg{title,
+		fmt.Errorf("> Usage:\nnode-exec [flags] <node> <command>\n> List of available nodes:\n%s",
+			strings.Join(nodeList, "\n"),
+		)}
 }

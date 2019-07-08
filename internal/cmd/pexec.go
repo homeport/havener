@@ -34,9 +34,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const defaultCommand = "/bin/bash"
+const podDefaultCommand = "/bin/sh"
 
-var podExecTty bool
+var (
+	podExecTty bool
+)
 
 // podExecCmd represents the pod-exec command
 var podExecCmd = &cobra.Command{
@@ -52,8 +54,8 @@ the namespace of the pod.
 If no namespace is given, havener will search all namespaces for
 a pod that matches the name.
 
-Also, you can omit the command, which will result in the default
-command: /bin/bash. For example 'havener pod-exec api-0' will search
+Also, you can omit the command which will result in the default
+command: ` + podDefaultCommand + `. For example 'havener pod-exec api-0' will search
 for a pod named 'api-0' in all namespaces and open a shell if found.
 
 In case no container name is given, havener will assume you want to
@@ -79,52 +81,33 @@ func execInClusterPod(args []string) error {
 		return &ErrorWithMsg{"failed to connect to Kubernetes cluster", err}
 	}
 
-	var (
-		pod       *corev1.Pod
-		container string
-		command   string
-	)
-
 	switch {
 	case len(args) >= 2: // pod and command is given
-		command = strings.Join(args[1:], " ")
-		pod, container, err = lookupPodByName(client, args[0])
+		podName, command := args[0], strings.Join(args[1:], " ")
+		pod, container, err := lookupPodByName(client, podName)
 		if err != nil {
-			return &ErrorWithMsg{"failed to find pod by name", err}
+			return err
+		}
+
+		if err := havener.PodExec(client, restconfig, pod, container, command, os.Stdin, os.Stdout, os.Stderr, podExecTty); err != nil {
+			return &ErrorWithMsg{"failed to execute command on pod", err}
 		}
 
 	case len(args) == 1: // only pod is given
-		command = defaultCommand
-		pod, container, err = lookupPodByName(client, args[0])
+		podName, command := args[0], podDefaultCommand
+		pod, container, err := lookupPodByName(client, podName)
 		if err != nil {
-			return &ErrorWithMsg{"failed to find pod by name", err}
+			return err
+		}
+
+		if err := havener.PodExec(client, restconfig, pod, container, command, os.Stdin, os.Stdout, os.Stderr, podExecTty); err != nil {
+			return &ErrorWithMsg{"failed to execute command on pod", err}
 		}
 
 	default:
-		pods, err := havener.ListPods(client)
-		if err != nil {
-			return &ErrorWithMsg{"failed to list all pods in cluster", err}
-		}
-
-		list := []string{}
-		for _, pod := range pods {
-			for i := range pod.Spec.Containers {
-				list = append(list, fmt.Sprintf("%s/%s/%s",
-					pod.ObjectMeta.Namespace,
-					pod.Name,
-					pod.Spec.Containers[i].Name,
-				))
-			}
-		}
-		return &ErrorWithMsg{"no pod name specified",
-			fmt.Errorf("list of available pods:\n%s",
-				strings.Join(list, "\n"),
-			)}
+		return availablePodsError(client, "no pod name specified")
 	}
 
-	if err := havener.PodExec(client, restconfig, pod, container, command, os.Stdin, os.Stdout, os.Stderr, podExecTty); err != nil {
-		return &ErrorWithMsg{"failed to execute command on pod", err}
-	}
 	return nil
 }
 
@@ -147,7 +130,7 @@ func lookupPodByName(client kubernetes.Interface, input string) (*corev1.Pod, st
 
 		switch {
 		case len(pods) < 1:
-			return nil, "", fmt.Errorf("unable to find a pod named %s", input)
+			return nil, "", availablePodsError(client, fmt.Sprintf("unable to find a pod named %s", input))
 
 		case len(pods) > 1:
 			return nil, "", fmt.Errorf("more than one pod named %s found, please specify a namespace", input)
@@ -159,7 +142,7 @@ func lookupPodByName(client kubernetes.Interface, input string) (*corev1.Pod, st
 		namespace, podName := splited[0], splited[1]
 		pod, err := client.CoreV1().Pods(namespace).Get(podName, metav1.GetOptions{})
 		if err != nil {
-			return nil, "", err
+			return nil, "", availablePodsError(client, fmt.Sprintf("pod %s not found", input))
 		}
 
 		return pod, pod.Spec.Containers[0].Name, nil
@@ -168,7 +151,7 @@ func lookupPodByName(client kubernetes.Interface, input string) (*corev1.Pod, st
 		namespace, podName, container := splited[0], splited[1], splited[2]
 		pod, err := client.CoreV1().Pods(namespace).Get(podName, metav1.GetOptions{})
 		if err != nil {
-			return nil, "", err
+			return nil, "", availablePodsError(client, fmt.Sprintf("pod %s not found", input))
 		}
 
 		return pod, container, nil
@@ -176,4 +159,27 @@ func lookupPodByName(client kubernetes.Interface, input string) (*corev1.Pod, st
 	default:
 		return nil, "", fmt.Errorf("unsupported naming schema, it needs to be [namespace/]pod[/container]")
 	}
+}
+
+func availablePodsError(client kubernetes.Interface, title string) error {
+	pods, err := havener.ListPods(client)
+	if err != nil {
+		return &ErrorWithMsg{"failed to list all pods in cluster", err}
+	}
+	podList := []string{}
+	for _, pod := range pods {
+		for i := range pod.Spec.Containers {
+			podList = append(podList, fmt.Sprintf("%s/%s/%s",
+				pod.ObjectMeta.Namespace,
+				pod.Name,
+				pod.Spec.Containers[i].Name,
+			))
+		}
+	}
+
+	return &ErrorWithMsg{title,
+		fmt.Errorf("> Usage:\npod-exec [flags] <pod> <command>\n> List of available pods:\n%s",
+			strings.Join(podList, "\n"),
+		)}
+
 }
