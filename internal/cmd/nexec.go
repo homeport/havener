@@ -22,8 +22,8 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"strings"
+	"sync"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -80,35 +80,50 @@ func execInClusterNodes(args []string) error {
 		return &ErrorWithMsg{"failed to connect to Kubernetes cluster", err}
 	}
 
+	var (
+		nodes   []*corev1.Node
+		input   string
+		command string
+	)
+
 	switch {
 	case len(args) >= 2: //node name and command is given
-		nodeName, command := args[0], strings.Join(args[1:], " ")
-		nodes, err := lookupNodesByName(client, nodeName)
+		input, command = args[0], strings.Join(args[1:], " ")
+		nodes, err = lookupNodesByName(client, input)
 		if err != nil {
 			return err
-		}
-
-		for _, node := range nodes {
-			if err := havener.NodeExec(client, restconfig, node, nodeExecImage, nodeExecTimeout, command, os.Stdin, os.Stdout, os.Stderr, nodeExecTty); err != nil {
-				return &ErrorWithMsg{"failed to execute command on node", err}
-			}
 		}
 
 	case len(args) == 1: //only node name is given
-		nodeName, command := args[0], nodeDefaultCommand
-		nodes, err := lookupNodesByName(client, nodeName)
+		input, command = args[0], nodeDefaultCommand
+		nodes, err = lookupNodesByName(client, input)
 		if err != nil {
 			return err
-		}
-
-		for _, node := range nodes {
-			if err := havener.NodeExec(client, restconfig, node, nodeExecImage, nodeExecTimeout, command, os.Stdin, os.Stdout, os.Stderr, nodeExecTty); err != nil {
-				return &ErrorWithMsg{"failed to execute command on node", err}
-			}
 		}
 
 	default: //no arguments
 		return availableNodesError(client, "no node name and command specified")
+	}
+
+	wg := &sync.WaitGroup{}
+	ch := make(chan havener.ExecResponse, len(nodes))
+
+	for _, node := range nodes {
+		wg.Add(1)
+		prefix := node.Name
+		go havener.NodeExec(client, restconfig, node, nodeExecImage, nodeExecTimeout, command, nodeExecTty, prefix, wg, ch)
+	}
+
+	wg.Wait()
+	close(ch)
+
+	for resp := range ch {
+		if resp.Error != nil {
+			return &ErrorWithMsg{"failed to execute command on node", resp.Error}
+		}
+		for _, message := range resp.Messages {
+			fmt.Printf("%s (%v) > %s", resp.Prefix, message.Date, message.Text)
+		}
 	}
 
 	return nil

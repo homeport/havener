@@ -25,6 +25,7 @@ package havener
 // metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"time"
@@ -47,6 +48,42 @@ import (
 /* TODO The functions in here lack a common style and symmetry. One needs the
    the Kubernetes client and a POD reference, the other just a name. Think
    about ideas on whether it makes sense to harmonize this a little bit. */
+
+type ExecMessage struct {
+	Text string
+	Date time.Time
+}
+
+type ExecResponse struct {
+	Prefix   string
+	Messages []ExecMessage
+	Error    error
+}
+
+func PodExecDistributed(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.Pod, podName string, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) []*ExecMessage {
+	reader, writer := io.Pipe()
+
+	go PodExec(
+		client,
+		restconfig,
+		pod,
+		podName,
+		command,
+		nil,
+		writer,
+		writer,
+		tty,
+	)
+
+	messages := []*ExecMessage{}
+
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		messages = append(messages, &ExecMessage{Text: scanner.Text(), Date: time.Now()})
+	}
+
+	return messages
+}
 
 // PodExec executes the provided command in the referenced pod's container.
 func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.Pod, container string, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
