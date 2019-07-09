@@ -87,6 +87,10 @@ releases:
   overrides:
     env:
       DOMAIN: 192.168.99.100.xip.io
+    foo:
+      boolbar: true
+      boolbaredgecase: /some-true/dir/foo
+      boolbarquoted: true
     image:
       pullPolicy: Always
     kube:
@@ -99,7 +103,10 @@ releases:
       UAA_ADMIN_CLIENT_SECRET: secret
 env:
   SERVICE_IP: 192.168.99.100
-  SERVICE_DOMAIN: ((env SERVICE_IP   )).xip.io
+  SERVICE_DOMAIN: (( env SERVICE_IP   )).xip.io
+  BOOLBARQUOTED: "true"
+  BOOLBAR: true
+  BOOLBAREDGECASE: /some-true/dir/foo
 `
 		Expect(string(input2)).To(BeEquivalentTo(expected))
 
