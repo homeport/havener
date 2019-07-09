@@ -105,7 +105,7 @@ func TraverseStructureAndProcessOperators(input interface{}) (interface{}, error
 // to define booleans in the values.yml, where booleans
 // are supported by helm
 func isPotentialBoolean(input interface{}) bool {
-	shellRegexp := regexp.MustCompile(`(false|true)`)
+	shellRegexp := regexp.MustCompile(`^(false|true)$`)
 	switch obj := input.(type) {
 	case string:
 		if matches := shellRegexp.FindAllStringSubmatch(obj, -1); len(matches) > 0 {
