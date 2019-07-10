@@ -23,10 +23,9 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"sync"
-
-	"github.com/lucasb-eyer/go-colorful"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,13 +34,15 @@ import (
 
 	"github.com/gonvenience/bunt"
 	"github.com/homeport/havener/pkg/havener"
+	colorful "github.com/lucasb-eyer/go-colorful"
 	"github.com/spf13/cobra"
 )
 
 const podDefaultCommand = "/bin/sh"
 
 var (
-	podExecTty bool
+	podExecTty   bool
+	podExecBlock bool
 )
 
 // podExecCmd represents the pod-exec command
@@ -77,6 +78,7 @@ func init() {
 	rootCmd.AddCommand(podExecCmd)
 
 	podExecCmd.PersistentFlags().BoolVarP(&podExecTty, "tty", "t", false, "allocate pseudo-terminal for command execution")
+	podExecCmd.PersistentFlags().BoolVar(&podExecBlock, "block", false, "show distributed shell output as block for each pod")
 }
 
 func execInClusterPods(args []string) error {
@@ -110,6 +112,7 @@ func execInClusterPods(args []string) error {
 		return availablePodsError(client, "no pod name specified")
 	}
 
+	distributed := len(podMap) > 1
 	wg := &sync.WaitGroup{}
 	ch := make(chan *havener.ExecResponse, len(podMap))
 
@@ -117,7 +120,7 @@ func execInClusterPods(args []string) error {
 	for pod, container := range podMap {
 		go func(pod *corev1.Pod, container string) {
 			podName := fmt.Sprintf("%s/%s", pod.Name, container)
-			if len(podMap) > 1 {
+			if distributed {
 				messages, err := havener.PodExecDistributed(
 					client,
 					restconfig,
@@ -126,9 +129,12 @@ func execInClusterPods(args []string) error {
 					command,
 					podExecTty,
 				)
-				ch <- &havener.ExecResponse{Prefix: podName, Messages: messages, Error: err}
+				for _, message := range messages {
+					message.Prefix = podName
+				}
+				ch <- &havener.ExecResponse{Messages: messages, Error: err}
 			} else {
-				ch <- &havener.ExecResponse{Prefix: podName, Error: havener.PodExec(
+				ch <- &havener.ExecResponse{Error: havener.PodExec(
 					client,
 					restconfig,
 					pod,
@@ -147,27 +153,48 @@ func execInClusterPods(args []string) error {
 	wg.Wait()
 	close(ch)
 
-	colors, err := colorful.HappyPalette(len(podMap))
+	output := []*havener.ExecMessage{}
+
+	for resp := range ch {
+		if distributed {
+			output = append(output, resp.Messages...)
+		}
+		if resp.Error != nil {
+			return &ErrorWithMsg{"failed to execute command on pod", resp.Error}
+		}
+	}
+
+	switch {
+	case nodeExecBlock:
+		sort.Slice(output, func(i, j int) bool { return output[i].Prefix < output[j].Prefix })
+	default:
+		sort.Slice(output, func(i, j int) bool { return output[i].Date.Before(output[j].Date) })
+	}
+
+	colors, err := colorful.HappyPalette(len(podMap) + 20)
 	if err != nil {
 		return &ErrorWithMsg{"failed to display pod output", err}
 	}
-	colorIndex := 0
+	colorDictionary := map[string]colorful.Color{}
 
-	for resp := range ch {
-		if len(podMap) > 1 {
-			for _, message := range resp.Messages {
-				format := bunt.Style(
-					fmt.Sprintf("%s (%s) |", resp.Prefix, getHumanReadableTime(message.Date)),
-					bunt.Foreground(colors[colorIndex]),
-					bunt.Bold(),
-				)
-				fmt.Printf("%s %s\n", format, message.Text)
-			}
+	colorIndex := 0
+	for _, message := range output {
+		var color colorful.Color
+		if dictColor, ok := colorDictionary[message.Prefix]; ok {
+			color = dictColor
+		} else {
+			color = colors[colorIndex]
+			colorDictionary[message.Prefix] = color
+			colorIndex++
 		}
-		if resp.Error != nil {
-			return &ErrorWithMsg{fmt.Sprintf("failed to execute command on pod '%s'", resp.Prefix), resp.Error}
-		}
-		colorIndex++
+
+		format := bunt.Style(
+			fmt.Sprintf("%s (%s) |", message.Prefix, getHumanReadableTime(message.Date)),
+			bunt.Foreground(color),
+			bunt.Bold(),
+		)
+
+		fmt.Printf("%s %s\n", format, message.Text)
 	}
 
 	return nil

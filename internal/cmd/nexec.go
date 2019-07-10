@@ -23,17 +23,19 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"sync"
+
+	"github.com/gonvenience/bunt"
+	"github.com/lucasb-eyer/go-colorful"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/gonvenience/bunt"
 	"github.com/homeport/havener/pkg/havener"
-	colorful "github.com/lucasb-eyer/go-colorful"
 	"github.com/spf13/cobra"
 )
 
@@ -43,6 +45,7 @@ var (
 	nodeExecTty     bool
 	nodeExecImage   string
 	nodeExecTimeout int
+	nodeExecBlock   bool
 	defaultImage    = "alpine"
 	defaultTimeout  = 10
 )
@@ -75,6 +78,7 @@ func init() {
 	nodeExecCmd.PersistentFlags().BoolVar(&nodeExecTty, "tty", false, "allocate pseudo-terminal for command execution")
 	nodeExecCmd.PersistentFlags().StringVar(&nodeExecImage, "image", defaultImage, "set image for helper pod from which the root-shell is accessed")
 	nodeExecCmd.PersistentFlags().IntVar(&nodeExecTimeout, "timeout", defaultTimeout, "set timout in seconds for the setup of the helper pod")
+	nodeExecCmd.PersistentFlags().BoolVar(&nodeExecBlock, "block", false, "show distributed shell output as block for each node")
 }
 
 func execInClusterNodes(args []string) error {
@@ -108,6 +112,7 @@ func execInClusterNodes(args []string) error {
 		return availableNodesError(client, "no node name and command specified")
 	}
 
+	distributed := len(nodes) > 1
 	wg := &sync.WaitGroup{}
 	ch := make(chan *havener.ExecResponse, len(nodes))
 
@@ -125,9 +130,12 @@ func execInClusterNodes(args []string) error {
 				os.Stdout,
 				os.Stderr,
 				nodeExecTty,
-				len(nodes) > 1,
+				distributed,
 			)
-			ch <- &havener.ExecResponse{Prefix: node.Name, Messages: messages, Error: err}
+			for _, message := range messages {
+				message.Prefix = node.Name
+			}
+			ch <- &havener.ExecResponse{Messages: messages, Error: err}
 			wg.Done()
 		}(node)
 	}
@@ -135,27 +143,53 @@ func execInClusterNodes(args []string) error {
 	wg.Wait()
 	close(ch)
 
-	colors, err := colorful.HappyPalette(len(nodes))
-	if err != nil {
-		return &ErrorWithMsg{"failed to display pod output", err}
-	}
-	colorIndex := 0
+	output := []*havener.ExecMessage{}
 
 	for resp := range ch {
-		if len(nodes) > 1 {
-			for _, message := range resp.Messages {
-				format := bunt.Style(
-					fmt.Sprintf("%s (%s) |", resp.Prefix, getHumanReadableTime(message.Date)),
-					bunt.Foreground(colors[colorIndex]),
-					bunt.Bold(),
-				)
-				fmt.Printf("%s %s\n", format, message.Text)
-			}
+		if distributed {
+			output = append(output, resp.Messages...)
 		}
 		if resp.Error != nil {
-			return &ErrorWithMsg{fmt.Sprintf("failed to execute command on node '%s'", resp.Prefix), resp.Error}
+
+			//TODO WRITE MESSAGES ... (function)
+
+			return &ErrorWithMsg{"failed to execute command on node", resp.Error}
 		}
-		colorIndex++
+	}
+
+	switch {
+	case nodeExecBlock:
+		fmt.Println("block")
+		sort.Slice(output, func(i, j int) bool { return output[i].Prefix < output[j].Prefix })
+	default:
+		fmt.Println("time")
+		sort.Slice(output, func(i, j int) bool { return output[i].Date.Before(output[j].Date) })
+	}
+
+	colors, err := colorful.HappyPalette(len(nodes) + 20)
+	if err != nil {
+		return &ErrorWithMsg{"failed to display node output", err}
+	}
+	colorDictionary := map[string]colorful.Color{}
+
+	colorIndex := 0
+	for _, message := range output {
+		var color colorful.Color
+		if dictColor, ok := colorDictionary[message.Prefix]; ok {
+			color = dictColor
+		} else {
+			color = colors[colorIndex]
+			colorDictionary[message.Prefix] = color
+			colorIndex++
+		}
+
+		format := bunt.Style(
+			fmt.Sprintf("%s (%s) |", message.Prefix, getHumanReadableTime(message.Date)),
+			bunt.Foreground(color),
+			bunt.Bold(),
+		)
+
+		fmt.Printf("%s %s\n", format, message.Text)
 	}
 
 	return nil

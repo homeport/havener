@@ -47,14 +47,14 @@ import (
 
 // ExecMessage is a helper structure for assigning a date to a message string
 type ExecMessage struct {
-	Text string
-	Date time.Time
+	Prefix string
+	Text   string
+	Date   time.Time
 }
 
 // ExecResponse is a helper structure for returning the results of the
 // node-exec and pod-exec commands via channels.
 type ExecResponse struct {
-	Prefix   string
 	Messages []*ExecMessage
 	Error    error
 }
