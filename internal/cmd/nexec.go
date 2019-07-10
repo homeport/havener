@@ -22,6 +22,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 
@@ -106,23 +107,40 @@ func execInClusterNodes(args []string) error {
 	}
 
 	wg := &sync.WaitGroup{}
-	ch := make(chan havener.ExecResponse, len(nodes))
+	ch := make(chan *havener.ExecResponse, len(nodes))
 
+	wg.Add(len(nodes))
 	for _, node := range nodes {
-		wg.Add(1)
-		prefix := node.Name
-		go havener.NodeExec(client, restconfig, node, nodeExecImage, nodeExecTimeout, command, nodeExecTty, prefix, wg, ch)
+		go func(node *corev1.Node) {
+			messages, err := havener.NodeExec(
+				client,
+				restconfig,
+				node,
+				nodeExecImage,
+				nodeExecTimeout,
+				command,
+				os.Stdin,
+				os.Stdout,
+				os.Stderr,
+				nodeExecTty,
+				len(nodes) > 1,
+			)
+			ch <- &havener.ExecResponse{Prefix: node.Name, Messages: messages, Error: err}
+			wg.Done()
+		}(node)
 	}
 
 	wg.Wait()
 	close(ch)
 
 	for resp := range ch {
-		if resp.Error != nil {
-			return &ErrorWithMsg{"failed to execute command on node", resp.Error}
+		if len(nodes) > 1 {
+			for _, message := range resp.Messages {
+				fmt.Printf("%s (%v) > %s\n", resp.Prefix, message.Date, message.Text)
+			}
 		}
-		for _, message := range resp.Messages {
-			fmt.Printf("%s (%v) > %s", resp.Prefix, message.Date, message.Text)
+		if resp.Error != nil {
+			return &ErrorWithMsg{fmt.Sprintf("failed to execute command on node '%s'", resp.Prefix), resp.Error}
 		}
 	}
 

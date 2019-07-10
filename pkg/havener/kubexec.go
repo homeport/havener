@@ -45,35 +45,41 @@ import (
 
 /* TODO In general, more comments and explanations are required. */
 
-/* TODO The functions in here lack a common style and symmetry. One needs the
-   the Kubernetes client and a POD reference, the other just a name. Think
-   about ideas on whether it makes sense to harmonize this a little bit. */
-
+// ExecMessage is a helper structure for assigning a date to a message string
 type ExecMessage struct {
 	Text string
 	Date time.Time
 }
 
+// ExecResponse is a helper structure for returning the results of the
+// node-exec and pod-exec commands via channels.
 type ExecResponse struct {
 	Prefix   string
-	Messages []ExecMessage
+	Messages []*ExecMessage
 	Error    error
 }
 
-func PodExecDistributed(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.Pod, podName string, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) []*ExecMessage {
+// PodExecDistributed executes the provided command in the referenced pod's container and returns a
+// slice of all messages from the output stream instead of printing them out.
+func PodExecDistributed(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.Pod, podName string, command string, tty bool) ([]*ExecMessage, error) {
 	reader, writer := io.Pipe()
+	errChan := make(chan error, 1)
 
-	go PodExec(
-		client,
-		restconfig,
-		pod,
-		podName,
-		command,
-		nil,
-		writer,
-		writer,
-		tty,
-	)
+	go func() {
+		err := PodExec(
+			client,
+			restconfig,
+			pod,
+			podName,
+			command,
+			nil,
+			writer,
+			writer,
+			tty,
+		)
+		errChan <- err
+		writer.Close()
+	}()
 
 	messages := []*ExecMessage{}
 
@@ -82,7 +88,12 @@ func PodExecDistributed(client kubernetes.Interface, restconfig *rest.Config, po
 		messages = append(messages, &ExecMessage{Text: scanner.Text(), Date: time.Now()})
 	}
 
-	return messages
+	err := <-errChan
+	if err != nil {
+		return messages, err
+	}
+
+	return messages, nil
 }
 
 // PodExec executes the provided command in the referenced pod's container.
@@ -140,7 +151,7 @@ func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.P
 }
 
 // NodeExec executes the provided command on the given node.
-func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node *corev1.Node, containerImage string, timeoutSeconds int, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
+func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node *corev1.Node, containerImage string, timeoutSeconds int, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool, distributed bool) ([]*ExecMessage, error) {
 	logf(Verbose, "Executing command on node...")
 	var err error
 
@@ -176,7 +187,7 @@ func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node *corev1
 	// Create pod in given namespace based on configuration
 	pod, err = client.CoreV1().Pods(namespace).Create(pod)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	// Stop pod and container after command execution
 	defer func() {
@@ -190,11 +201,24 @@ func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node *corev1
 
 	logf(Verbose, "Waiting for pod to be started...")
 	if err := waitForPodReadiness(client, namespace, pod, timeoutSeconds); err != nil {
-		return err
+		return nil, err
+	}
+
+	if distributed {
+		messages, err := PodExecDistributed(
+			client,
+			restconfig,
+			pod,
+			podName,
+			fmt.Sprintf("nsenter --target 1 --mount --uts --ipc --net --pid -- %s", command),
+			tty,
+		)
+		return messages, err
+
 	}
 
 	// Execute command on pod and redirect output to users provided stdout and stderr
-	return PodExec(
+	return nil, PodExec(
 		client,
 		restconfig,
 		pod,
