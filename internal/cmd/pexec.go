@@ -26,11 +26,14 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/lucasb-eyer/go-colorful"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/gonvenience/bunt"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
 )
@@ -144,15 +147,27 @@ func execInClusterPods(args []string) error {
 	wg.Wait()
 	close(ch)
 
+	colors, err := colorful.HappyPalette(len(podMap))
+	if err != nil {
+		return &ErrorWithMsg{"failed to display pod output", err}
+	}
+	colorIndex := 0
+
 	for resp := range ch {
 		if len(podMap) > 1 {
 			for _, message := range resp.Messages {
-				fmt.Printf("%s (%v) > %s\n", resp.Prefix, message.Date, message.Text)
+				format := bunt.Style(
+					fmt.Sprintf("%s (%s) |", resp.Prefix, getHumanReadableTime(message.Date)),
+					bunt.Foreground(colors[colorIndex]),
+					bunt.Bold(),
+				)
+				fmt.Printf("%s %s\n", format, message.Text)
 			}
 		}
 		if resp.Error != nil {
 			return &ErrorWithMsg{fmt.Sprintf("failed to execute command on pod '%s'", resp.Prefix), resp.Error}
 		}
+		colorIndex++
 	}
 
 	return nil

@@ -31,7 +31,9 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/gonvenience/bunt"
 	"github.com/homeport/havener/pkg/havener"
+	colorful "github.com/lucasb-eyer/go-colorful"
 	"github.com/spf13/cobra"
 )
 
@@ -133,15 +135,27 @@ func execInClusterNodes(args []string) error {
 	wg.Wait()
 	close(ch)
 
+	colors, err := colorful.HappyPalette(len(nodes))
+	if err != nil {
+		return &ErrorWithMsg{"failed to display pod output", err}
+	}
+	colorIndex := 0
+
 	for resp := range ch {
 		if len(nodes) > 1 {
 			for _, message := range resp.Messages {
-				fmt.Printf("%s (%v) > %s\n", resp.Prefix, message.Date, message.Text)
+				format := bunt.Style(
+					fmt.Sprintf("%s (%s) |", resp.Prefix, getHumanReadableTime(message.Date)),
+					bunt.Foreground(colors[colorIndex]),
+					bunt.Bold(),
+				)
+				fmt.Printf("%s %s\n", format, message.Text)
 			}
 		}
 		if resp.Error != nil {
 			return &ErrorWithMsg{fmt.Sprintf("failed to execute command on node '%s'", resp.Prefix), resp.Error}
 		}
+		colorIndex++
 	}
 
 	return nil

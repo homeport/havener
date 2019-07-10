@@ -30,6 +30,7 @@ import (
 	"os/exec"
 	"runtime/debug"
 	"strings"
+	"time"
 
 	"github.com/gonvenience/bunt"
 	"github.com/homeport/havener/pkg/havener"
@@ -274,4 +275,8 @@ func getReleaseMessage(release havener.Release, message string) (string, error) 
 	}
 
 	return message, nil
+}
+
+func getHumanReadableTime(date time.Time) string {
+	return fmt.Sprintf("%02d:%02d:%02d", date.Hour(), date.Minute(), date.Second())
 }
