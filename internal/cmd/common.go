@@ -29,9 +29,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime/debug"
-	"sort"
 	"strings"
-	"time"
 
 	"github.com/gonvenience/bunt"
 	"github.com/homeport/havener/pkg/havener"
@@ -276,76 +274,4 @@ func getReleaseMessage(release havener.Release, message string) (string, error) 
 	}
 
 	return message, nil
-}
-
-// getHumanReadableTime returns the time as string in the format: hh:mm:ss from a date object.
-func getHumanReadableTime(date time.Time) string {
-	return fmt.Sprintf("%02d:%02d:%02d", date.Hour(), date.Minute(), date.Second())
-}
-
-// printDistributedExecOutput sorts, formats a slice of ExecMessages and prints them
-// to os.Stdout.
-func printDistributedExecOutput(output []*havener.ExecMessage, items int, blockFlag bool) error {
-	switch {
-	case blockFlag:
-		sort.Slice(output, func(i, j int) bool {
-			if output[i].Prefix < output[j].Prefix {
-				return true
-			}
-			if output[i].Prefix > output[j].Prefix {
-				return false
-			}
-			return output[i].Date.Before(output[j].Date)
-		})
-	default:
-		sort.Slice(output, func(i, j int) bool { return output[i].Date.Before(output[j].Date) })
-	}
-
-	outputString, err := formatDistributedExecOutput(output, items)
-	if err != nil {
-		return &ErrorWithMsg{"failed to format output", err}
-	}
-	fmt.Print(outputString)
-
-	return nil
-}
-
-// formatDistributedExecOutput formats and merges a slice of ExecMessages to a single string.
-// It also assigns a color to each prefex and therefor needs the overall number of prefixes
-// (items) as parameter.
-func formatDistributedExecOutput(output []*havener.ExecMessage, items int) (string, error) {
-	colors, err := colorful.HappyPalette(items)
-	if err != nil {
-		return "", err
-	}
-	colorDictionary := map[string]colorful.Color{}
-
-	lines := []string{}
-	colorIndex := 0
-	for _, message := range output {
-		var color colorful.Color
-
-		if dictColor, ok := colorDictionary[message.Prefix]; ok {
-			color = dictColor
-		} else {
-			color = colors[colorIndex]
-			colorDictionary[message.Prefix] = color
-			colorIndex++
-		}
-
-		var (
-			prefix string = bunt.Style(
-				fmt.Sprintf("%s", message.Prefix),
-				bunt.Foreground(color),
-				bunt.Bold(),
-			)
-			date        string = bunt.Sprintf("DimGray{%s}", getHumanReadableTime(message.Date))
-			seperator   string = bunt.Sprintf("DimGray{%s}", "|")
-			messageText string = message.Text
-		)
-
-		lines = append(lines, fmt.Sprintf("%s %s %s %s", date, prefix, seperator, messageText))
-	}
-
-	return strings.Join(lines, "\r\n"), nil
 }

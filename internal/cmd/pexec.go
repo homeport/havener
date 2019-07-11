@@ -26,6 +26,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/homeport/havener/internal/hvnr"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -157,19 +159,24 @@ func execInClusterPods(args []string) error {
 			output = append(output, resp.Messages...)
 		}
 		if resp.Error != nil {
-			err := printDistributedExecOutput(output, len(podMap), podExecBlock)
+			outputString, err := hvnr.FormatDistributedExecOutput(output, len(podMap))
 			if err != nil {
-				return &ErrorWithMsg{"failed to print pod output", err}
+				return &ErrorWithMsg{"failed to format distributed output", err}
 			}
+			fmt.Print(outputString + "\r\n")
 			return &ErrorWithMsg{"failed to execute command on pod", resp.Error}
 		}
 	}
 
 	if distributed {
-		err := printDistributedExecOutput(output, len(podMap), podExecBlock)
+		output = hvnr.SortDistributedExecOutput(output, len(podMap), podExecBlock)
+
+		outputString, err := hvnr.FormatDistributedExecOutput(output, len(podMap))
 		if err != nil {
-			return &ErrorWithMsg{"failed to print pod output", err}
+			return &ErrorWithMsg{"failed to format distributed output", err}
 		}
+
+		fmt.Print(outputString)
 	}
 
 	return nil

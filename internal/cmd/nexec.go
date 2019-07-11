@@ -31,6 +31,7 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/homeport/havener/internal/hvnr"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
 )
@@ -146,19 +147,24 @@ func execInClusterNodes(args []string) error {
 			output = append(output, resp.Messages...)
 		}
 		if resp.Error != nil {
-			err := printDistributedExecOutput(output, len(nodes), nodeExecBlock)
+			outputString, err := hvnr.FormatDistributedExecOutput(output, len(nodes))
 			if err != nil {
-				return &ErrorWithMsg{"failed to print node output", err}
+				return &ErrorWithMsg{"failed to format distributed output", err}
 			}
+			fmt.Print(outputString + "\r\n")
 			return &ErrorWithMsg{"failed to execute command on node", resp.Error}
 		}
 	}
 
 	if distributed {
-		err := printDistributedExecOutput(output, len(nodes), nodeExecBlock)
+		output = hvnr.SortDistributedExecOutput(output, len(nodes), nodeExecBlock)
+
+		outputString, err := hvnr.FormatDistributedExecOutput(output, len(nodes))
 		if err != nil {
-			return &ErrorWithMsg{"failed to print node output", err}
+			return &ErrorWithMsg{"failed to format distributed output", err}
 		}
+
+		fmt.Print(outputString)
 	}
 
 	return nil
