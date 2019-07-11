@@ -23,7 +23,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"sort"
 	"strings"
 	"sync"
 
@@ -32,9 +31,7 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/gonvenience/bunt"
 	"github.com/homeport/havener/pkg/havener"
-	colorful "github.com/lucasb-eyer/go-colorful"
 	"github.com/spf13/cobra"
 )
 
@@ -160,41 +157,19 @@ func execInClusterPods(args []string) error {
 			output = append(output, resp.Messages...)
 		}
 		if resp.Error != nil {
+			err := printDistributedExecOutput(output, len(podMap), podExecBlock)
+			if err != nil {
+				return &ErrorWithMsg{"failed to print pod output", err}
+			}
 			return &ErrorWithMsg{"failed to execute command on pod", resp.Error}
 		}
 	}
 
-	switch {
-	case nodeExecBlock:
-		sort.Slice(output, func(i, j int) bool { return output[i].Prefix < output[j].Prefix })
-	default:
-		sort.Slice(output, func(i, j int) bool { return output[i].Date.Before(output[j].Date) })
-	}
-
-	colors, err := colorful.HappyPalette(len(podMap) + 20)
-	if err != nil {
-		return &ErrorWithMsg{"failed to display pod output", err}
-	}
-	colorDictionary := map[string]colorful.Color{}
-
-	colorIndex := 0
-	for _, message := range output {
-		var color colorful.Color
-		if dictColor, ok := colorDictionary[message.Prefix]; ok {
-			color = dictColor
-		} else {
-			color = colors[colorIndex]
-			colorDictionary[message.Prefix] = color
-			colorIndex++
+	if distributed {
+		err := printDistributedExecOutput(output, len(podMap), podExecBlock)
+		if err != nil {
+			return &ErrorWithMsg{"failed to print pod output", err}
 		}
-
-		format := bunt.Style(
-			fmt.Sprintf("%s (%s) |", message.Prefix, getHumanReadableTime(message.Date)),
-			bunt.Foreground(color),
-			bunt.Bold(),
-		)
-
-		fmt.Printf("%s %s\n", format, message.Text)
 	}
 
 	return nil

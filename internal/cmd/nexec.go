@@ -23,12 +23,8 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"sort"
 	"strings"
 	"sync"
-
-	"github.com/gonvenience/bunt"
-	"github.com/lucasb-eyer/go-colorful"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -150,46 +146,19 @@ func execInClusterNodes(args []string) error {
 			output = append(output, resp.Messages...)
 		}
 		if resp.Error != nil {
-
-			//TODO WRITE MESSAGES ... (function)
-
+			err := printDistributedExecOutput(output, len(nodes), nodeExecBlock)
+			if err != nil {
+				return &ErrorWithMsg{"failed to print node output", err}
+			}
 			return &ErrorWithMsg{"failed to execute command on node", resp.Error}
 		}
 	}
 
-	switch {
-	case nodeExecBlock:
-		fmt.Println("block")
-		sort.Slice(output, func(i, j int) bool { return output[i].Prefix < output[j].Prefix })
-	default:
-		fmt.Println("time")
-		sort.Slice(output, func(i, j int) bool { return output[i].Date.Before(output[j].Date) })
-	}
-
-	colors, err := colorful.HappyPalette(len(nodes) + 20)
-	if err != nil {
-		return &ErrorWithMsg{"failed to display node output", err}
-	}
-	colorDictionary := map[string]colorful.Color{}
-
-	colorIndex := 0
-	for _, message := range output {
-		var color colorful.Color
-		if dictColor, ok := colorDictionary[message.Prefix]; ok {
-			color = dictColor
-		} else {
-			color = colors[colorIndex]
-			colorDictionary[message.Prefix] = color
-			colorIndex++
+	if distributed {
+		err := printDistributedExecOutput(output, len(nodes), nodeExecBlock)
+		if err != nil {
+			return &ErrorWithMsg{"failed to print node output", err}
 		}
-
-		format := bunt.Style(
-			fmt.Sprintf("%s (%s) |", message.Prefix, getHumanReadableTime(message.Date)),
-			bunt.Foreground(color),
-			bunt.Bold(),
-		)
-
-		fmt.Printf("%s %s\n", format, message.Text)
 	}
 
 	return nil
