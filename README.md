@@ -142,7 +142,7 @@ The `version` command pretty much does what it says on the tin: it gives out the
 
 ## Configuration
 
-A `havener config file` provides an easy solution for configurating and deploying one or multiple Helm Charts. The `config` is saved as `a YAML file` and is used by the `deploy` and `upgrade` commands. Besides information about the charts, it can override the values.yaml file and can contain further pre- and post-processing steps.
+A `havener config file` provides an easy solution for configurating and deploying one or multiple Helm Charts. The `config` is saved as a YAML file and is used by the `deploy` and `upgrade` commands. Besides information about the charts, it can override the values.yaml file and can contain further pre- and post-processing steps.
 
 ```yml
 name: mongo deployment
