@@ -8,6 +8,15 @@
 
 ![havener](.docs/logo.png?raw=true "Havener logo - four stripes symbolising the rank of a harbourmaster inside a gearwheel")
 
+## Table of Contents
+
+- [Introduction](#introducing-havener)
+- [How do I get started](#how-do-i-get-started)
+- [Quick Command Overview](#quick-command-overview)
+- [Configuration](#configuration)
+- [Contributing](#contributing)
+- [License](#license)
+
 ## Introducing Havener
 
 Convenience tool to handle tasks around [Containerized CF](https://www.pivotaltracker.com/n/projects/2192232) workloads on a Kubernetes cluster. It deploys multiple Helm Charts using a configuration file, which is used to add in a tiny amount of glue code that is sometimes needed to make things work. Under to cover, `havener` does the same calls that `kubectl` do, nothing special. That means that at the end you have a Helm Release just like you would have using `helm` alone.
@@ -130,6 +139,78 @@ The `upgrade` command upgrades an existing helm release. A config file has to be
 #### version command
 
 The `version` command pretty much does what it says on the tin: it gives out the version currently used.
+
+## Configuration
+
+A `havener config file` provides an easy solution for configurating and deploying one or multiple Helm Charts. The `config` is saved as a YAML file and is used by the `deploy` and `upgrade` commands. Besides information about the charts, it can override the values.yaml file and can contain further pre- and post-processing steps.
+
+```yml
+name: mongo deployment
+releases:
+- name: mongodb
+  namespace: mongodb
+  version: (( env VERSION ))
+  location: stable/mongodb
+  overrides:
+    mongodbUsername: (( env USERNAME ))
+    mongodbPassword: (( env PASSWORD ))
+    mongodbDatabase: (( env DATABASE ))
+  before: [echo "$(date) before release"]
+  after: [echo "Installed mongoDB with credentials $USERNAME/$PASSWORD"]
+
+env:
+  VERSION: 1
+  USERNAME: (( shell echo "user" ))
+  PASSWORD: (( secret default root-password password.txt ))
+  DATABASE: admin
+
+before:
+- cmd: /bin/bash
+  args:
+  - -c
+  - |
+    #!/bin/bash
+    echo "$(date) before deployment"
+
+after:
+- echo "$(date) after deployment"
+```
+
+### sections
+
+#### releases section
+
+Contains a list of all release items which shall be deployed. Hereby, each release contains `general data` about the deployment (name, namespace, version, location of the Chart), an `override section` which can be used for overriding values of the values.yaml file of this Chart, a command to be executed `before` the deployment of this particular release and a command which is executed `after` the release.
+
+#### env section
+
+The `env section` defines new environmental variables which can be used within the configuration file. This enables to build, define and use dynamic values through variables. The values can also contain operators (( ... )) which are resolved before the variable is set. If you're using the `env operator` within this section, you have to make sure that its environmental variable was previously defined.
+
+#### before section
+
+#### after section
+
+### operators
+
+Operators are written in the format `(( <name> <args> ))` and dynamically resolve different expressions during the deployment of the config file. Operators include:
+
+### shell operator
+
+The `shell` operator executes and resolves the value of shell commands.
+</br>Usage: `(( shell COMMAND ))`
+</br>Example: `(( shell minikube ip ))`
+
+### secret operator
+
+The `secret` operator provides a short-cut solution for retrieving scret values of a namespace.
+</br>Usage: `(( secret NAMESPACE SECRETNAME SECRETKEY ))`
+</br>Example: `(( secret default root-password password.txt ))`
+
+### env operator
+
+The `secret` operator provides a short-cut solution for retrieving environmental variables.
+</br>Usage: `(( env ENVIRONMENTAL_VARIABLE_KEY ))`
+</br>Example: `(( env PWD ))`
 
 ## Contributing
 
