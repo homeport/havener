@@ -40,7 +40,7 @@ import (
 const podDefaultCommand = "/bin/sh"
 
 var (
-	podExecTty   bool
+	podExecNoTty bool
 	podExecBlock bool
 )
 
@@ -76,7 +76,7 @@ execute the command in the first container found in the pod.
 func init() {
 	rootCmd.AddCommand(podExecCmd)
 
-	podExecCmd.PersistentFlags().BoolVarP(&podExecTty, "tty", "t", false, "allocate pseudo-terminal for command execution")
+	podExecCmd.PersistentFlags().BoolVar(&podExecNoTty, "no-tty", false, "do not allocate pseudo-terminal for command execution")
 	podExecCmd.PersistentFlags().BoolVar(&podExecBlock, "block", false, "show distributed shell output as block for each pod")
 }
 
@@ -126,7 +126,7 @@ func execInClusterPods(args []string) error {
 					pod,
 					pod.Name,
 					command,
-					podExecTty,
+					!podExecNoTty,
 				)
 				for _, message := range messages {
 					message.Prefix = podName
@@ -142,7 +142,7 @@ func execInClusterPods(args []string) error {
 					os.Stdin,
 					os.Stdout,
 					os.Stderr,
-					podExecTty,
+					!podExecNoTty,
 				)}
 			}
 			wg.Done()
