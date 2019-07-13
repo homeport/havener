@@ -39,7 +39,7 @@ import (
 const nodeDefaultCommand = "/bin/sh"
 
 var (
-	nodeExecTty     bool
+	nodeExecNoTty   bool
 	nodeExecImage   string
 	nodeExecTimeout int
 	nodeExecBlock   bool
@@ -72,7 +72,7 @@ The command can be omitted which will result in the default command: ` + nodeDef
 func init() {
 	rootCmd.AddCommand(nodeExecCmd)
 
-	nodeExecCmd.PersistentFlags().BoolVar(&nodeExecTty, "tty", false, "allocate pseudo-terminal for command execution")
+	nodeExecCmd.PersistentFlags().BoolVar(&nodeExecNoTty, "no-tty", false, "do not allocate pseudo-terminal for command execution")
 	nodeExecCmd.PersistentFlags().StringVar(&nodeExecImage, "image", defaultImage, "set image for helper pod from which the root-shell is accessed")
 	nodeExecCmd.PersistentFlags().IntVar(&nodeExecTimeout, "timeout", defaultTimeout, "set timout in seconds for the setup of the helper pod")
 	nodeExecCmd.PersistentFlags().BoolVar(&nodeExecBlock, "block", false, "show distributed shell output as block for each node")
@@ -126,7 +126,7 @@ func execInClusterNodes(args []string) error {
 				os.Stdin,
 				os.Stdout,
 				os.Stderr,
-				nodeExecTty,
+				!nodeExecNoTty,
 				distributed,
 			)
 			for _, message := range messages {
