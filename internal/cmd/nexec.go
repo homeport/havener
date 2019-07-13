@@ -24,12 +24,14 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/homeport/havener/internal/hvnr"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
 )
@@ -40,13 +42,14 @@ var (
 	nodeExecTty     bool
 	nodeExecImage   string
 	nodeExecTimeout int
+	nodeExecBlock   bool
 	defaultImage    = "alpine"
 	defaultTimeout  = 10
 )
 
 // nodeExecCmd represents the node-exec command
 var nodeExecCmd = &cobra.Command{
-	Use:     "node-exec [flags] [<node>] [<command>]",
+	Use:     "node-exec [flags] [<node>[,<node>,...]] [<command>]",
 	Aliases: []string{"ne"},
 	Short:   "Execute command on Kubernetes node",
 	Long: `Execute a shell command on a node.
@@ -62,7 +65,7 @@ The command can be omitted which will result in the default command: ` + nodeDef
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return execInClusterNode(args)
+		return execInClusterNodes(args)
 	},
 }
 
@@ -72,53 +75,117 @@ func init() {
 	nodeExecCmd.PersistentFlags().BoolVar(&nodeExecTty, "tty", false, "allocate pseudo-terminal for command execution")
 	nodeExecCmd.PersistentFlags().StringVar(&nodeExecImage, "image", defaultImage, "set image for helper pod from which the root-shell is accessed")
 	nodeExecCmd.PersistentFlags().IntVar(&nodeExecTimeout, "timeout", defaultTimeout, "set timout in seconds for the setup of the helper pod")
+	nodeExecCmd.PersistentFlags().BoolVar(&nodeExecBlock, "block", false, "show distributed shell output as block for each node")
 }
 
-func execInClusterNode(args []string) error {
+func execInClusterNodes(args []string) error {
 	client, restconfig, err := havener.OutOfClusterAuthentication("")
 	if err != nil {
 		return &ErrorWithMsg{"failed to connect to Kubernetes cluster", err}
 	}
 
+	var (
+		nodes   []*corev1.Node
+		input   string
+		command string
+	)
+
 	switch {
 	case len(args) >= 2: //node name and command is given
-		nodeName, command := args[0], strings.Join(args[1:], " ")
-		node, err := lookupNodeByName(client, nodeName)
+		input, command = args[0], strings.Join(args[1:], " ")
+		nodes, err = lookupNodesByName(client, input)
 		if err != nil {
 			return err
-		}
-
-		if err := havener.NodeExec(client, restconfig, node, nodeExecImage, nodeExecTimeout, command, os.Stdin, os.Stdout, os.Stderr, nodeExecTty); err != nil {
-			return &ErrorWithMsg{"failed to execute command on node", err}
 		}
 
 	case len(args) == 1: //only node name is given
-		nodeName, command := args[0], nodeDefaultCommand
-		node, err := lookupNodeByName(client, nodeName)
+		input, command = args[0], nodeDefaultCommand
+		nodes, err = lookupNodesByName(client, input)
 		if err != nil {
 			return err
-		}
-
-		if err := havener.NodeExec(client, restconfig, node, nodeExecImage, nodeExecTimeout, command, os.Stdin, os.Stdout, os.Stderr, nodeExecTty); err != nil {
-			return &ErrorWithMsg{"failed to execute command on node", err}
 		}
 
 	default: //no arguments
 		return availableNodesError(client, "no node name and command specified")
 	}
 
+	distributed := len(nodes) > 1
+	wg := &sync.WaitGroup{}
+	ch := make(chan *havener.ExecResponse, len(nodes))
+
+	wg.Add(len(nodes))
+	for _, node := range nodes {
+		go func(node *corev1.Node) {
+			messages, err := havener.NodeExec(
+				client,
+				restconfig,
+				node,
+				nodeExecImage,
+				nodeExecTimeout,
+				command,
+				os.Stdin,
+				os.Stdout,
+				os.Stderr,
+				nodeExecTty,
+				distributed,
+			)
+			for _, message := range messages {
+				message.Prefix = node.Name
+			}
+			ch <- &havener.ExecResponse{Messages: messages, Error: err}
+			wg.Done()
+		}(node)
+	}
+
+	wg.Wait()
+	close(ch)
+
+	output := []*havener.ExecMessage{}
+
+	for resp := range ch {
+		if distributed {
+			output = append(output, resp.Messages...)
+		}
+		if resp.Error != nil {
+			outputString, err := hvnr.FormatDistributedExecOutput(output, len(nodes))
+			if err != nil {
+				return &ErrorWithMsg{"failed to format distributed output", err}
+			}
+			fmt.Print(outputString + "\r\n")
+			return &ErrorWithMsg{"failed to execute command on node", resp.Error}
+		}
+	}
+
+	if distributed {
+		output = hvnr.SortDistributedExecOutput(output, len(nodes), nodeExecBlock)
+
+		outputString, err := hvnr.FormatDistributedExecOutput(output, len(nodes))
+		if err != nil {
+			return &ErrorWithMsg{"failed to format distributed output", err}
+		}
+
+		fmt.Print(outputString)
+	}
+
 	return nil
 }
 
-func lookupNodeByName(client kubernetes.Interface, input string) (*corev1.Node, error) {
-	if node, err := client.CoreV1().Nodes().Get(input, metav1.GetOptions{}); err == nil {
-		return node, nil
+func lookupNodesByName(client kubernetes.Interface, input string) ([]*corev1.Node, error) {
+	inputList := strings.Split(input, ",")
+
+	nodeList := []*corev1.Node{}
+	for _, nodeName := range inputList {
+		if node, err := client.CoreV1().Nodes().Get(nodeName, metav1.GetOptions{}); err == nil {
+			nodeList = append(nodeList, node)
+		} else {
+			return nil, availableNodesError(client, "node '%s' does not exist", nodeName)
+		}
 	}
 
-	return nil, availableNodesError(client, "invalid node name specfied")
+	return nodeList, nil
 }
 
-func availableNodesError(client kubernetes.Interface, title string) error {
+func availableNodesError(client kubernetes.Interface, title string, fArgs ...interface{}) error {
 	nodes, err := havener.ListNodes(client)
 	if err != nil {
 		return &ErrorWithMsg{"failed to list all nodes in cluster", err}
@@ -128,7 +195,7 @@ func availableNodesError(client kubernetes.Interface, title string) error {
 		nodeList = append(nodeList, nodeName)
 	}
 
-	return &ErrorWithMsg{title,
+	return &ErrorWithMsg{fmt.Sprintf(title, fArgs...),
 		fmt.Errorf("> Usage:\nnode-exec [flags] <node> <command>\n> List of available nodes:\n%s",
 			strings.Join(nodeList, "\n"),
 		)}
