@@ -158,7 +158,7 @@ func PrintSecretsAnalysis() error {
 	})
 
 	result := [][]string{
-		[]string{
+		{
 			bunt.Sprintf("*namespace*"),
 			bunt.Sprintf("*secret*"),
 			bunt.Sprintf("*name*"),
