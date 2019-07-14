@@ -25,16 +25,16 @@ package havener
 // metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/gonvenience/term"
 	"github.com/gonvenience/text"
 	"golang.org/x/crypto/ssh/terminal"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -45,60 +45,9 @@ import (
 
 /* TODO In general, more comments and explanations are required. */
 
-// ExecMessage is a helper structure for assigning a date to a message string
-type ExecMessage struct {
-	Prefix string
-	Text   string
-	Date   time.Time
-}
-
-// ExecResponse is a helper structure for returning the results of the
-// node-exec and pod-exec commands via channels.
-type ExecResponse struct {
-	Messages []*ExecMessage
-	Error    error
-}
-
-// PodExecDistributed executes the provided command in the referenced pod's container and returns a
-// slice of all messages from the output stream instead of printing them out.
-func PodExecDistributed(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.Pod, podName string, command string, tty bool) ([]*ExecMessage, error) {
-	reader, writer := io.Pipe()
-	errChan := make(chan error, 1)
-
-	go func() {
-		err := PodExec(
-			client,
-			restconfig,
-			pod,
-			podName,
-			command,
-			nil,
-			writer,
-			writer,
-			tty,
-		)
-		errChan <- err
-		writer.Close()
-	}()
-
-	messages := []*ExecMessage{}
-
-	scanner := bufio.NewScanner(reader)
-	for scanner.Scan() {
-		messages = append(messages, &ExecMessage{Text: scanner.Text(), Date: time.Now()})
-	}
-
-	err := <-errChan
-	if err != nil {
-		return messages, err
-	}
-
-	return messages, nil
-}
-
 // PodExec executes the provided command in the referenced pod's container.
-func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.Pod, container string, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
-	logf(Verbose, "Executing command on pod...")
+func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.Pod, container string, command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
+	logf(Verbose, "Executing command on pod: %#v", command)
 
 	req := client.CoreV1().RESTClient().Post().
 		Resource("pods").
@@ -107,7 +56,7 @@ func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.P
 		SubResource("exec").
 		VersionedParams(&corev1.PodExecOptions{
 			Container: container,
-			Command:   []string{"/bin/sh", "-c", command},
+			Command:   command,
 			Stdin:     stdin != nil,
 			Stdout:    stdout != nil,
 			Stderr:    stderr != nil,
@@ -151,9 +100,8 @@ func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.P
 }
 
 // NodeExec executes the provided command on the given node.
-func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node *corev1.Node, containerImage string, timeoutSeconds int, command string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool, distributed bool) ([]*ExecMessage, error) {
-	logf(Verbose, "Executing command on node...")
-	var err error
+func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node *corev1.Node, containerImage string, timeoutSeconds int, command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
+	logf(Verbose, "Executing command on node: %#v", command)
 
 	namespace := "kube-system"
 	podName := text.RandomStringWithPrefix("node-exec-", 15) // Create unique pod/container name
@@ -185,45 +133,35 @@ func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node *corev1
 	logf(Verbose, "Creating pod...")
 
 	// Create pod in given namespace based on configuration
-	pod, err = client.CoreV1().Pods(namespace).Create(pod)
+	pod, err := client.CoreV1().Pods(namespace).Create(pod)
 	if err != nil {
-		return nil, err
+		return err
 	}
+
 	// Stop pod and container after command execution
 	defer func() {
 		jobDeletionGracePeriod := int64(10)
 		propagationPolicy := metav1.DeletePropagationForeground
+
+		logf(Verbose, "Deleting temporary pod ...")
 		client.CoreV1().Pods(namespace).Delete(podName, &metav1.DeleteOptions{
 			GracePeriodSeconds: &jobDeletionGracePeriod,
 			PropagationPolicy:  &propagationPolicy,
 		})
 	}()
 
-	logf(Verbose, "Waiting for pod to be started...")
+	logf(Verbose, "Waiting for temporary pod to be started...")
 	if err := waitForPodReadiness(client, namespace, pod, timeoutSeconds); err != nil {
-		return nil, err
-	}
-
-	if distributed {
-		messages, err := PodExecDistributed(
-			client,
-			restconfig,
-			pod,
-			podName,
-			fmt.Sprintf("nsenter --target 1 --mount --uts --ipc --net --pid -- %s", command),
-			tty,
-		)
-		return messages, err
-
+		return err
 	}
 
 	// Execute command on pod and redirect output to users provided stdout and stderr
-	return nil, PodExec(
+	return PodExec(
 		client,
 		restconfig,
 		pod,
 		podName,
-		fmt.Sprintf("nsenter --target 1 --mount --uts --ipc --net --pid -- %s", command),
+		append([]string{"nsenter", "--target", "1", "--mount", "--uts", "--ipc", "--net", "--pid", "--"}, command...),
 		stdin,
 		stdout,
 		stderr,

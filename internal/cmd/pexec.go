@@ -26,13 +26,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/homeport/havener/internal/hvnr"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/gonvenience/wrap"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
 )
@@ -89,19 +88,19 @@ func execInClusterPods(args []string) error {
 	var (
 		podMap  map[*corev1.Pod]string
 		input   string
-		command string
+		command []string
 	)
 
 	switch {
 	case len(args) >= 2: // pod and command is given
-		input, command = args[0], strings.Join(args[1:], " ")
+		input, command = args[0], args[1:]
 		podMap, err = lookupPodsByName(client, input)
 		if err != nil {
 			return err
 		}
 
 	case len(args) == 1: // only pod is given
-		input, command = args[0], podDefaultCommand
+		input, command = args[0], []string{podDefaultCommand}
 		podMap, err = lookupPodsByName(client, input)
 		if err != nil {
 			return err
@@ -111,74 +110,81 @@ func execInClusterPods(args []string) error {
 		return availablePodsError(client, "no pod name specified")
 	}
 
-	distributed := len(podMap) > 1
+	// Single pod mode, use default streams and run pod execute function
+	if len(podMap) == 1 {
+		for pod, container := range podMap {
+			return havener.PodExec(
+				client,
+				restconfig,
+				pod,
+				container,
+				command,
+				os.Stdin,
+				os.Stdout,
+				os.Stderr,
+				!podExecNoTty,
+			)
+		}
+	}
+
+	// In distributed shell mode, TTY is forced to be disabled
+	podExecNoTty = true
+
 	wg := &sync.WaitGroup{}
-	ch := make(chan *havener.ExecResponse, len(podMap))
+	output := make(chan OutputMsg)
+	errors := make(chan error, len(podMap))
+	printer := make(chan bool, 1)
 
 	wg.Add(len(podMap))
 	for pod, container := range podMap {
 		go func(pod *corev1.Pod, container string) {
-			podName := fmt.Sprintf("%s/%s", pod.Name, container)
-			if distributed {
-				messages, err := havener.PodExecDistributed(
-					client,
-					restconfig,
-					pod,
-					pod.Name,
-					command,
-					!podExecNoTty,
-				)
-				for _, message := range messages {
-					message.Prefix = podName
-				}
-				ch <- &havener.ExecResponse{Messages: messages, Error: err}
-			} else {
-				ch <- &havener.ExecResponse{Error: havener.PodExec(
-					client,
-					restconfig,
-					pod,
-					container,
-					command,
-					os.Stdin,
-					os.Stdout,
-					os.Stderr,
-					!podExecNoTty,
-				)}
-			}
-			wg.Done()
+			defer func() {
+				wg.Done()
+			}()
+
+			origin := fmt.Sprintf("%s/%s", pod.Name, container)
+			errors <- havener.PodExec(
+				client,
+				restconfig,
+				pod,
+				container,
+				command,
+				os.Stdin,
+				chanWriter("StdOut", origin, output),
+				chanWriter("StdErr", origin, output),
+				!podExecNoTty,
+			)
 		}(pod, container)
 	}
 
+	// Start the respective output printer in a separate Go routine
+	go func() {
+		if podExecBlock {
+			PrintOutputMessageAsBlock(output, len(podMap))
+
+		} else {
+			PrintOutputMessage(output, len(podMap))
+		}
+
+		printer <- true
+	}()
+
 	wg.Wait()
-	close(ch)
+	close(errors)
+	close(output)
 
-	output := []*havener.ExecMessage{}
-
-	for resp := range ch {
-		if distributed {
-			output = append(output, resp.Messages...)
-		}
-		if resp.Error != nil {
-			outputString, err := hvnr.FormatDistributedExecOutput(output, len(podMap))
-			if err != nil {
-				return &ErrorWithMsg{"failed to format distributed output", err}
-			}
-			fmt.Print(outputString + "\r\n")
-			return &ErrorWithMsg{"failed to execute command on pod", resp.Error}
-		}
-	}
-
-	if distributed {
-		output = hvnr.SortDistributedExecOutput(output, len(podMap), podExecBlock)
-
-		outputString, err := hvnr.FormatDistributedExecOutput(output, len(podMap))
+	errList := []error{}
+	for err := range errors {
 		if err != nil {
-			return &ErrorWithMsg{"failed to format distributed output", err}
+			errList = append(errList, err)
 		}
-
-		fmt.Print(outputString)
 	}
 
+	if len(errList) != 0 {
+		return wrap.Errors(errList, "pod command execution failed")
+	}
+
+	<-printer
 	return nil
 }
 

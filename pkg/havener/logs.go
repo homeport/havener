@@ -55,7 +55,7 @@ var cfgFinds = []string{
 	"find opt/fissile -type f -size +0c 2>/dev/null",
 }
 
-const retrieveCommand = `/bin/sh -c '
+const retrieveScript = `
 #!/bin/sh
 
 FILES="$(cd / && %s)"
@@ -77,8 +77,7 @@ if [ ! -z "${FILES}" ]; then
     esac
   done | GZIP=-9 tar --create --gzip --file=- --files-from=- 2>/dev/null
 fi
-
-' 2>/dev/null`
+`
 
 var parallelDownloads = 32
 
@@ -227,6 +226,11 @@ func retrieveFilesFromPod(client kubernetes.Interface, restconfig *rest.Config, 
 			container.Name,
 		)
 
+		script := fmt.Sprintf(
+			retrieveScript,
+			strings.Join(finds, "; "),
+		)
+
 		read, write := io.Pipe()
 		go func() {
 			PodExec(
@@ -234,10 +238,10 @@ func retrieveFilesFromPod(client kubernetes.Interface, restconfig *rest.Config, 
 				restconfig,
 				pod,
 				container.Name,
-				fmt.Sprintf(retrieveCommand, strings.Join(finds, "; ")),
+				[]string{"/bin/sh", "-c", script},
 				nil,
 				write,
-				os.Stderr,
+				nil,
 				false)
 			write.Close()
 		}()

@@ -29,11 +29,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/client-go/kubernetes"
-
-	"github.com/homeport/havener/internal/hvnr"
+	"github.com/gonvenience/wrap"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
+	"k8s.io/client-go/kubernetes"
 )
 
 const nodeDefaultCommand = "/bin/sh"
@@ -87,19 +86,19 @@ func execInClusterNodes(args []string) error {
 	var (
 		nodes   []*corev1.Node
 		input   string
-		command string
+		command []string
 	)
 
 	switch {
 	case len(args) >= 2: //node name and command is given
-		input, command = args[0], strings.Join(args[1:], " ")
+		input, command = args[0], args[1:]
 		nodes, err = lookupNodesByName(client, input)
 		if err != nil {
 			return err
 		}
 
 	case len(args) == 1: //only node name is given
-		input, command = args[0], nodeDefaultCommand
+		input, command = args[0], []string{nodeDefaultCommand}
 		nodes, err = lookupNodesByName(client, input)
 		if err != nil {
 			return err
@@ -109,14 +108,38 @@ func execInClusterNodes(args []string) error {
 		return availableNodesError(client, "no node name and command specified")
 	}
 
-	distributed := len(nodes) > 1
+	// Single node mode, use default streams and run node execute function
+	if len(nodes) == 1 {
+		return havener.NodeExec(
+			client,
+			restconfig,
+			nodes[0],
+			nodeExecImage,
+			nodeExecTimeout,
+			command,
+			os.Stdin,
+			os.Stdout,
+			os.Stderr,
+			!nodeExecNoTty,
+		)
+	}
+
+	// In distributed shell mode, TTY is forced to be disabled
+	nodeExecNoTty = true
+
 	wg := &sync.WaitGroup{}
-	ch := make(chan *havener.ExecResponse, len(nodes))
+	output := make(chan OutputMsg)
+	errors := make(chan error, len(nodes))
+	printer := make(chan bool, 1)
 
 	wg.Add(len(nodes))
 	for _, node := range nodes {
 		go func(node *corev1.Node) {
-			messages, err := havener.NodeExec(
+			defer func() {
+				wg.Done()
+			}()
+
+			errors <- havener.NodeExec(
 				client,
 				restconfig,
 				node,
@@ -124,49 +147,41 @@ func execInClusterNodes(args []string) error {
 				nodeExecTimeout,
 				command,
 				os.Stdin,
-				os.Stdout,
-				os.Stderr,
+				chanWriter("StdOut", node.Name, output),
+				chanWriter("StdErr", node.Name, output),
 				!nodeExecNoTty,
-				distributed,
 			)
-			for _, message := range messages {
-				message.Prefix = node.Name
-			}
-			ch <- &havener.ExecResponse{Messages: messages, Error: err}
-			wg.Done()
 		}(node)
 	}
 
+	// Start the respective output printer in a separate Go routine
+	go func() {
+		if nodeExecBlock {
+			PrintOutputMessageAsBlock(output, len(nodes))
+
+		} else {
+			PrintOutputMessage(output, len(nodes))
+		}
+
+		printer <- true
+	}()
+
 	wg.Wait()
-	close(ch)
+	close(errors)
+	close(output)
 
-	output := []*havener.ExecMessage{}
-
-	for resp := range ch {
-		if distributed {
-			output = append(output, resp.Messages...)
-		}
-		if resp.Error != nil {
-			outputString, err := hvnr.FormatDistributedExecOutput(output, len(nodes))
-			if err != nil {
-				return &ErrorWithMsg{"failed to format distributed output", err}
-			}
-			fmt.Print(outputString + "\r\n")
-			return &ErrorWithMsg{"failed to execute command on node", resp.Error}
-		}
-	}
-
-	if distributed {
-		output = hvnr.SortDistributedExecOutput(output, len(nodes), nodeExecBlock)
-
-		outputString, err := hvnr.FormatDistributedExecOutput(output, len(nodes))
+	errList := []error{}
+	for err := range errors {
 		if err != nil {
-			return &ErrorWithMsg{"failed to format distributed output", err}
+			errList = append(errList, err)
 		}
-
-		fmt.Print(outputString)
 	}
 
+	if len(errList) != 0 {
+		return wrap.Errors(errList, "node command execution failed")
+	}
+
+	<-printer
 	return nil
 }
 
