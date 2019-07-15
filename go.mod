@@ -11,7 +11,7 @@ require (
 	github.com/gonvenience/term v1.0.0
 	github.com/gonvenience/text v1.0.2
 	github.com/gonvenience/wait v1.0.2
-	github.com/gonvenience/wrap v1.0.0
+	github.com/gonvenience/wrap v1.1.0
 	github.com/google/gofuzz v1.0.0 // indirect
 	github.com/googleapis/gnostic v0.2.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.1 // indirect

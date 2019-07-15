@@ -64,6 +64,8 @@ github.com/gonvenience/wait v1.0.2 h1:DoA3qcw75/iYdxX/BvlKT3bMN1Mv5VPKHsTzA5Y1oL
 github.com/gonvenience/wait v1.0.2/go.mod h1:bTPf2sNDz6WXJ7jhN3jZRPqnpU7MVv175qlMJSx+0kI=
 github.com/gonvenience/wrap v1.0.0 h1:N1zDI7z/uPd5ZQa8jII/ye/VENy3wgLXG962vw3ytMM=
 github.com/gonvenience/wrap v1.0.0/go.mod h1:L47Cm1sK1G8QmFAYQfkHcF/sQ1IBJUa0u4sjqiLqPdM=
+github.com/gonvenience/wrap v1.1.0 h1:d8gEZrXS/zg4BC1q0U4nHpPIh5k6muKpQ1+rQFBwpYc=
+github.com/gonvenience/wrap v1.1.0/go.mod h1:L47Cm1sK1G8QmFAYQfkHcF/sQ1IBJUa0u4sjqiLqPdM=
 github.com/google/btree v1.0.0/go.mod h1:lNA+9X1NB3Zf8V7Ke586lFgjr2dZNuvo3lPJSGZ5JPQ=
 github.com/google/go-cmp v0.2.0/go.mod h1:oXzfMopK8JAjlY9xF4vHSVASa0yLyX7SntLO5aqRK0M=
 github.com/google/gofuzz v1.0.0 h1:A8PeW59pxE9IoFRqBp37U+mSNaQoZ46F1f0f863XSXw=
