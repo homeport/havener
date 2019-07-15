@@ -22,6 +22,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"sync"
@@ -130,14 +131,18 @@ func execInClusterPods(args []string) error {
 	// In distributed shell mode, TTY is forced to be disabled
 	podExecNoTty = true
 
-	wg := &sync.WaitGroup{}
-	output := make(chan OutputMsg)
-	errors := make(chan error, len(podMap))
-	printer := make(chan bool, 1)
+	var (
+		wg      = &sync.WaitGroup{}
+		readers = duplicateReader(os.Stdin, len(podMap))
+		output  = make(chan OutputMsg)
+		errors  = make(chan error, len(podMap))
+		printer = make(chan bool, 1)
+		counter = 0
+	)
 
 	wg.Add(len(podMap))
 	for pod, container := range podMap {
-		go func(pod *corev1.Pod, container string) {
+		go func(pod *corev1.Pod, container string, reader io.Reader) {
 			defer func() {
 				wg.Done()
 			}()
@@ -149,12 +154,14 @@ func execInClusterPods(args []string) error {
 				pod,
 				container,
 				command,
-				os.Stdin,
+				reader,
 				chanWriter("StdOut", origin, output),
 				chanWriter("StdErr", origin, output),
 				!podExecNoTty,
 			)
-		}(pod, container)
+		}(pod, container, readers[counter])
+
+		counter++
 	}
 
 	// Start the respective output printer in a separate Go routine
