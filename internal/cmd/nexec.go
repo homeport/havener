@@ -22,6 +22,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"sync"
@@ -127,14 +128,17 @@ func execInClusterNodes(args []string) error {
 	// In distributed shell mode, TTY is forced to be disabled
 	nodeExecNoTty = true
 
-	wg := &sync.WaitGroup{}
-	output := make(chan OutputMsg)
-	errors := make(chan error, len(nodes))
-	printer := make(chan bool, 1)
+	var (
+		wg      = &sync.WaitGroup{}
+		readers = duplicateReader(os.Stdin, len(nodes))
+		output  = make(chan OutputMsg)
+		errors  = make(chan error, len(nodes))
+		printer = make(chan bool, 1)
+	)
 
 	wg.Add(len(nodes))
-	for _, node := range nodes {
-		go func(node *corev1.Node) {
+	for i, node := range nodes {
+		go func(node *corev1.Node, reader io.Reader) {
 			defer func() {
 				wg.Done()
 			}()
@@ -146,12 +150,12 @@ func execInClusterNodes(args []string) error {
 				nodeExecImage,
 				nodeExecTimeout,
 				command,
-				os.Stdin,
+				reader,
 				chanWriter("StdOut", node.Name, output),
 				chanWriter("StdErr", node.Name, output),
 				!nodeExecNoTty,
 			)
-		}(node)
+		}(node, readers[i])
 	}
 
 	// Start the respective output printer in a separate Go routine
