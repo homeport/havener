@@ -22,7 +22,6 @@ package havener
 
 import (
 	"archive/tar"
-	"bytes"
 	"compress/gzip"
 	"fmt"
 	"io"
@@ -32,10 +31,11 @@ import (
 	"strings"
 	"sync"
 
-	yaml "gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/gonvenience/wrap"
+	yaml "gopkg.in/yaml.v2"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -125,6 +125,11 @@ func RetrieveLogs(client kubernetes.Interface, restconfig *rest.Config, target s
 		return err
 	}
 
+	namespaces, err := ListNamespaces(client)
+	if err != nil {
+		return err
+	}
+
 	if absolute, err := filepath.Abs(target); err == nil {
 		target = absolute
 	}
@@ -166,11 +171,6 @@ func RetrieveLogs(client kubernetes.Interface, restconfig *rest.Config, target s
 		}()
 	}
 
-	namespaces, err := ListNamespaces(client)
-	if err != nil {
-		return combineErrors(append(errors, err))
-	}
-
 	for _, namespace := range namespaces {
 		listResult, err := client.CoreV1().Pods(namespace).List(metav1.ListOptions{})
 		if err != nil {
@@ -208,7 +208,11 @@ func RetrieveLogs(client kubernetes.Interface, restconfig *rest.Config, target s
 	close(tasks)
 	wg.Wait()
 
-	return combineErrors(errors)
+	if len(errors) > 0 {
+		return wrap.Errors(errors, "failed to retrieve logs from cluster")
+	}
+
+	return nil
 }
 
 func retrieveFilesFromPod(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.Pod, baseDir string, includeConfigFiles bool) []error {
@@ -342,19 +346,4 @@ func retrieveContainerLogs(client kubernetes.Interface, pod *corev1.Pod, baseDir
 	}
 
 	return errors
-}
-
-func combineErrors(errors []error) error {
-	if len(errors) > 0 {
-		var buf bytes.Buffer
-		for _, err := range errors {
-			buf.WriteString(" - ")
-			buf.WriteString(err.Error())
-			buf.WriteString("\n")
-		}
-
-		return fmt.Errorf("some issues during log download:\n%s", buf.String())
-	}
-
-	return nil
 }

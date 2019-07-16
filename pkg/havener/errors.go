@@ -20,15 +20,7 @@
 
 package havener
 
-import (
-	"bytes"
-	"fmt"
-)
-
-// MultipleErrors is used when one or more errors can occur in one function
-type MultipleErrors struct {
-	ListOfErrors []error
-}
+import "fmt"
 
 // NoHelmChartFoundError means that no Helm Charts were found at a given location
 type NoHelmChartFoundError struct {
@@ -44,21 +36,6 @@ type invalidPathInsideZip struct {
 // invalidZipFileName means that the file is not of the form <file-name>.zip
 type invalidZipFileName struct {
 	fileName string
-}
-
-func (e *MultipleErrors) Error() string {
-	var buf bytes.Buffer
-
-	if len(e.ListOfErrors) > 0 {
-		buf.WriteString("multiple errors occurred:\n")
-		for _, err := range e.ListOfErrors {
-			buf.WriteString(" - ")
-			buf.WriteString(err.Error())
-			buf.WriteString("\n")
-		}
-	}
-
-	return buf.String()
 }
 
 func (e *NoHelmChartFoundError) Error() string {

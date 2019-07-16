@@ -249,3 +249,20 @@ func duplicateReader(reader io.Reader, count int) []io.Reader {
 
 	return readers
 }
+
+func combineErrorsFromChannel(context string, c chan error) error {
+	errors := []error{}
+	for err := range c {
+		if err != nil {
+			errors = append(errors, err)
+		}
+	}
+
+	switch len(errors) {
+	case 0:
+		return nil
+
+	default:
+		return wrap.Errors(errors, context)
+	}
+}
