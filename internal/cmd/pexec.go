@@ -180,15 +180,8 @@ func execInClusterPods(args []string) error {
 	close(errors)
 	close(output)
 
-	errList := []error{}
-	for err := range errors {
-		if err != nil {
-			errList = append(errList, err)
-		}
-	}
-
-	if len(errList) != 0 {
-		return wrap.Errors(errList, "pod command execution failed")
+	if err := combineErrorsFromChannel("pod command execution failed", errors); err != nil {
+		return err
 	}
 
 	<-printer
