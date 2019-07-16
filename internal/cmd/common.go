@@ -22,31 +22,18 @@ package cmd
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
-	"net/url"
 	"os"
 	"os/exec"
-	"runtime/debug"
 	"strings"
 
 	"github.com/gonvenience/bunt"
+	"github.com/gonvenience/wrap"
 	"github.com/homeport/havener/pkg/havener"
 	colorful "github.com/lucasb-eyer/go-colorful"
 	yaml "gopkg.in/yaml.v2"
 )
-
-// ErrorWithMsg defines a custom msg together
-// with an error
-type ErrorWithMsg struct {
-	Msg string
-	Err error
-}
-
-func (e *ErrorWithMsg) Error() string {
-	return fmt.Sprintf("%v\n", e.Err)
-}
 
 // NoUserPrompt defines whether a user confirmation is required or should be omitted
 var NoUserPrompt = false
@@ -72,47 +59,6 @@ func PromptUser(message string) bool {
 	}
 
 	return false
-}
-
-// exitWithError leaves the tool with the provided error message
-func exitWithError(msg string, err error) {
-	bunt.Printf("Coral{*%s*}\n", msg)
-
-	if err != nil {
-		for _, line := range strings.Split(err.Error(), "\n") {
-			bunt.Printf("Coral{│} DimGray{%s}\n", line)
-		}
-	}
-
-	os.Exit(1)
-}
-
-// exitWithErrorAndIssue leaves the tool with the provided error message and a
-// link that can be used to open a GitHub issue
-func exitWithErrorAndIssue(msg string, err error) {
-	bunt.Printf("Coral{*%s*}\n", msg)
-
-	var errMsg = msg
-	if err != nil {
-		errMsg = err.Error()
-
-		for _, line := range strings.Split(err.Error(), "\n") {
-			bunt.Printf("Coral{│} DimGray{%s}\n", line)
-		}
-	}
-
-	var buf bytes.Buffer
-	buf.WriteString(errMsg)
-	buf.WriteString("\n\nStacktrace:\n```")
-	buf.WriteString(string(debug.Stack()))
-	buf.WriteString("```")
-
-	bunt.Printf("\nIf you like to open an issue in GitHub:\nCornflowerBlue{~https://github.com/homeport/havener/issues/new?title=%s&body=%s~}\n\n",
-		url.PathEscape("Report panic: "+errMsg),
-		url.PathEscape(buf.String()),
-	)
-
-	os.Exit(1)
 }
 
 func processTask(title string, task *havener.Task) error {
@@ -250,12 +196,12 @@ func printStatusMessage(head string, body string, headColor colorful.Color) {
 func processOverrideSection(release havener.Release) ([]byte, error) {
 	overrides, err := havener.TraverseStructureAndProcessOperators(release.Overrides)
 	if err != nil {
-		return nil, &ErrorWithMsg{"failed to process overrides section", err}
+		return nil, wrap.Error(err, "failed to process overrides section")
 	}
 
 	overridesData, err := yaml.Marshal(overrides)
 	if err != nil {
-		return nil, &ErrorWithMsg{"failed to marshal overrides structure into bytes", err}
+		return nil, wrap.Error(err, "failed to marshal overrides structure into bytes")
 	}
 
 	return overridesData, nil
@@ -266,7 +212,7 @@ func processOverrideSection(release havener.Release) ([]byte, error) {
 func getReleaseMessage(release havener.Release, message string) (string, error) {
 	releaseNotes, err := havener.RunHelmBinary("get", "notes", release.ChartName)
 	if err != nil {
-		return "", &ErrorWithMsg{"failed to get notes of release", err}
+		return "", wrap.Error(err, "failed to get notes of release")
 	}
 
 	if releaseNotes != nil {

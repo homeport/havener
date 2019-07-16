@@ -81,7 +81,7 @@ func init() {
 func execInClusterNodes(args []string) error {
 	client, restconfig, err := havener.OutOfClusterAuthentication("")
 	if err != nil {
-		return &ErrorWithMsg{"failed to connect to Kubernetes cluster", err}
+		return wrap.Error(err, "failed to connect to Kubernetes cluster")
 	}
 
 	var (
@@ -207,15 +207,17 @@ func lookupNodesByName(client kubernetes.Interface, input string) ([]*corev1.Nod
 func availableNodesError(client kubernetes.Interface, title string, fArgs ...interface{}) error {
 	nodes, err := havener.ListNodes(client)
 	if err != nil {
-		return &ErrorWithMsg{"failed to list all nodes in cluster", err}
+		return wrap.Error(err, "failed to list all nodes in cluster")
 	}
 	nodeList := []string{}
 	for _, nodeName := range nodes {
 		nodeList = append(nodeList, nodeName)
 	}
 
-	return &ErrorWithMsg{fmt.Sprintf(title, fArgs...),
+	return wrap.Errorf(
 		fmt.Errorf("> Usage:\nnode-exec [flags] <node> <command>\n> List of available nodes:\n%s",
 			strings.Join(nodeList, "\n"),
-		)}
+		),
+		title, fArgs...,
+	)
 }

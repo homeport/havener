@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/gonvenience/term"
+	"github.com/gonvenience/wrap"
 	"github.com/homeport/havener/internal/hvnr"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
@@ -71,7 +72,7 @@ func retrieveClusterStats() error {
 
 	clientSet, _, err := havener.OutOfClusterAuthentication("")
 	if err != nil {
-		return &ErrorWithMsg{"unable to get access to cluster", err}
+		return wrap.Error(err, "unable to get access to cluster")
 	}
 
 	term.HideCursor()
@@ -85,12 +86,12 @@ func retrieveClusterStats() error {
 		// TODO Get stats for nodes and pods at the same time
 		nodeStats, err := hvnr.CompileNodeStats(clientSet)
 		if err != nil {
-			return &ErrorWithMsg{"failed to compile node usage stats", err}
+			return wrap.Error(err, "failed to compile node usage stats")
 		}
 
 		podStats, err := hvnr.CompilePodStats(clientSet)
 		if err != nil {
-			return &ErrorWithMsg{"failed to compile pod usage stats", err}
+			return wrap.Error(err, "failed to compile pod usage stats")
 		}
 
 		podLineLimit := term.GetTerminalHeight() - len(strings.Split(nodeStats, "\n")) - 1

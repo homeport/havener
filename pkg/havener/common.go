@@ -26,7 +26,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/pkg/errors"
+	"github.com/gonvenience/wrap"
 	"github.com/spf13/viper"
 	yaml "gopkg.in/yaml.v2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -92,7 +92,7 @@ func SetConfigEnv(config *Config) error {
 
 		value, err := ProcessOperators(value)
 		if err != nil {
-			return fmt.Errorf("failed to process env section\nerror message: %s", err.Error())
+			return wrap.Error(err, "failed to process env section")
 		}
 		os.Setenv(key, value)
 	}
@@ -105,12 +105,12 @@ func SetConfigEnv(config *Config) error {
 func ParseConfigFile(path string) (*Config, error) {
 	source, err := ioutil.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("unable to read havener configuration\nerror message: %s", err.Error())
+		return nil, wrap.Error(err, "unable to read havener configuration")
 	}
 
 	var config Config
 	if err = yaml.Unmarshal(source, &config); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal havener configuration\nerror message: %s", err.Error())
+		return nil, wrap.Error(err, "failed to unmarshal havener configuration")
 	}
 
 	return &config, nil
@@ -121,7 +121,7 @@ func ParseConfigFile(path string) (*Config, error) {
 func getSecretValue(namespace string, secretName string, secretKey string) (string, error) {
 	client, _, err := OutOfClusterAuthentication("")
 	if err != nil {
-		return "", errors.Wrap(err, "unable to get access to cluster")
+		return "", wrap.Error(err, "unable to get access to cluster")
 	}
 
 	secret, err := client.CoreV1().Secrets(namespace).Get(secretName, v1.GetOptions{})
