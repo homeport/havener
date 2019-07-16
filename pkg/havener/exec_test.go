@@ -64,8 +64,7 @@ releases:
 		input := pwDir + "/../../test/incorrect_commands_test.yml"
 		_, err := ProcessConfigFile(input)
 
-		expected := `failed to run command: abcd
-error message: exit status 127`
+		expected := `failed to run command: abcd: exit status 127`
 
 		Expect(err.Error()).To(BeEquivalentTo(expected))
 

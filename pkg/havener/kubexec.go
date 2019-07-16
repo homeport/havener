@@ -34,13 +34,13 @@ import (
 
 	"github.com/gonvenience/term"
 	"github.com/gonvenience/text"
+	"github.com/gonvenience/wrap"
 	"golang.org/x/crypto/ssh/terminal"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
-	"k8s.io/utils/exec"
 )
 
 /* TODO In general, more comments and explanations are required. */
@@ -65,7 +65,7 @@ func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.P
 
 	executor, err := remotecommand.NewSPDYExecutor(restconfig, "POST", req.URL())
 	if err != nil {
-		return fmt.Errorf("failed to initialize remote executor: %v", err)
+		return wrap.Error(err, "failed to initialize remote executor")
 	}
 
 	var tsq *terminalSizeQueue
@@ -84,14 +84,7 @@ func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.P
 	}
 
 	if err = executor.Stream(remotecommand.StreamOptions{Stdin: stdin, Stdout: stdout, Stderr: stderr, Tty: tty, TerminalSizeQueue: tsq}); err != nil {
-		switch err := err.(type) {
-		case exec.CodeExitError:
-			// In case this needs to be refactored in a way where the exit code of the remote command is interesting
-			return fmt.Errorf("remote command failed with exit code %d", err.Code)
-
-		default:
-			return fmt.Errorf("could not execute: %v", err)
-		}
+		return wrap.Errorf(err, "failed to exectue command on pod %s, container %s", pod.Name, container)
 	}
 
 	logf(Verbose, "Successfully executed command.")

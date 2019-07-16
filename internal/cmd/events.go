@@ -28,6 +28,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/gonvenience/bunt"
+	"github.com/gonvenience/wrap"
 	"github.com/homeport/havener/pkg/havener"
 
 	corev1 "k8s.io/api/core/v1"
@@ -75,12 +76,12 @@ func init() {
 func retrieveClusterEvents(kubeConfig string) error {
 	client, _, err := havener.OutOfClusterAuthentication(kubeConfig)
 	if err != nil {
-		return &ErrorWithMsg{"failed to access cluster", err}
+		return wrap.Error(err, "failed to access cluster")
 	}
 
 	namespaces, err := havener.ListNamespaces(client)
 	if err != nil {
-		return &ErrorWithMsg{"failed to get a list of namespaces", err}
+		return wrap.Error(err, "failed to get a list of namespaces")
 	}
 
 	notes := make(chan note)
@@ -96,7 +97,7 @@ func retrieveClusterEvents(kubeConfig string) error {
 		go func() error {
 			watcher, err := client.CoreV1().Events(namespace).Watch(metav1.ListOptions{})
 			if err != nil {
-				return &ErrorWithMsg{"failed to setup event watcher", err}
+				return wrap.Error(err, "failed to setup event watcher")
 			}
 
 			for event := range watcher.ResultChan() {

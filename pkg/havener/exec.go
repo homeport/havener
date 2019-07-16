@@ -29,7 +29,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
+	"github.com/gonvenience/wrap"
 )
 
 // ProcessConfigFile reads the havener config file from the provided path and
@@ -153,7 +153,7 @@ func processShellOperator(s string) (string, error) {
 			cmd.Stdout = &out
 
 			if err := cmd.Run(); err != nil {
-				return "", fmt.Errorf("failed to run command: %s\nerror message: %s", match[1], err.Error())
+				return "", wrap.Errorf(err, "failed to run command: %s", match[1])
 			}
 
 			result := strings.TrimSpace(out.String())
@@ -203,7 +203,7 @@ func processSecretOperator(s string) (string, error) {
 			secretKey := fmt.Sprintf("%v", match[3])
 
 			if namespace == "" || secretName == "" || secretKey == "" {
-				return "", errors.New("invalid arguments for secret operator")
+				return "", fmt.Errorf("invalid arguments for secret operator")
 			}
 
 			secretValue, err := getSecretValue(namespace, secretName, secretKey)

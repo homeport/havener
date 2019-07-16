@@ -28,6 +28,7 @@ import (
 
 	"github.com/gonvenience/bunt"
 	"github.com/gonvenience/wait"
+	"github.com/gonvenience/wrap"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -89,7 +90,7 @@ func UpgradeViaHavenerConfig(havenerConfig string) error {
 	}
 
 	if err := processTask("Pre-upgrade Steps", config.Before); err != nil {
-		return &ErrorWithMsg{"failed to evaluate pre-upgrade steps", err}
+		return wrap.Error(err, "failed to evaluate pre-upgrade steps")
 	}
 
 	for _, release := range config.Releases {
@@ -99,11 +100,11 @@ func UpgradeViaHavenerConfig(havenerConfig string) error {
 		}
 
 		if err := processTask("Before Chart "+release.ChartName, release.Before); err != nil {
-			return &ErrorWithMsg{"failed to evaluate before release steps", err}
+			return wrap.Error(err, "failed to evaluate before release steps")
 		}
 
 		if err := hvnr.ShowHelmReleaseDiff(release.ChartName, release.ChartLocation, overridesData, reuseValues); err != nil {
-			return &ErrorWithMsg{"failed to show differences before upgrade", err}
+			return wrap.Error(err, "failed to show differences before upgrade")
 		}
 
 		pi := wait.NewProgressIndicator(fmt.Sprintf("Upgrading Helm Release for %s", release.ChartName))
@@ -121,7 +122,7 @@ func UpgradeViaHavenerConfig(havenerConfig string) error {
 		pi.Stop()
 
 		if err != nil {
-			return &ErrorWithMsg{"failed to upgrade via havener configuration", err}
+			return wrap.Error(err, "failed to upgrade via havener configuration")
 		}
 
 		message := bunt.Sprintf("Successfully upgraded helm chart *%s* in namespace *_%s_*.",
@@ -137,12 +138,12 @@ func UpgradeViaHavenerConfig(havenerConfig string) error {
 		printStatusMessage("Upgrade", message, bunt.Gray)
 
 		if err := processTask("After Chart "+release.ChartName, release.After); err != nil {
-			return &ErrorWithMsg{"failed to evaluate after release steps", err}
+			return wrap.Error(err, "failed to evaluate after release steps")
 		}
 	}
 
 	if err := processTask("Post-upgrade Steps", config.After); err != nil {
-		return &ErrorWithMsg{"failed to evaluate post-upgrade steps", err}
+		return wrap.Error(err, "failed to evaluate post-upgrade steps")
 	}
 	return nil
 }

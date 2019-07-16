@@ -26,6 +26,7 @@ import (
 
 	"github.com/gonvenience/bunt"
 	"github.com/gonvenience/wait"
+	"github.com/gonvenience/wrap"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -83,7 +84,7 @@ func DeployViaHavenerConfig(havenerConfig string) error {
 	}
 
 	if err := processTask("Predeployment Steps", config.Before); err != nil {
-		return &ErrorWithMsg{"failed to evaluate predeployment steps", err}
+		return wrap.Error(err, "failed to evaluate predeployment steps")
 	}
 
 	for _, release := range config.Releases {
@@ -93,7 +94,7 @@ func DeployViaHavenerConfig(havenerConfig string) error {
 		}
 
 		if err := processTask("Before Chart "+release.ChartName, release.Before); err != nil {
-			return &ErrorWithMsg{"failed to evaluate before release steps", err}
+			return wrap.Error(err, "failed to evaluate before release steps")
 		}
 
 		pi := wait.NewProgressIndicator(fmt.Sprintf("Creating Helm Release for %s", release.ChartName))
@@ -110,7 +111,7 @@ func DeployViaHavenerConfig(havenerConfig string) error {
 		setCurrentProgressIndicator(nil)
 
 		if err != nil {
-			return &ErrorWithMsg{"failed to deploy via havener configuration", err}
+			return wrap.Error(err, "failed to deploy via havener configuration")
 		}
 
 		message := bunt.Sprintf("Successfully created new helm chart *%s* in namespace *_%s_*.",
@@ -126,12 +127,12 @@ func DeployViaHavenerConfig(havenerConfig string) error {
 		printStatusMessage("Upgrade", message, bunt.Gray)
 
 		if err := processTask("After Chart "+release.ChartName, release.After); err != nil {
-			return &ErrorWithMsg{"failed to evaluate after release steps", err}
+			return wrap.Error(err, "failed to evaluate after release steps")
 		}
 	}
 
 	if err := processTask("Postdeployment Steps", config.After); err != nil {
-		return &ErrorWithMsg{"failed to evaluate postdeployment steps", err}
+		return wrap.Error(err, "failed to evaluate postdeployment steps")
 	}
 	return nil
 }

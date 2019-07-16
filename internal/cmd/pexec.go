@@ -83,7 +83,7 @@ func init() {
 func execInClusterPods(args []string) error {
 	client, restconfig, err := havener.OutOfClusterAuthentication("")
 	if err != nil {
-		return &ErrorWithMsg{"failed to connect to Kubernetes cluster", err}
+		return wrap.Error(err, "failed to connect to Kubernetes cluster")
 	}
 
 	var (
@@ -255,7 +255,7 @@ func lookupPodsByName(client kubernetes.Interface, input string) (map[*corev1.Po
 func availablePodsError(client kubernetes.Interface, title string) error {
 	pods, err := havener.ListPods(client)
 	if err != nil {
-		return &ErrorWithMsg{"failed to list all pods in cluster", err}
+		return wrap.Error(err, "failed to list all pods in cluster")
 	}
 	podList := []string{}
 	for _, pod := range pods {
@@ -268,9 +268,10 @@ func availablePodsError(client kubernetes.Interface, title string) error {
 		}
 	}
 
-	return &ErrorWithMsg{title,
+	return wrap.Error(
 		fmt.Errorf("> Usage:\npod-exec [flags] <pod> <command>\n> List of available pods:\n%s",
 			strings.Join(podList, "\n"),
-		)}
-
+		),
+		title,
+	)
 }

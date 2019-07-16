@@ -25,8 +25,8 @@ import (
 	"io/ioutil"
 	"os/exec"
 
+	"github.com/gonvenience/wrap"
 	"github.com/homeport/havener/pkg/havener"
-	"github.com/pkg/errors"
 )
 
 // Environment allows to setup the required configuration
@@ -51,19 +51,19 @@ func NewEnvironment() *Environment {
 func (e *Environment) SetUpEnvironment() (err error) {
 	// This should tell us is the cluster is accessible
 	if err := e.RunBinary(e.KubectlBinary, "get", "cs"); err != nil {
-		return errors.Wrapf(err, "Failed triggering cmd: %s. Please make sure you have access to the Kubernetes cluster.", "kubectl get cs")
+		return wrap.Errorf(err, "Failed triggering cmd: %s. Please make sure you have access to the Kubernetes cluster.", "kubectl get cs")
 	}
 
 	//Check if helm binary is installed
 	err = havener.VerifyHelmBinary()
 	if err != nil {
-		return errors.Wrap(err, "Helm binary was not found.")
+		return wrap.Error(err, "Helm binary was not found.")
 	}
 
 	//Check if tiller is installed
 	err = e.RunBinary(e.HelmBinary, "version")
 	if err != nil {
-		return errors.Wrapf(err, "Failed triggering cmd: %s. Please make sure tiller is up and running.", "helm version")
+		return wrap.Errorf(err, "Failed triggering cmd: %s. Please make sure tiller is up and running.", "helm version")
 	}
 	return
 }
@@ -73,7 +73,7 @@ func (e *Environment) RunBinary(binaryName string, args ...string) error {
 	cmd := exec.Command(binaryName, args...)
 	stdOutput, err := cmd.CombinedOutput()
 	if err != nil {
-		return errors.Wrapf(err, "%s cmd, failed with the following error: %s", cmd.Args, string(stdOutput))
+		return wrap.Errorf(err, "%s cmd, failed with the following error: %s", cmd.Args, string(stdOutput))
 	}
 	return nil
 }
@@ -83,7 +83,7 @@ func (e *Environment) RunBinaryWithStdOutput(binaryName string, args ...string) 
 	cmd := exec.Command(binaryName, args...)
 	stdOutput, err := cmd.CombinedOutput()
 	if err != nil {
-		return []byte{}, errors.Wrapf(err, "%s cmd, failed with the following error: %s", cmd.Args, string(stdOutput))
+		return []byte{}, wrap.Errorf(err, "%s cmd, failed with the following error: %s", cmd.Args, string(stdOutput))
 	}
 	return stdOutput, nil
 }

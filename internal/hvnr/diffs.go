@@ -26,10 +26,10 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/pkg/errors"
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/gonvenience/bunt"
+	"github.com/gonvenience/wrap"
 	"github.com/homeport/dyff/pkg/v1/dyff"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/homeport/ytbx/pkg/v1/ytbx"
@@ -131,7 +131,7 @@ func compare(filename string, from yaml.MapSlice, to yaml.MapSlice) error {
 		var buf bytes.Buffer
 
 		if err := reportWriter.WriteReport(bufio.NewWriter(&buf)); err != nil {
-			return errors.Wrap(err, "failed to write differences report")
+			return wrap.Error(err, "failed to write differences report")
 		}
 
 		bunt.Printf("Changes in CadetBlue{%s}:\n", filename)

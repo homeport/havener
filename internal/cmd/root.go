@@ -21,16 +21,21 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	"github.com/gonvenience/bunt"
+	"github.com/gonvenience/neat"
 	"github.com/gonvenience/term"
+	"github.com/gonvenience/wrap"
 	homedir "github.com/mitchellh/go-homedir"
 )
 
@@ -64,26 +69,35 @@ func Execute() {
 	}()
 
 	if err := rootCmd.Execute(); err != nil {
+		var (
+			headline string
+			content  string
+		)
+
 		switch err := err.(type) {
-		case *ErrorWithMsg:
-			bunt.Printf("Coral{*%s*}\n", err.Msg)
-			if err.Err != nil {
-				for _, line := range strings.Split(err.Error(), "\n") {
-					bunt.Printf("Coral{│} DimGray{%s}\n", line)
-				}
-			}
-			os.Exit(1)
+		case wrap.ContextError:
+			headline = bunt.Sprintf("*Error:* _%s_", err.Context())
+			content = err.Cause().Error()
+
 		default:
-			fmt.Println(err)
-			os.Exit(1)
+			headline = "Error occurred"
+			content = fmt.Sprint(err)
 		}
+
+		neat.Box(os.Stderr,
+			headline, strings.NewReader(content),
+			neat.HeadlineColor(bunt.Coral),
+			neat.ContentColor(bunt.DimGray),
+		)
+
+		os.Exit(1)
 	}
 }
 
 func init() {
 	home, err := homedir.Dir()
 	if err != nil {
-		exitWithError("unable to get home directory", err)
+		panic(wrap.Error(err, "unable to get home directory"))
 	}
 
 	rootCmd.Flags().SortFlags = false
@@ -119,4 +133,27 @@ func init() {
 	if term.FixedTerminalWidth < 0 && term.IsGardenContainer() {
 		term.FixedTerminalHeight = 128
 	}
+}
+
+// exitWithErrorAndIssue leaves the tool with the provided error message and a
+// link that can be used to open a GitHub issue
+func exitWithErrorAndIssue(msg string, err error) {
+	neat.Box(os.Stderr,
+		msg, strings.NewReader(err.Error()),
+		neat.HeadlineColor(bunt.Coral),
+		neat.ContentColor(bunt.DimGray),
+	)
+
+	var buf bytes.Buffer
+	buf.WriteString(err.Error())
+	buf.WriteString("\n\nStacktrace:\n```")
+	buf.WriteString(string(debug.Stack()))
+	buf.WriteString("```")
+
+	bunt.Printf("\nIf you like to open an issue in GitHub:\nCornflowerBlue{~https://github.com/homeport/havener/issues/new?title=%s&body=%s~}\n\n",
+		url.PathEscape("Report panic: "+err.Error()),
+		url.PathEscape(buf.String()),
+	)
+
+	os.Exit(1)
 }

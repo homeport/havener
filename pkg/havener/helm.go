@@ -22,12 +22,13 @@ package havener
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"strconv"
 
-	"github.com/pkg/errors"
+	"github.com/gonvenience/wrap"
 )
 
 var (
@@ -118,7 +119,7 @@ func RunHelmBinary(args ...string) ([]byte, error) {
 	stdOutput, err := cmd.CombinedOutput()
 	if err != nil {
 		output := string(stdOutput)
-		return nil, errors.Wrapf(err, "helm failed: %s", output)
+		return nil, wrap.Errorf(err, "helm failed: %s", output)
 	}
 	return stdOutput, nil
 }
@@ -128,7 +129,7 @@ func RunHelmBinary(args ...string) ([]byte, error) {
 func VerifyHelmBinary() error {
 	_, err := exec.LookPath(helmBinary)
 	if err != nil {
-		return errors.Wrap(err, "Helm binary not found, please install it in order to proceed.")
+		return wrap.Error(err, "Helm binary not found, please install it in order to proceed.")
 	}
 	return nil
 }
@@ -198,5 +199,6 @@ func GetReleaseByName(releaseName string) (Releases, error) {
 			return release, nil
 		}
 	}
-	return Releases{}, errors.New("Release not found")
+
+	return Releases{}, fmt.Errorf("Release %s not found", releaseName)
 }

@@ -29,6 +29,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/gonvenience/wait"
+	"github.com/gonvenience/wrap"
 
 	"github.com/homeport/havener/pkg/havener"
 )
@@ -60,7 +61,7 @@ func init() {
 func retrieveClusterLogs() error {
 	clientSet, restconfig, err := havener.OutOfClusterAuthentication("")
 	if err != nil {
-		return &ErrorWithMsg{"unable to get access to cluster", err}
+		return wrap.Error(err, "unable to get access to cluster")
 	}
 
 	var commonText string
@@ -87,12 +88,15 @@ func retrieveClusterLogs() error {
 	case err := <-resultChan:
 		if err != nil {
 			pi.Stop()
-			return &ErrorWithMsg{"unable to retrieve logs from pods", err}
+			return wrap.Error(err, "unable to retrieve logs from pods")
 		}
 
 	case <-time.After(timeout):
 		pi.Stop()
-		return &ErrorWithMsg{"unable to retrieve logs from pods", fmt.Errorf("download did not finish within configured timeout")}
+		return wrap.Error(
+			fmt.Errorf("download did not finish within configured timeout"),
+			"unable to retrieve logs from pods",
+		)
 	}
 
 	pi.Done("Done downloading " + commonText + ": " + filepath.Join(downloadLocation, havener.LogDirName))

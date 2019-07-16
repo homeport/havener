@@ -28,7 +28,7 @@ import (
 	"regexp"
 
 	"github.com/gonvenience/term"
-	"github.com/pkg/errors"
+	"github.com/gonvenience/wrap"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -50,14 +50,14 @@ func VerifyCertExpirations() (err error) {
 
 	client, _, err := OutOfClusterAuthentication("")
 	if err != nil {
-		return errors.Wrap(err, "unable to get access to cluster")
+		return wrap.Error(err, "unable to get access to cluster")
 	}
 
 	logf(Verbose, "Getting namespaces...")
 
 	list, err := ListNamespaces(client)
 	if err != nil {
-		return errors.Wrap(err, "unable to get a list of namespaces")
+		return wrap.Error(err, "unable to get a list of namespaces")
 	}
 
 	for _, namespace := range list {
@@ -65,7 +65,7 @@ func VerifyCertExpirations() (err error) {
 
 		secretList, err := ListSecretsInNamespace(client, namespace)
 		if err != nil {
-			return errors.Wrap(err, "unable to get a list of secrets")
+			return wrap.Error(err, "unable to get a list of secrets")
 		}
 
 		if len(list) == 0 {
@@ -77,7 +77,7 @@ func VerifyCertExpirations() (err error) {
 
 			nodeList, err := client.CoreV1().Secrets(namespace).Get(secret, v1.GetOptions{})
 			if err != nil {
-				return errors.Wrap(err, "unable to access secrets")
+				return wrap.Error(err, "unable to access secrets")
 			}
 
 			results := GetCertificateFromSecret(nodeList.Data, namespace, secret)

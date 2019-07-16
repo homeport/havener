@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"github.com/gonvenience/wait"
+	"github.com/gonvenience/wrap"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
@@ -57,11 +58,11 @@ If multiple Helm Releases are specified, then they will deleted concurrently.
 
 		client, _, err := havener.OutOfClusterAuthentication("")
 		if err != nil {
-			return &ErrorWithMsg{"unable to get access to cluster", err}
+			return wrap.Error(err, "unable to get access to cluster")
 		}
 
 		if err := PurgeHelmReleases(client, args...); err != nil {
-			return &ErrorWithMsg{"failed to purge helm releases", err}
+			return wrap.Error(err, "failed to purge helm releases")
 		}
 		return nil
 	},
