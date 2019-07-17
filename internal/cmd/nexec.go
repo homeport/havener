@@ -202,14 +202,14 @@ func availableNodesError(client kubernetes.Interface, title string, fArgs ...int
 	if err != nil {
 		return wrap.Error(err, "failed to list all nodes in cluster")
 	}
-	nodeList := []string{}
-	for _, nodeName := range nodes {
-		nodeList = append(nodeList, nodeName)
+
+	if len(nodes) == 0 {
+		return fmt.Errorf("failed to find any node in cluster")
 	}
 
 	return wrap.Errorf(
-		fmt.Errorf("> Usage:\nnode-exec [flags] <node> <command>\n> List of available nodes:\n%s",
-			strings.Join(nodeList, "\n"),
+		fmt.Errorf("List of available nodes:\n%s",
+			strings.Join(nodes, "\n"),
 		),
 		title, fArgs...,
 	)

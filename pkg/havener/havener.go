@@ -28,3 +28,19 @@ runs Cloud Foundry in its containerized version. However, it is not limited to
 this kind of workload.
 */
 package havener
+
+var onShutdownFuncs = []func(){}
+
+// AddShutdownFunction adds a function to be called in case GracefulShutdown is
+// called, for example to clean up resources.
+func AddShutdownFunction(f func()) {
+	onShutdownFuncs = append(onShutdownFuncs, f)
+}
+
+// GracefulShutdown brings down the havener package by going through registered
+// on-shutdown functions.
+func GracefulShutdown() {
+	for _, f := range onShutdownFuncs {
+		f()
+	}
+}
