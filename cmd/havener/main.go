@@ -27,15 +27,22 @@ import (
 
 	"github.com/gonvenience/term"
 	"github.com/homeport/havener/internal/cmd"
+	"github.com/homeport/havener/pkg/havener"
 )
 
 func main() {
+	// Register on operating system signals for an external unexpected exit
 	signals := make(chan os.Signal)
 	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
-
 	go func() {
 		<-signals
+
+		// Make sure that the terminal cursor visibility is restored
 		term.ShowCursor()
+
+		// Notify havener package graceful shutdown function
+		havener.GracefulShutdown()
+
 		os.Exit(1)
 	}()
 

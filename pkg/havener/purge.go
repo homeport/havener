@@ -37,8 +37,6 @@ import (
    provided by the user. Think about making the behaviour configurable: For
    example by introducing a flag like `--ignore-non-existent` or similar. */
 
-/* TODO Make the spinner configurable. */
-
 var defaultPropagationPolicy = metav1.DeletePropagationForeground
 
 // PurgeHelmRelease removes the given helm release including all its resources.
@@ -136,4 +134,15 @@ func PurgeNamespace(kubeClient kubernetes.Interface, namespace string) error {
 	}
 
 	return nil
+}
+
+// PurgePod removes the pod in the given namespace.
+func PurgePod(kubeClient kubernetes.Interface, namespace string, podName string, gracePeriodSeconds int64, propagationPolicy metav1.DeletionPropagation) error {
+	logf(Verbose, "Deleting pod %s in namespace %s", podName, namespace)
+	return kubeClient.CoreV1().Pods(namespace).Delete(
+		podName,
+		&metav1.DeleteOptions{
+			GracePeriodSeconds: &gracePeriodSeconds,
+			PropagationPolicy:  &propagationPolicy,
+		})
 }

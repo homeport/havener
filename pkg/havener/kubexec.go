@@ -100,6 +100,12 @@ func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node *corev1
 	podName := text.RandomStringWithPrefix("node-exec-", 15) // Create unique pod/container name
 	trueThat := true
 
+	// Make sure to stop pod after command execution
+	defer PurgePod(client, namespace, podName, 10, metav1.DeletePropagationForeground)
+	AddShutdownFunction(func() {
+		PurgePod(client, namespace, podName, 10, metav1.DeletePropagationBackground)
+	})
+
 	// Pod confoguration
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -123,25 +129,12 @@ func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node *corev1
 		},
 	}
 
-	logf(Verbose, "Creating pod...")
-
 	// Create pod in given namespace based on configuration
+	logf(Verbose, "Creating temporary pod %s in namespace %s", podName, namespace)
 	pod, err := client.CoreV1().Pods(namespace).Create(pod)
 	if err != nil {
 		return err
 	}
-
-	// Stop pod and container after command execution
-	defer func() {
-		jobDeletionGracePeriod := int64(10)
-		propagationPolicy := metav1.DeletePropagationForeground
-
-		logf(Verbose, "Deleting temporary pod ...")
-		client.CoreV1().Pods(namespace).Delete(podName, &metav1.DeleteOptions{
-			GracePeriodSeconds: &jobDeletionGracePeriod,
-			PropagationPolicy:  &propagationPolicy,
-		})
-	}()
 
 	logf(Verbose, "Waiting for temporary pod to be started...")
 	if err := waitForPodReadiness(client, namespace, pod, timeoutSeconds); err != nil {
