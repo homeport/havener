@@ -19,7 +19,7 @@
 
 ## Introducing Havener
 
-Convenience tool to handle tasks around [Containerized CF](https://www.pivotaltracker.com/n/projects/2192232) workloads on a Kubernetes cluster. It deploys multiple Helm Charts using a configuration file, which is used to add in a tiny amount of glue code that is sometimes needed to make things work. Under to cover, `havener` does the same calls that `kubectl` do, nothing special. That means that at the end you have a Helm Release just like you would have using `helm` alone.
+Convenience tool to handle tasks around [Containerized CF](https://www.pivotaltracker.com/n/projects/2192232) workloads on a Kubernetes cluster. It deploys multiple Helm Charts using a configuration file, which is used to add in a tiny amount of glue code that is sometimes needed to make things work. Under to cover, `havener` does the same API calls like `kubectl`, nothing special. That means that at the end you have a Helm Release just like you would have using `helm` alone.
 
 ## How do I get started
 
@@ -70,6 +70,7 @@ Available Commands:
   node-exec   Execute command on Kubernetes node
   pod-exec    Execute command on Kubernetes pod
   purge       Deletes Helm Releases
+  secrets     Check secrets
   top         Shows CPU and Memory usage
   upgrade     Upgrade Helm Release in Kubernetes
   version     Shows the version
@@ -78,7 +79,12 @@ Flags:
       --kubeconfig string     Kubernetes configuration file (default "/Users/mdiester/.kube/config")
       --terminal-width int    disable autodetection and specify an explicit terminal width (default -1)
       --terminal-height int   disable autodetection and specify an explicit terminal height (default -1)
-  -v, --verbose               verbose output
+      --fatal                 fatal output - level 1
+      --error                 error output - level 2
+      --warn                  warn output - level 3
+  -v, --verbose               verbose output - level 4
+      --debug                 debug output - level 5
+      --trace                 trace output - level 6
   -h, --help                  help for havener
 
 Use "havener [command] --help" for more information about a command.
@@ -110,27 +116,55 @@ The `deploy` command installs a helm release. A config file has to be provided, 
   havener deploy --config examples/armada-config.yml
   ```
 
+#### events command
+
+Continuesly show Kubernetes events of all namespaces and all resources.
+
 #### logs command
 
-It loops over all pods and all namespaces and downloads log and configuration files from some well-known hard-coded locations to a local directory. Use this to quickly scan through multiple files from multiple locations in case you have to debug an issue where it is not clear yet where to look.
+Loops over all pods and all namespaces and downloads log and configuration files from some well-known hard-coded locations to a local directory. Use this to quickly scan through multiple files from multiple locations in case you have to debug an issue where it is not clear yet where to look.
 
-#### node-exec command
+#### node-exec command (alias `ne`)
 
-The `node-exec` command executes a shell command on a node.
+The `node-exec` command executes a shell command on a node, for example:
 
-- For example:
+```sh
+havener node-exec <NODE_IP> /bin/bash
+```
 
-  ```sh
-  havener node-exec --tty <NODE_IP> /bin/bash
-  ```
+By default, it will connect `Stdin` to the target process as well as assuming a terminal (TTY). Use `--no-tty` to disable terminal mode.
+
+The `node-exec` command also supports running a command on multiple nodes at the same time. The `--no-tty` flag is implicitly set in distributed command mode. The input from `Stdin` is duplicated and send to each separate command.
+
+```sh
+havener node-exec node1,node2,node3,node4 -- tail -f /var/log/syslog
+```
+
+The resulting output is prefixed with its origin but otherwise printed as is whenever it is created on the respective node. This means that the output of different sources is mixed based on the creation time. You can use `--block` to change the output to wait until all results are back to be sorted based on the node.
+
+If you run the `node-exec` command without any additional arguments, it will print a list of available nodes.
+
+#### pod-exec (alias `pe`)
+
+Analog to `node-exec`, the `pod-exec` command executes a process on a given pod. This is equivalent to `kubectl exec`. Same as `node-exec`, it is assumed to be primarily used to open a terminal with a shell and therefore sets the terminal mode (TTY) by default as well as connects `Stdin` to the target process.
+
+Unlike `kubectl exec`, the `havener` syntax for a target contains the namespace, pod name and container name in one string separated by a slash, for example: `cf/doppler-0/doppler` will open a terminal to the `doppler-0` pod in the `cf` namespace and select the container named `doppler` in that pod. This is mainly intended to be more flexible when dealing with multiple namespaces.
+
+The `pod-exec` command also supports running a process on multiple pods at the same time. Again, this implicitly disables TTY and `Stdin` is duplicated for each distributed command.
+
+If you run the `pod-exec` command without any additional arguments, it will print a list of available pods.
 
 #### purge command
 
-The `purge` command deletes all listed helm releases. This includes deployments, stateful sets, and namespaces. It requires at least one argument.
+The `purge` command deletes all provided Helm Release. This includes deployments, stateful sets, and namespaces. Although still deleting gracefully without the force option, the `purge` command will try to delete the Helm Release as quickly as possible by deleting as many resources as possible at the same time.
+
+#### secrets command
+
+Scans through all secrets of all namespaces to create a password strength scrore of all secrets that look like passwords. This can identify potentially weak passwords used by a deployment.
 
 #### top command
 
-The `top` command shows usage metrics (CPU and memory) by pod and namespace.
+The `top` command shows usage metrics (CPU and memory) by pod and namespace. _Please note:_ Only `heapster` is currently supported. The `top` command will updated as soon as time permits.
 
 #### upgrade command
 
@@ -142,7 +176,7 @@ The `version` command pretty much does what it says on the tin: it gives out the
 
 ## Configuration
 
-A `havener config file` provides an easy solution for configurating and deploying one or multiple Helm Charts. The `config` is saved as a YAML file and is used by the `deploy` and `upgrade` commands. Besides information about the charts, it can override the values.yaml file and can contain further pre- and post-processing steps.
+A havener configuration file provides an easy solution for configurating and deploying one or multiple Helm Charts. The `config` is saved as a YAML file and is used by the `deploy` and `upgrade` commands. Besides information about the charts, it can override the `values.yaml` file and can contain further pre- and post-processing steps. The before and after processing steps support a Concourse style command definition as well as the Travis style with one command per entry.
 
 ```yml
 name: mongo deployment
@@ -186,27 +220,23 @@ Contains a list of all release items which shall be deployed. Hereby, each relea
 
 The `env section` defines new environmental variables which can be used within the configuration file. This enables to build, define and use dynamic values through variables. The values can also contain operators (( ... )) which are resolved before the variable is set. If you're using the `env operator` within this section, you have to make sure that its environmental variable was previously defined.
 
-#### before section
-
-#### after section
-
 ### operators
 
 Operators are written in the format `(( <name> <args> ))` and dynamically resolve different expressions during the deployment of the config file. Operators include:
 
-### shell operator
+#### shell operator
 
 The `shell` operator executes and resolves the value of shell commands.
 </br>Usage: `(( shell COMMAND ))`
 </br>Example: `(( shell minikube ip ))`
 
-### secret operator
+#### secret operator
 
 The `secret` operator provides a short-cut solution for retrieving scret values of a namespace.
 </br>Usage: `(( secret NAMESPACE SECRETNAME SECRETKEY ))`
 </br>Example: `(( secret default root-password password.txt ))`
 
-### env operator
+#### env operator
 
 The `secret` operator provides a short-cut solution for retrieving environmental variables.
 </br>Usage: `(( env ENVIRONMENTAL_VARIABLE_KEY ))`
