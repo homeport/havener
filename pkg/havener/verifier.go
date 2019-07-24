@@ -21,13 +21,11 @@
 package havener
 
 import (
-	"bytes"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 	"regexp"
 
-	"github.com/gonvenience/term"
 	"github.com/gonvenience/wrap"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -39,85 +37,79 @@ type VerifiedCert struct {
 }
 
 // VerifyCertExpirations checks all certificates in all secrets in all namespaces
-func VerifyCertExpirations() (err error) {
+func VerifyCertExpirations() ([][]string, error) {
 	logf(Verbose, "Going to check certificates...")
-
-	var count int
-	var countEmpty int
-	var buf bytes.Buffer
+	var (
+		result     = [][]string{}
+		countTotal int
+		countEmpty int
+	)
 
 	logf(Verbose, "Accessing cluster...")
-
 	client, _, err := OutOfClusterAuthentication("")
 	if err != nil {
-		return wrap.Error(err, "unable to get access to cluster")
+		return nil, wrap.Error(err, "unable to get access to cluster")
 	}
 
 	logf(Verbose, "Getting namespaces...")
-
 	list, err := ListNamespaces(client)
 	if err != nil {
-		return wrap.Error(err, "unable to get a list of namespaces")
+		return nil, wrap.Error(err, "unable to get a list of namespaces")
 	}
 
 	for _, namespace := range list {
-		logf(Verbose, "Getting secrets of namespace %s...", namespace)
+		logf(Verbose, "Getting secrets of namespace DarkOrange{%s} ...", namespace)
 
 		secretList, err := ListSecretsInNamespace(client, namespace)
 		if err != nil {
-			return wrap.Error(err, "unable to get a list of secrets")
+			return nil, wrap.Error(err, "unable to get a list of secrets")
 		}
 
 		if len(list) == 0 {
-			logf(Verbose, "No secrets in namespace %s", namespace)
+			logf(Verbose, "No secrets in namespace DarkOrange{%s}", namespace)
 		}
 
 		for _, secret := range secretList {
-			logf(Verbose, "Accessing secret %s of namespace %s...", secret, namespace)
+			logf(Verbose, "Accessing namespace DarkOrange{%s}/secret DodgerBlue{%s} ...", secret, namespace)
 
 			nodeList, err := client.CoreV1().Secrets(namespace).Get(secret, v1.GetOptions{})
 			if err != nil {
-				return wrap.Error(err, "unable to access secrets")
+				return nil, wrap.Error(err, "unable to access secrets")
 			}
 
-			results := GetCertificateFromSecret(nodeList.Data, namespace, secret)
-			count = 0
+			certs := GetCertificateFromSecret(nodeList.Data, namespace, secret)
+
+			countTotal = 0
 			countEmpty = 0
-			for key, cert := range results {
+			for key, cert := range certs {
 				var message string
 				if cert.Error != nil {
 					message = cert.Error.Error()
-					count++
+					countTotal++
+
 				} else if cert.Cert == nil {
 					message = "empty certificate"
 					countEmpty++
+
 				} else {
 					message = "valid"
 				}
 
-				line := fmt.Sprintf("%-18s %-26s %-39s %s\n", namespace, secret, key, message)
-
-				if len(line) > term.GetTerminalWidth() {
-					line = line[:term.GetTerminalWidth()-5] + "[...]"
-				}
-
-				buf.WriteString(line)
-			}
-			if len(results) == 0 {
-				logf(Verbose, "No certificates in secret %s\n", secret)
-			} else {
-				logf(Verbose, "Total nr. of certs in secret %s in namespace %s: %v; valid: %v; invalid: %v; empty: %v\n", secret, namespace, len(results), len(results)-count-countEmpty, count, countEmpty)
+				result = append(result, []string{namespace, secret, key, message})
 			}
 
+			logf(Verbose, "Summary for namespace DarkOrange{%s}/secret DodgerBlue{%s}: certs=%d, valid=%d; invalid=%d, empty=%d",
+				namespace,
+				secret,
+				len(certs),
+				len(certs)-countTotal-countEmpty,
+				countTotal,
+				countEmpty,
+			)
 		}
 	}
 
-	if count > 0 {
-		return fmt.Errorf("unable to verify certificates, snumber of failed certs: %d", count)
-	}
-
-	fmt.Print(buf.String())
-	return nil
+	return result, nil
 }
 
 // GetCertificateFromSecret looks for certificates inside the secrets and checks if they're valid
