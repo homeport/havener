@@ -23,6 +23,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/gonvenience/neat"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
 )
@@ -32,25 +33,23 @@ var certsCmd = &cobra.Command{
 	Use:   "certs",
 	Short: "Check certificates",
 	Long:  `Verify certificates from all secrets in all namespaces`,
-	Run: func(cmd *cobra.Command, args []string) {
-		err := havener.VerifyCertExpirations()
+	RunE: func(cmd *cobra.Command, args []string) error {
+		details, err := havener.VerifyCertExpirations()
 		if err != nil {
-			fmt.Println(err)
+			return err
 		}
 
+		output, err := neat.Table(details, neat.VertialBarSeparator())
+		if err != nil {
+			return err
+		}
+
+		fmt.Println(output)
+
+		return nil
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(certsCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// certsCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// certsCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

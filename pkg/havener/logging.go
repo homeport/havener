@@ -21,8 +21,9 @@
 package havener
 
 import (
-	"fmt"
 	"time"
+
+	"github.com/gonvenience/bunt"
 )
 
 // LogLevel indicates the priority level of the log message
@@ -66,7 +67,7 @@ func GetLogChannel() chan LogMessage {
 // logf formats the message and sends it to the logger
 func logf(level LogLevel, message string, fArgs ...interface{}) {
 	logChannel <- LogMessage{
-		Message: fmt.Sprintf(message, fArgs...),
+		Message: bunt.Sprintf(message, fArgs...),
 		Level:   level,
 		Date:    time.Now(),
 	}
