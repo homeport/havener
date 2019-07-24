@@ -6,7 +6,7 @@ require (
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/elazarl/goproxy v0.0.0-20190711103511-473e67f1d7d2 // indirect
 	github.com/elazarl/goproxy/ext v0.0.0-20190711103511-473e67f1d7d2 // indirect
-	github.com/gonvenience/bunt v1.1.0
+	github.com/gonvenience/bunt v1.1.1
 	github.com/gonvenience/neat v1.0.3
 	github.com/gonvenience/term v1.0.0
 	github.com/gonvenience/text v1.0.2
