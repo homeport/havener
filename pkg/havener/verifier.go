@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/gonvenience/bunt"
 	"github.com/gonvenience/wrap"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -39,11 +40,7 @@ type VerifiedCert struct {
 // VerifyCertExpirations checks all certificates in all secrets in all namespaces
 func VerifyCertExpirations() ([][]string, error) {
 	logf(Verbose, "Going to check certificates...")
-	var (
-		result     = [][]string{}
-		countTotal int
-		countEmpty int
-	)
+	result := [][]string{}
 
 	logf(Verbose, "Accessing cluster...")
 	client, _, err := OutOfClusterAuthentication("")
@@ -77,35 +74,20 @@ func VerifyCertExpirations() ([][]string, error) {
 				return nil, wrap.Error(err, "unable to access secrets")
 			}
 
-			certs := GetCertificateFromSecret(nodeList.Data, namespace, secret)
-
-			countTotal = 0
-			countEmpty = 0
-			for key, cert := range certs {
+			for key, cert := range GetCertificateFromSecret(nodeList.Data, namespace, secret) {
 				var message string
 				if cert.Error != nil {
-					message = cert.Error.Error()
-					countTotal++
+					message = bunt.Sprintf("OrangeRed{Error: _%v_}", cert.Error.Error())
 
 				} else if cert.Cert == nil {
-					message = "empty certificate"
-					countEmpty++
+					message = bunt.Sprint("DimGray{_empty certificate_}")
 
 				} else {
-					message = "valid"
+					message = bunt.Sprintf("LightGreen{valid until _%v_}", cert.Cert.NotAfter)
 				}
 
 				result = append(result, []string{namespace, secret, key, message})
 			}
-
-			logf(Verbose, "Summary for namespace DarkOrange{%s}/secret DodgerBlue{%s}: certs=%d, valid=%d; invalid=%d, empty=%d",
-				namespace,
-				secret,
-				len(certs),
-				len(certs)-countTotal-countEmpty,
-				countTotal,
-				countEmpty,
-			)
 		}
 	}
 

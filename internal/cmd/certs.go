@@ -21,8 +21,10 @@
 package cmd
 
 import (
-	"fmt"
+	"os"
+	"strings"
 
+	"github.com/gonvenience/bunt"
 	"github.com/gonvenience/neat"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
@@ -39,12 +41,28 @@ var certsCmd = &cobra.Command{
 			return err
 		}
 
+		details = append(
+			[][]string{
+				[]string{
+					bunt.Sprint("*namespace*"),
+					bunt.Sprint("*secret*"),
+					bunt.Sprint("*name/key*"),
+					bunt.Sprint("*status*"),
+				},
+			},
+			details...,
+		)
+
 		output, err := neat.Table(details, neat.VertialBarSeparator())
 		if err != nil {
 			return err
 		}
 
-		fmt.Println(output)
+		neat.Box(os.Stdout,
+			"Overview of certificates found in Cluster secrets",
+			strings.NewReader(output),
+			neat.HeadlineColor(bunt.SteelBlue),
+		)
 
 		return nil
 	},
