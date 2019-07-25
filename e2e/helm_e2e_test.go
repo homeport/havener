@@ -96,10 +96,34 @@ releases:
 	})
 
 	Context("when upgrading releases via havener", func() {
-		var testUpgradeConfigBytes, testUpdgradeOverridesBytes []byte
-
+		var (
+			testUpgradeConfigBytes          []byte
+			testUpdgradeOverridesBytes      []byte
+			testUpgradeMongoConfigBytes     []byte
+			testUpdgradeMongoOverridesBytes []byte
+		)
 		BeforeEach(func() {
 			env = environment.NewEnvironment()
+			testUpgradeMongoConfigBytes = []byte(`---
+name: mongodb deployment
+releases:
+- name: mongodb-release-upgrade-test
+  namespace: upgrade-mongo
+  location: stable/mongodb
+  overrides:
+    mongodbUsername: "fake-user"
+    mongodbDatabase: "fake-db"
+    mongodbPassword: "fake-pwd"
+`)
+			testUpdgradeMongoOverridesBytes = []byte(`---
+name: mongodb deployment
+releases:
+- name: mongodb-release-upgrade-test
+  namespace: upgrade-mongo
+  location: stable/mongodb
+  overrides:
+    mongodbUsername: "fake-user"
+`)
 			testUpgradeConfigBytes = []byte(`---
 name: mysql deployment
 releases:
@@ -132,6 +156,21 @@ releases:
 			Expect(err).NotTo(HaveOccurred())
 
 			err = env.RunBinary(env.HelmBinary, "delete", "mysql-release-upgrade-test", "--purge")
+			Expect(err).NotTo(HaveOccurred())
+
+			installFilePath, err = environment.GenerateConfigFile(testUpgradeMongoConfigBytes)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = cmd.DeployViaHavenerConfig(installFilePath)
+			Expect(err).NotTo(HaveOccurred())
+
+			upgradeFilePath, err = environment.GenerateConfigFile(testUpdgradeMongoOverridesBytes)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = cmd.UpgradeViaHavenerConfig(upgradeFilePath)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = env.RunBinary(env.HelmBinary, "delete", "mongodb-release-upgrade-test", "--purge")
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
