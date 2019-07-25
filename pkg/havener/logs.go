@@ -44,7 +44,8 @@ import (
 const LogDirName = "retrieved-logs"
 
 var logFinds = []string{
-	"find var/vcap/sys -type f -name '*.log*' -size +0c 2>/dev/null",
+	"find var/vcap/sys -type f -name '*.log' -size +0c 2>/dev/null",
+	"find var/vcap/sys -type f -name '*.log.*' -size +0c 2>/dev/null",
 	"find var/vcap/monit -type f -size +0c 2>/dev/null",
 	"find var/log -type f -size +0c 2>/dev/null",
 }
@@ -78,8 +79,6 @@ if [ ! -z "${FILES}" ]; then
   done | GZIP=-9 tar --create --gzip --file=- --files-from=- 2>/dev/null
 fi
 `
-
-var parallelDownloads = 32
 
 func createDirectory(path string) error {
 	if _, err := os.Stat(path); err != nil {
@@ -119,7 +118,7 @@ func ClusterName() (string, error) {
 
 // RetrieveLogs downloads log and configuration files from some well known location of all the pods
 // of all the namespaces and stored them in the local file system.
-func RetrieveLogs(client kubernetes.Interface, restconfig *rest.Config, target string, includeConfigFiles bool) error {
+func RetrieveLogs(client kubernetes.Interface, restconfig *rest.Config, parallelDownloads int, target string, includeConfigFiles bool) error {
 	clusterName, err := ClusterName()
 	if err != nil {
 		return err
@@ -144,19 +143,33 @@ func RetrieveLogs(client kubernetes.Interface, restconfig *rest.Config, target s
 	errors := []error{}
 
 	var wg sync.WaitGroup
+	wg.Add(parallelDownloads)
 	for i := 0; i < parallelDownloads; i++ {
-		wg.Add(1)
 		go func() {
 			for task := range tasks {
 				switch task.assignment {
-				case "cf-logs":
-					for _, err := range retrieveFilesFromPod(client, restconfig, task.pod, task.baseDir, includeConfigFiles) {
+				case "known-logs":
+					for _, err := range retrieveFilesFromPod(client, restconfig, task.pod, task.baseDir, logFinds) {
 						switch err {
 						case io.EOF, gzip.ErrHeader, gzip.ErrChecksum:
 							continue
 						}
 
-						errors = append(errors, err)
+						if err != nil {
+							errors = append(errors, err)
+						}
+					}
+
+				case "config-files":
+					for _, err := range retrieveFilesFromPod(client, restconfig, task.pod, task.baseDir, cfgFinds) {
+						switch err {
+						case io.EOF, gzip.ErrHeader, gzip.ErrChecksum:
+							continue
+						}
+
+						if err != nil {
+							errors = append(errors, err)
+						}
 					}
 
 				case "container-logs":
@@ -178,29 +191,37 @@ func RetrieveLogs(client kubernetes.Interface, restconfig *rest.Config, target s
 			continue
 		}
 
-		for p := range listResult.Items {
-			if listResult.Items[p].Status.Phase == corev1.PodRunning {
-				tasks <- &task{
-					assignment: "cf-logs",
-					pod:        &listResult.Items[p],
-					baseDir: filepath.Join(
-						target,
-						LogDirName,
-						clusterName,
-						namespace,
-					),
-				}
-			}
+		baseDir := filepath.Join(
+			target,
+			LogDirName,
+			clusterName,
+			namespace,
+		)
 
+		for p := range listResult.Items {
+			// In any case, download the container logs
 			tasks <- &task{
 				assignment: "container-logs",
 				pod:        &listResult.Items[p],
-				baseDir: filepath.Join(
-					target,
-					LogDirName,
-					clusterName,
-					namespace,
-				),
+				baseDir:    baseDir,
+			}
+
+			if listResult.Items[p].Status.Phase == corev1.PodRunning {
+				// For running pods, download known log files
+				tasks <- &task{
+					assignment: "known-logs",
+					pod:        &listResult.Items[p],
+					baseDir:    baseDir,
+				}
+
+				// For running pods, download configuration file
+				if includeConfigFiles {
+					tasks <- &task{
+						assignment: "config-files",
+						pod:        &listResult.Items[p],
+						baseDir:    baseDir,
+					}
+				}
 			}
 		}
 	}
@@ -215,13 +236,8 @@ func RetrieveLogs(client kubernetes.Interface, restconfig *rest.Config, target s
 	return nil
 }
 
-func retrieveFilesFromPod(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.Pod, baseDir string, includeConfigFiles bool) []error {
+func retrieveFilesFromPod(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.Pod, baseDir string, findCommands []string) []error {
 	errors := []error{}
-
-	finds := append([]string{}, logFinds...)
-	if includeConfigFiles {
-		finds = append(finds, cfgFinds...)
-	}
 
 	for _, container := range pod.Spec.Containers {
 		targetPath := filepath.Join(
@@ -230,24 +246,28 @@ func retrieveFilesFromPod(client kubernetes.Interface, restconfig *rest.Config, 
 			container.Name,
 		)
 
-		script := fmt.Sprintf(
-			retrieveScript,
-			strings.Join(finds, "; "),
-		)
-
 		read, write := io.Pipe()
 		go func() {
-			PodExec(
+			defer write.Close()
+			err := PodExec(
 				client,
 				restconfig,
 				pod,
 				container.Name,
-				[]string{"/bin/sh", "-c", script},
+				[]string{"/bin/sh", "-c",
+					fmt.Sprintf(
+						retrieveScript,
+						strings.Join(findCommands, "; "),
+					)},
 				nil,
 				write,
 				nil,
-				false)
-			write.Close()
+				false,
+			)
+
+			if err != nil {
+				errors = append(errors, err)
+			}
 		}()
 
 		if err := untar(read, targetPath); err != nil {

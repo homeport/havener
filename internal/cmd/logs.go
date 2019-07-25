@@ -34,9 +34,12 @@ import (
 	"github.com/homeport/havener/pkg/havener"
 )
 
-var includeConfigFiles bool
-var downloadLocation string
-var totalDownloadTimeout int
+var (
+	excludeConfigFiles   bool
+	parallelDownloads    int
+	totalDownloadTimeout int
+	downloadLocation     string
+)
 
 // logsCmd represents the top command
 var logsCmd = &cobra.Command{
@@ -53,9 +56,10 @@ var logsCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(logsCmd)
 
-	logsCmd.PersistentFlags().BoolVar(&includeConfigFiles, "config-files", false, "include configuration files in download package")
+	logsCmd.PersistentFlags().BoolVar(&excludeConfigFiles, "no-config-files", false, "exclude configuration files in download package")
 	logsCmd.PersistentFlags().StringVar(&downloadLocation, "target", os.TempDir(), "desired target download location for retrieved files")
 	logsCmd.PersistentFlags().IntVar(&totalDownloadTimeout, "timeout", 5*60, "allowed time in seconds before the download is aborted")
+	logsCmd.PersistentFlags().IntVar(&parallelDownloads, "parallel", 64, "number of parallel download jobs")
 }
 
 func retrieveClusterLogs() error {
@@ -65,15 +69,15 @@ func retrieveClusterLogs() error {
 	}
 
 	var commonText string
-	if includeConfigFiles {
-		commonText = "log and configuration files"
-	} else {
+	if excludeConfigFiles {
 		commonText = "log files"
+	} else {
+		commonText = "log and configuration files"
 	}
 
 	timeout := time.Duration(totalDownloadTimeout) * time.Second
 
-	pi := wait.NewProgressIndicator("Downloading " + commonText + " ...")
+	pi := wait.NewProgressIndicator("Downloading %s to _%s_ ...", commonText, downloadLocation)
 	pi.SetTimeout(timeout)
 	setCurrentProgressIndicator(pi)
 	defer setCurrentProgressIndicator(nil)
@@ -81,7 +85,13 @@ func retrieveClusterLogs() error {
 
 	resultChan := make(chan error, 1)
 	go func() {
-		resultChan <- havener.RetrieveLogs(clientSet, restconfig, downloadLocation, includeConfigFiles)
+		resultChan <- havener.RetrieveLogs(
+			clientSet,
+			restconfig,
+			parallelDownloads,
+			downloadLocation,
+			!excludeConfigFiles,
+		)
 	}()
 
 	select {
@@ -99,6 +109,10 @@ func retrieveClusterLogs() error {
 		)
 	}
 
-	pi.Done("Done downloading " + commonText + ": " + filepath.Join(downloadLocation, havener.LogDirName))
+	pi.Done("Finished downloading %s to %s",
+		commonText,
+		filepath.Join(downloadLocation, havener.LogDirName),
+	)
+
 	return nil
 }
