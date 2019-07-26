@@ -210,13 +210,16 @@ func processOverrideSection(release havener.Release) ([]byte, error) {
 // getReleaseMessage combines a custom message with the release notes
 // from the helm binary.
 func getReleaseMessage(release havener.Release, message string) (string, error) {
-	releaseNotes, err := havener.RunHelmBinary("get", "notes", release.ChartName)
+	var releaseNotes string
+
+	result, err := havener.RunHelmBinary("status", release.ChartName)
 	if err != nil {
 		return "", wrap.Error(err, "failed to get notes of release")
 	}
+	releaseNotes = substringFrom(string(result), "NOTES:")
 
-	if releaseNotes != nil {
-		message = message + "\n\n" + string(releaseNotes)
+	if len(releaseNotes) != 0 {
+		message = message + "\n\n" + releaseNotes
 	}
 
 	return message, nil
@@ -265,4 +268,14 @@ func combineErrorsFromChannel(context string, c chan error) error {
 	default:
 		return wrap.Errors(errors, context)
 	}
+}
+
+// substringFrom gets substring from the beginning of sep string to the end
+func substringFrom(value string, sep string) string {
+	pos := strings.LastIndex(value, sep)
+	if pos == -1 {
+		return ""
+	}
+
+	return value[pos:]
 }
