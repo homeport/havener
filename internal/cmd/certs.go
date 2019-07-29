@@ -43,7 +43,7 @@ var certsCmd = &cobra.Command{
 
 		details = append(
 			[][]string{
-				[]string{
+				{
 					bunt.Sprint("*namespace*"),
 					bunt.Sprint("*secret*"),
 					bunt.Sprint("*name/key*"),

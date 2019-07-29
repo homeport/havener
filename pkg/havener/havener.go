@@ -29,6 +29,17 @@ this kind of workload.
 */
 package havener
 
+import (
+	"github.com/gonvenience/wrap"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+)
+
+// Helpful imports:
+// batchv1 "k8s.io/api/batch/v1"
+// corev1 "k8s.io/api/core/v1"
+// metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 var onShutdownFuncs = []func(){}
 
 // AddShutdownFunction adds a function to be called in case GracefulShutdown is
@@ -43,4 +54,23 @@ func GracefulShutdown() {
 	for _, f := range onShutdownFuncs {
 		f()
 	}
+}
+
+// Havener is the main handle to consolidate required cluster access variables
+type Havener struct {
+	clientset  *kubernetes.Clientset
+	restconfig *rest.Config
+}
+
+// NewHavener returns a new Havener handle to perform cluster actions
+func NewHavener() (*Havener, error) {
+	clientset, restconfig, err := OutOfClusterAuthentication("")
+	if err != nil {
+		return nil, wrap.Error(err, "unable to get access to cluster")
+	}
+
+	return &Havener{
+		clientset:  clientset,
+		restconfig: restconfig,
+	}, nil
 }
