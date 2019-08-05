@@ -30,6 +30,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/gonvenience/term"
 	"github.com/gonvenience/wrap"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
@@ -107,6 +108,12 @@ func execInClusterNodes(args []string) error {
 
 	default: //no arguments
 		return availableNodesError(client, "no node name and command specified")
+	}
+
+	// In case the current process does not run in a terminal, disable the
+	// default TTY behavior.
+	if !term.IsTerminal() {
+		nodeExecNoTty = true
 	}
 
 	// Single node mode, use default streams and run node execute function
