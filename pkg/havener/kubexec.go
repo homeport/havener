@@ -181,14 +181,10 @@ func waitForPodReadiness(client kubernetes.Interface, namespace string, pod *cor
 	for {
 		select {
 		case err := <-watcherChannel:
-			if err != nil {
-				return err
-			}
+			return err
 
 		case <-timeout:
 			return fmt.Errorf("failed to get pod after %d seconds", timeoutSeconds)
 		}
-
-		return nil
 	}
 }

@@ -115,7 +115,7 @@ func PrintOutputMessageAsBlock(messages chan OutputMsg, items int) {
 func printMessage(color colorful.Color, msg OutputMsg) {
 	var (
 		prefix = bunt.Style(
-			fmt.Sprintf("%s", msg.Origin),
+			msg.Origin,
 			bunt.Foreground(color),
 			bunt.Bold(),
 		)
