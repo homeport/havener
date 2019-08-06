@@ -154,6 +154,8 @@ func (h *Havener) TopDetails() (*TopDetails, error) {
 	wg.Add(2)
 
 	go func() {
+		defer wg.Done()
+
 		nodeMetricsJSON, err := h.clientset.RESTClient().Get().AbsPath("apis/metrics.k8s.io/v1beta1/nodes").DoRaw()
 		if err != nil {
 			errChan <- err
@@ -172,11 +174,11 @@ func (h *Havener) TopDetails() (*TopDetails, error) {
 			nodeDetails.UsedMemory = parseQuantity(node.Usage.Memory).Value()
 			result.Nodes[node.Metadata.Name] = nodeDetails
 		}
-
-		wg.Done()
 	}()
 
 	go func() {
+		defer wg.Done()
+
 		podMetricsJSON, err := h.clientset.RESTClient().Get().AbsPath("apis/metrics.k8s.io/v1beta1/pods").DoRaw()
 		if err != nil {
 			errChan <- err
@@ -197,8 +199,6 @@ func (h *Havener) TopDetails() (*TopDetails, error) {
 				result.Containers[pod.Metadata.Namespace][pod.Metadata.Name][container.Name] = tmp
 			}
 		}
-
-		wg.Done()
 	}()
 
 	wg.Wait()

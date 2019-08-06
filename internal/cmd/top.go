@@ -287,6 +287,14 @@ func renderTopContainers(topDetails *havener.TopDetails, x int) string {
 			},
 		}
 
+		x = func() int {
+			if x < len(topContainers) {
+				return x
+			}
+
+			return len(topContainers) - 1
+		}()
+
 		for _, entry := range topContainers[:x] {
 			table = append(table, []string{
 				renderContainerName(entry.namespace, entry.pod, entry.container),
