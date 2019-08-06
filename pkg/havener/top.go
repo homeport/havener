@@ -100,13 +100,13 @@ type podMetricsList struct {
 }
 
 // TopDetails retrieves top statistics and data of Kubernetes resources
-func (h *Havener) TopDetails() (*TopDetails, error) {
+func (h *Hvnr) TopDetails() (*TopDetails, error) {
 	var result = TopDetails{
 		Nodes:      map[string]NodeDetails{},
 		Containers: map[string]map[string]map[string]ContainerDetails{},
 	}
 
-	nodeList, err := h.clientset.CoreV1().Nodes().List(metav1.ListOptions{})
+	nodeList, err := h.client.CoreV1().Nodes().List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +118,7 @@ func (h *Havener) TopDetails() (*TopDetails, error) {
 		}
 	}
 
-	pods, err := ListPods(h.clientset)
+	pods, err := h.ListPods()
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +156,7 @@ func (h *Havener) TopDetails() (*TopDetails, error) {
 	go func() {
 		defer wg.Done()
 
-		nodeMetricsJSON, err := h.clientset.RESTClient().Get().AbsPath("apis/metrics.k8s.io/v1beta1/nodes").DoRaw()
+		nodeMetricsJSON, err := h.client.CoreV1().RESTClient().Get().AbsPath("apis/metrics.k8s.io/v1beta1/nodes").DoRaw()
 		if err != nil {
 			errChan <- err
 			return
@@ -179,7 +179,7 @@ func (h *Havener) TopDetails() (*TopDetails, error) {
 	go func() {
 		defer wg.Done()
 
-		podMetricsJSON, err := h.clientset.RESTClient().Get().AbsPath("apis/metrics.k8s.io/v1beta1/pods").DoRaw()
+		podMetricsJSON, err := h.client.CoreV1().RESTClient().Get().AbsPath("apis/metrics.k8s.io/v1beta1/pods").DoRaw()
 		if err != nil {
 			errChan <- err
 			return

@@ -31,6 +31,7 @@ package havener
 
 import (
 	"github.com/gonvenience/wrap"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -56,21 +57,28 @@ func GracefulShutdown() {
 	}
 }
 
-// Havener is the main handle to consolidate required cluster access variables
-type Havener struct {
-	clientset  *kubernetes.Clientset
+// Hvnr is the internal handle to consolidate required cluster access variables
+type Hvnr struct {
+	client     kubernetes.Interface
 	restconfig *rest.Config
 }
 
+// Havener is an interface to work with a cluster through the havener
+// abstraction layer
+type Havener interface {
+	TopDetails() (*TopDetails, error)
+	ListPods() ([]*corev1.Pod, error)
+}
+
 // NewHavener returns a new Havener handle to perform cluster actions
-func NewHavener() (*Havener, error) {
-	clientset, restconfig, err := OutOfClusterAuthentication("")
+func NewHavener() (*Hvnr, error) {
+	client, restconfig, err := OutOfClusterAuthentication("")
 	if err != nil {
 		return nil, wrap.Error(err, "unable to get access to cluster")
 	}
 
-	return &Havener{
-		clientset:  clientset,
+	return &Hvnr{
+		client:     client,
 		restconfig: restconfig,
 	}, nil
 }
