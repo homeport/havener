@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package hvnr
+package cmd
 
 import (
 	"bufio"
@@ -26,13 +26,12 @@ import (
 	"regexp"
 	"strings"
 
-	yaml "gopkg.in/yaml.v2"
-
 	"github.com/gonvenience/bunt"
 	"github.com/gonvenience/wrap"
 	"github.com/homeport/dyff/pkg/v1/dyff"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/homeport/ytbx/pkg/v1/ytbx"
+	yaml "gopkg.in/yaml.v2"
 )
 
 const (
@@ -40,8 +39,8 @@ const (
 	endManifestMatch   = "Release \".+\" .*"
 )
 
-// ShowHelmReleaseDiff provides a difference report using the packages of the `dyff` tool.
-func ShowHelmReleaseDiff(chartname string, chartPath string, valueOverrides []byte, reuseVal bool) error {
+// showHelmReleaseDiff provides a difference report using the packages of the `dyff` tool.
+func showHelmReleaseDiff(chartname string, chartPath string, valueOverrides []byte, reuseVal bool) error {
 	manifestBytes, err := havener.RunHelmBinary("get", chartname)
 	if err != nil {
 		return err

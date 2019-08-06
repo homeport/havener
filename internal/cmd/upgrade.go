@@ -24,8 +24,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/homeport/havener/internal/hvnr"
-
 	"github.com/gonvenience/bunt"
 	"github.com/gonvenience/wait"
 	"github.com/gonvenience/wrap"
@@ -103,7 +101,7 @@ func UpgradeViaHavenerConfig(havenerConfig string) error {
 			return wrap.Error(err, "failed to evaluate before release steps")
 		}
 
-		if err := hvnr.ShowHelmReleaseDiff(release.ChartName, release.ChartLocation, overridesData, reuseValues); err != nil {
+		if err := showHelmReleaseDiff(release.ChartName, release.ChartLocation, overridesData, reuseValues); err != nil {
 			return wrap.Error(err, "failed to show differences before upgrade")
 		}
 
