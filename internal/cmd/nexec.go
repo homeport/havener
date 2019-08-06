@@ -215,7 +215,7 @@ func availableNodesError(client kubernetes.Interface, title string, fArgs ...int
 	}
 
 	return wrap.Errorf(
-		fmt.Errorf("List of available nodes:\n%s",
+		fmt.Errorf("list of available nodes:\n%s",
 			strings.Join(nodes, "\n"),
 		),
 		title, fArgs...,

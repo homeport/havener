@@ -3,11 +3,10 @@ package cmd_test
 import (
 	"fmt"
 
+	. "github.com/homeport/havener/internal/cmd"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	yaml "gopkg.in/yaml.v2"
-
-	. "github.com/homeport/havener/internal/hvnr"
 )
 
 var exampleService = `apiVersion: v1

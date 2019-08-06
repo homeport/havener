@@ -323,7 +323,14 @@ func renderTopContainers(topDetails *havener.TopDetails, x int) string {
 
 		for _, node := range sortedNodeList(topDetails) {
 			list := topContainersPerNode[node]
-			j := x / len(topContainersPerNode)
+			j := func() int {
+				endIdx := x / len(topContainersPerNode)
+				if endIdx < len(topContainersPerNode) {
+					return endIdx
+				}
+
+				return len(topContainersPerNode) - 1
+			}()
 
 			for i := 0; i < j; i++ {
 				var nodename string
