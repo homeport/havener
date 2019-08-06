@@ -97,15 +97,22 @@ func SecretsInNamespace(client kubernetes.Interface, namespace string) ([]corev1
 }
 
 // ListPods lists all pods in all namespaces
+// Deprecated: Use Havener interface function ListPods instead
 func ListPods(client kubernetes.Interface) ([]*corev1.Pod, error) {
-	namespaces, err := ListNamespaces(client)
+	hvnr := Hvnr{client: client}
+	return hvnr.ListPods()
+}
+
+// ListPods lists all pods in all namespaces
+func (h *Hvnr) ListPods() ([]*corev1.Pod, error) {
+	namespaces, err := ListNamespaces(h.client)
 	if err != nil {
 		return nil, err
 	}
 
 	result := []*corev1.Pod{}
 	for _, namespace := range namespaces {
-		listResp, err := client.CoreV1().Pods(namespace).List(metav1.ListOptions{})
+		listResp, err := h.client.CoreV1().Pods(namespace).List(metav1.ListOptions{})
 		if err != nil {
 			return nil, err
 		}
