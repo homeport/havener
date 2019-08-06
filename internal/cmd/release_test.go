@@ -1,4 +1,4 @@
-package hvnr_test
+package cmd_test
 
 import (
 	"fmt"
