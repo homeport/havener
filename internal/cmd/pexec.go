@@ -30,11 +30,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/client-go/kubernetes"
-
+	"github.com/gonvenience/term"
 	"github.com/gonvenience/wrap"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
+	"k8s.io/client-go/kubernetes"
 )
 
 const podDefaultCommand = "/bin/sh"
@@ -109,6 +109,12 @@ func execInClusterPods(args []string) error {
 
 	default:
 		return availablePodsError(client, "no pod name specified")
+	}
+
+	// In case the current process does not run in a terminal, disable the
+	// default TTY behavior.
+	if !term.IsTerminal() {
+		podExecNoTty = true
 	}
 
 	// Single pod mode, use default streams and run pod execute function
