@@ -59,8 +59,9 @@ func GracefulShutdown() {
 
 // Hvnr is the internal handle to consolidate required cluster access variables
 type Hvnr struct {
-	client     kubernetes.Interface
-	restconfig *rest.Config
+	client      kubernetes.Interface
+	restconfig  *rest.Config
+	clusterName string
 }
 
 // Havener is an interface to work with a cluster through the havener
@@ -68,6 +69,7 @@ type Hvnr struct {
 type Havener interface {
 	TopDetails() (*TopDetails, error)
 	ListPods() ([]*corev1.Pod, error)
+	ClusterName() string
 }
 
 // NewHavener returns a new Havener handle to perform cluster actions
@@ -77,8 +79,19 @@ func NewHavener() (*Hvnr, error) {
 		return nil, wrap.Error(err, "unable to get access to cluster")
 	}
 
+	clusterName, err := ClusterName()
+	if err != nil {
+		return nil, wrap.Error(err, "unable to get cluster name")
+	}
+
 	return &Hvnr{
-		client:     client,
-		restconfig: restconfig,
+		client:      client,
+		restconfig:  restconfig,
+		clusterName: clusterName,
 	}, nil
+}
+
+// ClusterName returns the name of the currently configured cluster
+func (h *Hvnr) ClusterName() string {
+	return h.clusterName
 }

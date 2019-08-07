@@ -70,16 +70,6 @@ func init() {
 }
 
 func printWatchList(hvnr havener.Havener) error {
-	table := [][]string{
-		[]string{
-			bunt.Sprint("*Namespace*"),
-			bunt.Sprint("*Pod*"),
-			bunt.Sprint("*Ready*"),
-			bunt.Sprint("*Status*"),
-			bunt.Sprint("*Age*"),
-		},
-	}
-
 	pods, err := hvnr.ListPods()
 	if err != nil {
 		return err
@@ -92,6 +82,12 @@ func printWatchList(hvnr havener.Havener) error {
 
 		return pods[i].Name < pods[j].Name
 	})
+
+	var (
+		counter  = 0
+		maxLines = term.GetTerminalHeight() - 6
+		table    = [][]string{}
+	)
 
 	for _, pod := range pods {
 		switch pod.Namespace {
@@ -156,9 +152,20 @@ func printWatchList(hvnr havener.Havener) error {
 			bunt.Style(status, styleOptions...),
 			bunt.Style(age, styleOptions...),
 		})
+
+		if counter++; counter > maxLines {
+			table = append(table, []string{"[...]", "", "", "", ""})
+			break
+		}
 	}
 
-	out, err := neat.Table(table, neat.CustomSeparator("  "))
+	out, err := renderBoxWithTable(
+		bunt.Sprintf("Pods running in cluster _%s_", hvnr.ClusterName()),
+		[]string{"Namespace", "Pod", "Ready", "Status", "Age"},
+		table,
+		neat.CustomSeparator("  "),
+	)
+
 	if err != nil {
 		return err
 	}
