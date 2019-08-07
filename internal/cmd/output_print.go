@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/gonvenience/bunt"
+	"github.com/gonvenience/neat"
 	colorful "github.com/lucasb-eyer/go-colorful"
 )
 
@@ -138,4 +139,35 @@ func printMessage(color colorful.Color, msg OutputMsg) {
 // GetHumanReadableTime returns the time as string in the format: hh:mm:ss from a date object.
 func GetHumanReadableTime(date time.Time) string {
 	return fmt.Sprintf("%02d:%02d:%02d", date.Hour(), date.Minute(), date.Second())
+}
+
+func renderBoxWithTable(headline string, tablehead []string, table [][]string, styleOptions ...neat.TableOption) (string, error) {
+	// Apply bold emphasis on table head elements
+	for i, entry := range tablehead {
+		tablehead[i] = bunt.Style(entry, bunt.Bold())
+	}
+
+	// Render table with provided style options
+	output, err := neat.Table(
+		append([][]string{tablehead}, table...),
+		styleOptions...,
+	)
+
+	// Bail out if rendering failed
+	if err != nil {
+		return err.Error(), err
+	}
+
+	// Wrap table output into a box and return result
+	return neat.ContentBox(headline, output, neat.HeadlineColor(bunt.SkyBlue)), nil
+}
+
+func printBoxWithTable(headline string, tablehead []string, table [][]string, styleOptions ...neat.TableOption) error {
+	output, err := renderBoxWithTable(headline, tablehead, table, styleOptions...)
+	if err != nil {
+		return err
+	}
+
+	fmt.Print(output)
+	return nil
 }

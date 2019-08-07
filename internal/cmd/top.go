@@ -155,7 +155,7 @@ func renderNodeDetails(topDetails *havener.TopDetails) string {
 	return neat.ContentBox(
 		"CPU and Memory usage by Node",
 		buf.String(),
-		neat.HeadlineColor(bunt.DimGray),
+		neat.HeadlineColor(bunt.SkyBlue),
 	)
 }
 
@@ -223,7 +223,7 @@ func renderNamespaceDetails(topDetails *havener.TopDetails) string {
 	return neat.ContentBox(
 		"CPU and Memory usage by Namespace",
 		buf.String(),
-		neat.HeadlineColor(bunt.DimGray),
+		neat.HeadlineColor(bunt.SkyBlue),
 	)
 }
 
@@ -279,14 +279,7 @@ func renderTopContainers(topDetails *havener.TopDetails, x int) string {
 	}()
 
 	topPodsInCluster := func() string {
-		table := [][]string{
-			{
-				bunt.Sprintf("LightSteelBlue{*Namespace/Pod/Container*}"),
-				bunt.Sprintf("LightSteelBlue{*Cores*}"),
-				bunt.Sprintf("LightSteelBlue{*Memory*}"),
-			},
-		}
-
+		table := [][]string{}
 		x = func() int {
 			if x < len(topContainers) {
 				return x
@@ -303,7 +296,14 @@ func renderTopContainers(topDetails *havener.TopDetails, x int) string {
 			})
 		}
 
-		out, err := neat.Table(table, neat.AlignRight(1, 2), neat.CustomSeparator("  "))
+		out, err := renderBoxWithTable(
+			"Top Pods in Cluster",
+			[]string{"Namespace/Pod/Container", "Cores", "Memory"},
+			table,
+			neat.AlignRight(1, 2),
+			neat.CustomSeparator("  "),
+		)
+
 		if err != nil {
 			return err.Error()
 		}
@@ -312,15 +312,7 @@ func renderTopContainers(topDetails *havener.TopDetails, x int) string {
 	}()
 
 	topPodsPerNode := func() string {
-		table := [][]string{
-			{
-				bunt.Sprintf("LightSteelBlue{*Node*}"),
-				bunt.Sprintf("LightSteelBlue{*Namespace/Pod/Container*}"),
-				bunt.Sprintf("LightSteelBlue{*Cores*}"),
-				bunt.Sprintf("LightSteelBlue{*Memory*}"),
-			},
-		}
-
+		table := [][]string{}
 		for _, node := range sortedNodeList(topDetails) {
 			list := topContainersPerNode[node]
 			j := func() int {
@@ -347,7 +339,14 @@ func renderTopContainers(topDetails *havener.TopDetails, x int) string {
 			}
 		}
 
-		out, err := neat.Table(table, neat.AlignRight(2, 3), neat.CustomSeparator("  "))
+		out, err := renderBoxWithTable(
+			"Top Pods per Node",
+			[]string{"Node", "Namespace/Pod/Container", "Cores", "Memory"},
+			table,
+			neat.AlignRight(2, 3),
+			neat.CustomSeparator("  "),
+		)
+
 		if err != nil {
 			return err.Error()
 		}
@@ -355,19 +354,7 @@ func renderTopContainers(topDetails *havener.TopDetails, x int) string {
 		return out
 	}()
 
-	return sideBySide(
-		neat.ContentBox(
-			"Top Pods in Cluster",
-			topPodsInCluster,
-			neat.HeadlineColor(bunt.DimGray),
-		),
-
-		neat.ContentBox(
-			"Top Pods per Node",
-			topPodsPerNode,
-			neat.HeadlineColor(bunt.DimGray),
-		),
-	)
+	return sideBySide(topPodsInCluster, topPodsPerNode)
 }
 
 func sortedNodeList(topDetails *havener.TopDetails) []string {
@@ -473,7 +460,7 @@ func renderProgressBar(value int64, max int64, caption string, text string, leng
 
 	var buf bytes.Buffer
 
-	bunt.Fprintf(&buf, "LightSteelBlue{%s}", caption)
+	bunt.Fprintf(&buf, "*%s*", caption)
 	for i := 0; i < width; i++ {
 		if i < marks {
 			switch bunt.UseColors() {

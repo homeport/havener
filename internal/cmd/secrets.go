@@ -24,12 +24,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 
 	"github.com/gonvenience/bunt"
-	"github.com/gonvenience/neat"
 	"github.com/gonvenience/wait"
 	"github.com/gonvenience/wrap"
 	"github.com/homeport/havener/pkg/havener"
@@ -75,7 +73,6 @@ func printSecretsAnalysis() error {
 	}
 
 	list := []pwd{}
-
 	for _, namespace := range namespaces {
 		if namespace == "kube-system" {
 			continue
@@ -171,15 +168,7 @@ func printSecretsAnalysis() error {
 		return list[i].cracktime < list[j].cracktime
 	})
 
-	result := [][]string{
-		{
-			bunt.Sprintf("*namespace*"),
-			bunt.Sprintf("*secret*"),
-			bunt.Sprintf("*name*"),
-			bunt.Sprintf("*score*"),
-		},
-	}
-
+	result := [][]string{}
 	for _, pwd := range list {
 		result = append(result, []string{
 			pwd.namespace,
@@ -191,18 +180,11 @@ func printSecretsAnalysis() error {
 
 	pi.Stop()
 
-	output, err := neat.Table(result)
-	if err != nil {
-		return err
-	}
-
-	neat.Box(os.Stdout,
+	return printBoxWithTable(
 		"Scores of passwords found in Cluster secrets",
-		strings.NewReader(output),
-		neat.HeadlineColor(bunt.SteelBlue),
+		[]string{"namespace", "secret", "name", "score"},
+		result,
 	)
-
-	return nil
 }
 
 func (p *pwd) Strength() string {
