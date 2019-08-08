@@ -206,7 +206,7 @@ func PathToHelmChart(input string) (string, error) {
 	}
 
 	// Each switch case applies an specific regular expression for an expected input.
-	switch urlRegex := regexp.MustCompile(`^((.*)@)?((https://|http://).+)$`); true {
+	switch urlRegex := regexp.MustCompile(`^((.*)@)?((https://|http://).+)$`); {
 	// Only try to git clone a chart that follows the correct syntax.
 	// syntax is <path-inside-compressed-file>@<url-to-compressed-file>, example:
 	// helm/cf-opensuse@https://github.com/SUSE/scf/releases/download/2.13.3/scf-opensuse-2.13.3+cf2.7.0.0.gf95d9aed.zip
