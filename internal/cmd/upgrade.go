@@ -33,28 +33,25 @@ import (
 )
 
 const (
-	envVarUpgradeConfig     = "upgrade_config"
 	envVarUpgradeTimeout    = "upgrade_timeout"
 	envVarUpgradeValueReuse = "upgrade_reuse_values"
 )
 
 // upgradeCmd represents the upgrade command
 var upgradeCmd = &cobra.Command{
-	Use:           "upgrade",
+	Use:           "upgrade [havener config file]",
 	Short:         "Upgrade Helm Release in Kubernetes",
 	Long:          `Upgrade Helm Release based on havener configuration`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		havenerUpgradeConfig := viper.GetString(envVarUpgradeConfig)
-
 		switch {
-		case len(havenerUpgradeConfig) > 0:
-			return UpgradeViaHavenerConfig(havenerUpgradeConfig)
-
+		case len(args) == 1:
+			return UpgradeViaHavenerConfig(args[0])
 		default:
 			cmd.Usage()
 		}
+
 		return nil
 	},
 }
@@ -62,12 +59,10 @@ var upgradeCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(upgradeCmd)
 
-	upgradeCmd.PersistentFlags().String("config", "", "havener configuration file")
 	upgradeCmd.PersistentFlags().Int("timeout", 40, "upgrade timeout in minutes")
 	upgradeCmd.PersistentFlags().Bool("reuse-values", false, "reuse the last release's values and merge in any overrides")
 
 	viper.AutomaticEnv()
-	viper.BindPFlag(envVarUpgradeConfig, upgradeCmd.PersistentFlags().Lookup("config"))
 	viper.BindPFlag(envVarUpgradeTimeout, upgradeCmd.PersistentFlags().Lookup("timeout"))
 	viper.BindPFlag(envVarUpgradeValueReuse, upgradeCmd.PersistentFlags().Lookup("reuse-values"))
 }
