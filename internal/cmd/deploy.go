@@ -33,6 +33,7 @@ import (
 )
 
 const (
+	envVarDeployConfig  = "deployment_config"
 	envVarDeployTimeout = "deployment_timeout"
 )
 
@@ -44,9 +45,13 @@ var deployCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		havenerConfig := viper.GetString(envVarDeployConfig)
+
 		switch {
 		case len(args) == 1:
 			return DeployViaHavenerConfig(args[0])
+		case len(havenerConfig) > 0:
+			return DeployViaHavenerConfig(havenerConfig)
 		default:
 			cmd.Usage()
 		}
@@ -58,9 +63,11 @@ var deployCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(deployCmd)
 
+	deployCmd.PersistentFlags().String("config", "", "havener configuration file")
 	deployCmd.PersistentFlags().Int("timeout", 40, "deployment timeout in minutes")
 
 	viper.AutomaticEnv()
+	viper.BindPFlag(envVarDeployConfig, deployCmd.PersistentFlags().Lookup("config"))
 	viper.BindPFlag(envVarDeployTimeout, deployCmd.PersistentFlags().Lookup("timeout"))
 }
 
