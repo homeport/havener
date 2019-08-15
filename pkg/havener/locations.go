@@ -206,16 +206,19 @@ func PathToHelmChart(input string) (string, error) {
 	}
 
 	// Each switch case applies an specific regular expression for an expected input.
-	switch {
+	switch urlRegex := regexp.MustCompile(`^((.*)@)?((https://|http://).+)$`); {
 	// Only try to git clone a chart that follows the correct syntax.
 	// syntax is <path-inside-compressed-file>@<url-to-compressed-file>, example:
 	// helm/cf-opensuse@https://github.com/SUSE/scf/releases/download/2.13.3/scf-opensuse-2.13.3+cf2.7.0.0.gf95d9aed.zip
-	// see https://regex101.com/r/5r3n6u/2
-	case validateRegex(regexp.MustCompile(`^(.+)[@](.+)$`), input):
-		matches := regexp.MustCompile(`^(.+)[@](.+)$`).FindAllStringSubmatch(input, -1)
+	// or https://github.com/SUSE/scf/releases/download/2.13.3/scf-opensuse-2.13.3+cf2.7.0.0.gf95d9aed.zip to use the root directory
+	// see https://regex101.com/r/lB7oO0/1
+	case validateRegex(urlRegex, input):
+		matches := urlRegex.FindAllStringSubmatch(input, -1)
 		for _, match := range matches {
-			artifactPath = match[1]
-			artifactURL = match[2]
+			if len(match[2]) > 0 {
+				artifactPath = match[2]
+			}
+			artifactURL = match[3]
 		}
 		localPath, error := downloadArtifact(artifactURL, artifactPath)
 		if error != nil {
