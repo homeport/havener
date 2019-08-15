@@ -23,6 +23,7 @@ package cmd
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"regexp"
 	"strings"
 
@@ -35,8 +36,9 @@ import (
 )
 
 const (
-	beginManifestMatch = "HOOKS:\n---"
+	beginManifestMatch = "(\\nHOOKS:---\\n)|(\\nHOOKS:\\n)"
 	endManifestMatch   = "Release \".+\" .*"
+	desiredSubStrings  = 2
 )
 
 // showHelmReleaseDiff provides a difference report using the packages of the `dyff` tool.
@@ -69,9 +71,14 @@ func showHelmReleaseDiff(chartname string, chartPath string, valueOverrides []by
 	// is to clean up the stdout data, by using the "HOOK:" as the starting point
 	// and the  "Release "release-name" has been upgraded" text as the end point.
 	// All other data outside of this delimiters, is not needed for the comparison.
-	manifestBeginning := strings.Split(string(dryRunBytes), beginManifestMatch)
-	manifestEnd := regexp.MustCompile(endManifestMatch)
-	manifestNewChart := manifestEnd.Split(manifestBeginning[1], 2)
+	manifestBeginning, err := regexSplit(beginManifestMatch, string(dryRunBytes))
+	if err != nil {
+		return err
+	}
+	manifestNewChart, err := regexSplit(endManifestMatch, manifestBeginning[1])
+	if err != nil {
+		return err
+	}
 
 	from, err := ListManifestFiles(string(manifestBytes))
 	if err != nil {
@@ -104,6 +111,20 @@ func showHelmReleaseDiff(chartname string, chartPath string, valueOverrides []by
 	}
 
 	return nil
+}
+
+func regexSplit(rgxMatch string, stdOutDryRun string) ([]string, error) {
+	matched, err := regexp.MatchString(rgxMatch, stdOutDryRun)
+	if err != nil {
+		return nil, err
+	}
+	if !matched {
+		return nil, errors.New("stdout of an upgrade dry-run cannot be parsed, bailing out")
+	}
+
+	re := regexp.MustCompile(rgxMatch).Split(stdOutDryRun, desiredSubStrings)
+
+	return re, nil
 }
 
 func compare(filename string, from yaml.MapSlice, to yaml.MapSlice) error {
