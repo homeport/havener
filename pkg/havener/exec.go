@@ -47,10 +47,26 @@ func ProcessConfigFile(path string) (*Config, error) {
 	}
 
 	for idx, release := range config.Releases {
+		config.Releases[idx].ChartName, err = ProcessOperators(release.ChartName)
+		if err != nil {
+			return nil, err
+		}
+		config.Releases[idx].ChartVersion, err = ProcessOperators(release.ChartVersion)
+		if err != nil {
+			return nil, err
+		}
+		config.Releases[idx].ChartNamespace, err = ProcessOperators(release.ChartNamespace)
+		if err != nil {
+			return nil, err
+		}
+		config.Releases[idx].ChartLocation, err = ProcessOperators(release.ChartLocation)
+		if err != nil {
+			return nil, err
+		}
+
 		if release.Overrides == nil {
 			continue
 		}
-
 		config.Releases[idx].Overrides, err = TraverseStructureAndProcessOperators(release.Overrides)
 		if err != nil {
 			return nil, err

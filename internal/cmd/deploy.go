@@ -75,12 +75,7 @@ func init() {
 func DeployViaHavenerConfig(havenerConfig string) error {
 	timeoutInMin := viper.GetInt(envVarDeployTimeout)
 
-	config, err := havener.ParseConfigFile(havenerConfig)
-	if err != nil {
-		return err
-	}
-
-	err = havener.SetConfigEnv(config)
+	config, err := havener.ProcessConfigFile(havenerConfig)
 	if err != nil {
 		return err
 	}
@@ -90,7 +85,7 @@ func DeployViaHavenerConfig(havenerConfig string) error {
 	}
 
 	for _, release := range config.Releases {
-		overridesData, err := processOverrideSection(release)
+		overridesData, err := marshallOverrideSection(release)
 		if err != nil {
 			return err
 		}

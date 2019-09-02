@@ -79,12 +79,7 @@ func UpgradeViaHavenerConfig(havenerConfig string) error {
 	timeoutInMin := viper.GetInt(envVarUpgradeTimeout)
 	reuseValues := viper.GetBool(envVarUpgradeValueReuse)
 
-	config, err := havener.ParseConfigFile(havenerConfig)
-	if err != nil {
-		return err
-	}
-
-	err = havener.SetConfigEnv(config)
+	config, err := havener.ProcessConfigFile(havenerConfig)
 	if err != nil {
 		return err
 	}
@@ -94,7 +89,7 @@ func UpgradeViaHavenerConfig(havenerConfig string) error {
 	}
 
 	for _, release := range config.Releases {
-		overridesData, err := processOverrideSection(release)
+		overridesData, err := marshallOverrideSection(release)
 		if err != nil {
 			return err
 		}
