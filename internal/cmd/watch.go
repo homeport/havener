@@ -21,6 +21,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -37,6 +38,8 @@ import (
 var watchCmdSettings struct {
 	interval   int
 	namespaces []string
+	resource   string
+	crd        string
 }
 
 // watchCmd represents the top command
@@ -72,15 +75,56 @@ var watchCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(watchCmd)
-
 	watchCmd.PersistentFlags().IntVarP(&watchCmdSettings.interval, "interval", "i", 2, "interval between measurements in seconds")
+	watchCmd.PersistentFlags().StringVarP(&watchCmdSettings.resource, "resource", "r", "", "resource to watch (default to pods)")
 	watchCmd.PersistentFlags().StringSliceVarP(&watchCmdSettings.namespaces, "namespace", "n", []string{}, "comma separated list of namespaces to filter (default is to use all namespaces")
+	watchCmd.PersistentFlags().StringVarP(&watchCmdSettings.crd, "crd", "c", "", "crd to watch, based on the singular or short-name of the resource")
 }
 
-func printWatchList(hvnr havener.Havener) error {
+func printWatchList(hvnr havener.Havener) (err error) {
+	var out string
+
+	if watchCmdSettings.crd != "" && watchCmdSettings.resource != "" {
+		return errors.New("--resource and --crd flags cannot be specified simultaneously")
+	}
+
+	if watchCmdSettings.crd != "" {
+		out, err = generateCRDTable(hvnr)
+		if err != nil {
+			return err
+		}
+	} else {
+		switch watchCmdSettings.resource {
+		case "pods":
+			out, err = generatePodsTable(hvnr)
+			if err != nil {
+				return err
+			}
+		case "secrets":
+			out, err = generateSecretsTable(hvnr)
+			if err != nil {
+				return err
+			}
+		case "configmaps":
+			out, err = generateCMTable(hvnr)
+			if err != nil {
+				return err
+			}
+		default:
+			out, err = generatePodsTable(hvnr)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	print("\x1b[H", "\x1b[2J", out)
+	return nil
+}
+
+func generatePodsTable(hvnr havener.Havener) (string, error) {
 	pods, err := hvnr.ListPods(watchCmdSettings.namespaces...)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	sort.Slice(pods, func(i, j int) bool {
@@ -175,13 +219,112 @@ func printWatchList(hvnr havener.Havener) error {
 		table,
 		neat.CustomSeparator("  "),
 	)
-
 	if err != nil {
-		return err
+		return "", err
+	}
+	return out, nil
+}
+
+func generateSecretsTable(hvnr havener.Havener) (secResult string, err error) {
+	var tableSec = [][]string{}
+
+	secrets, err := hvnr.ListSecrets(watchCmdSettings.namespaces...)
+	if err != nil {
+		return "", err
 	}
 
-	print("\x1b[H", "\x1b[2J", out)
-	return nil
+	for _, secret := range secrets {
+		styleOptions := []bunt.StyleOption{}
+
+		age := humanReadableDuration(time.Now().Sub(secret.CreationTimestamp.Time))
+
+		tableSec = append(tableSec, []string{
+			bunt.Style(secret.Namespace, styleOptions...),
+			bunt.Style(secret.Name, styleOptions...),
+			bunt.Style(age, styleOptions...),
+		})
+	}
+
+	secResult, err = renderBoxWithTable(
+		bunt.Sprintf("Secrets running in cluster _%s_", hvnr.ClusterName()),
+		[]string{"Namespace", "Name", "Age"},
+		tableSec,
+		neat.CustomSeparator("  "),
+	)
+	if err != nil {
+		return "", err
+	}
+
+	return secResult, nil
+}
+
+func generateCMTable(hvnr havener.Havener) (cmResult string, err error) {
+
+	var tableSec = [][]string{}
+
+	configMaps, err := hvnr.ListConfigMaps(watchCmdSettings.namespaces...)
+	if err != nil {
+		return "", err
+	}
+
+	for _, cm := range configMaps {
+		styleOptions := []bunt.StyleOption{}
+		age := humanReadableDuration(time.Now().Sub(cm.CreationTimestamp.Time))
+		tableSec = append(tableSec, []string{
+			bunt.Style(cm.Namespace, styleOptions...),
+			bunt.Style(cm.Name, styleOptions...),
+			bunt.Style(age, styleOptions...),
+		})
+	}
+
+	cmResult, err = renderBoxWithTable(
+		bunt.Sprintf("Configmaps running in cluster _%s_", hvnr.ClusterName()),
+		[]string{"Namespace", "Name", "Age"},
+		tableSec,
+		neat.CustomSeparator("  "),
+	)
+	if err != nil {
+		return "", err
+	}
+
+	return cmResult, nil
+}
+
+func generateCRDTable(hvnr havener.Havener) (string, error) {
+
+	var (
+		tableSec = [][]string{}
+	)
+	bdplList, err := hvnr.ListCRDItems(watchCmdSettings.crd)
+	if err != nil {
+		return "", err
+	}
+
+	for _, bdpl := range bdplList {
+		styleOptions := []bunt.StyleOption{}
+
+		age := humanReadableDuration(
+			time.Now().Sub(
+				bdpl.GetCreationTimestamp().Time,
+			),
+		)
+		tableSec = append(tableSec, []string{
+			bunt.Style(bdpl.GetNamespace(), styleOptions...),
+			bunt.Style(bdpl.GetName(), styleOptions...),
+			bunt.Style(age, styleOptions...),
+		})
+	}
+	outBDPL, err := renderBoxWithTable(
+		bunt.Sprintf("%s running in cluster _%s_", watchCmdSettings.crd, hvnr.ClusterName()),
+		[]string{"Namespace", "Name", "Age"},
+		tableSec,
+		neat.CustomSeparator("  "),
+	)
+
+	if err != nil {
+		return "", err
+	}
+	return outBDPL, nil
 }
 
 func humanReadableNamespaceCategory(pod corev1.Pod) string {

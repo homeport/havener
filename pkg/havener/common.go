@@ -25,11 +25,14 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/gonvenience/wrap"
 	"github.com/spf13/viper"
 	yaml "gopkg.in/yaml.v2"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc" //from https://github.com/kubernetes/client-go/issues/345
 	"k8s.io/client-go/rest"
@@ -169,4 +172,31 @@ func clusterName() (string, error) {
 	}
 
 	return "", fmt.Errorf("unable to determine cluster name based on Kubernetes configuration")
+}
+
+func apiCRDResourceExist(arl []*metav1.APIResourceList, crdName string) (bool, schema.GroupVersionResource) {
+	for _, ar := range arl {
+		// Look for a CRD based on it´s singular or
+		// different short names.
+		for _, r := range ar.APIResources {
+			if crdName == r.SingularName || containsItem(r.ShortNames, crdName) {
+				groupVersion := strings.Split(ar.GroupVersion, "/")
+				return true, schema.GroupVersionResource{
+					Group:    groupVersion[0],
+					Version:  groupVersion[1],
+					Resource: r.Name,
+				}
+			}
+		}
+	}
+	return false, schema.GroupVersionResource{}
+}
+
+func containsItem(l []string, s string) bool {
+	for _, a := range l {
+		if a == s {
+			return true
+		}
+	}
+	return false
 }
