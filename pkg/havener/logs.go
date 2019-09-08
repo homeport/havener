@@ -76,7 +76,7 @@ if [ ! -z "${FILES}" ]; then
         esac
         ;;
     esac
-  done | GZIP=-9 tar --create --gzip --file=- --files-from=- 2>/dev/null
+  done | GZIP=-9 tar --create --gzip --file=- --files-from=- || true
 fi
 `
 
@@ -240,6 +240,11 @@ func retrieveFilesFromPod(client kubernetes.Interface, restconfig *rest.Config, 
 	errors := []error{}
 
 	for _, container := range pod.Spec.Containers {
+		// Ignore all container that have no shell available
+		if err := PodExec(client, restconfig, pod, container.Name, []string{"/bin/sh", "-c", "true"}, nil, ioutil.Discard, nil, false); err != nil {
+			continue
+		}
+
 		targetPath := filepath.Join(
 			baseDir,
 			pod.Name,
