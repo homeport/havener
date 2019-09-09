@@ -191,15 +191,10 @@ func printStatusMessage(head string, body string, headColor colorful.Color) {
 	bunt.Println()
 }
 
-// processOverrideSection rewrites the override section of the havener config
-// by resolving its operators.
-func processOverrideSection(release havener.Release) ([]byte, error) {
-	overrides, err := havener.TraverseStructureAndProcessOperators(release.Overrides)
-	if err != nil {
-		return nil, wrap.Error(err, "failed to process overrides section")
-	}
-
-	overridesData, err := yaml.Marshal(overrides)
+// marshallOverrideSection marshalls the override section of the havener config
+// for using it in helm deployment.
+func marshallOverrideSection(release havener.Release) ([]byte, error) {
+	overridesData, err := yaml.Marshal(release.Overrides)
 	if err != nil {
 		return nil, wrap.Error(err, "failed to marshal overrides structure into bytes")
 	}

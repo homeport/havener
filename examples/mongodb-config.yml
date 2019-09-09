@@ -1,8 +1,8 @@
 name: mongo deployment
 releases:
 - name: mongodb
-  namespace: mongodb
-  version: (( env VERSION ))
+  namespace: (( env CFNAMESPACE ))
+  version: 1
   location: stable/mongodb
   overrides:
     mongodbUsername: (( env USERNAME ))
@@ -12,7 +12,7 @@ releases:
   after: [echo "Installed mongoDB instance with credentials $USERNAME/$PASSWORD"]
 
 env:
-  VERSION: 1
+  CFNAMESPACE: databases
   USERNAME: (( shell echo "user" ))
   PASSWORD: (( env USERNAME ))-12345678
   DATABASE: admin
