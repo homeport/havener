@@ -4,6 +4,8 @@ go 1.12
 
 require (
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
+	github.com/elazarl/goproxy v0.0.0-20190711103511-473e67f1d7d2 // indirect
+	github.com/elazarl/goproxy/ext v0.0.0-20190711103511-473e67f1d7d2 // indirect
 	github.com/gonvenience/bunt v1.1.1
 	github.com/gonvenience/neat v1.0.3
 	github.com/gonvenience/term v1.0.0
@@ -31,6 +33,6 @@ require (
 	k8s.io/api v0.0.0-20190704095032-f4ca3d3bdf1d
 	k8s.io/apimachinery v0.0.0-20190704094733-8f6ac2502e51
 	k8s.io/client-go v0.0.0-20190704100234-640d9f240853
-	k8s.io/utils v0.0.0-20190712204705-3dccf664f023
+	k8s.io/utils v0.0.0-20190712204705-3dccf664f023 // indirect
 	sigs.k8s.io/yaml v1.1.0 // indirect
 )
