@@ -13,7 +13,7 @@ require (
 	github.com/gonvenience/wait v1.0.2
 	github.com/gonvenience/wrap v1.1.0
 	github.com/googleapis/gnostic v0.3.0 // indirect
-	github.com/homeport/dyff v0.10.2
+	github.com/homeport/dyff v0.10.3
 	github.com/homeport/ytbx v1.1.2
 	github.com/imdario/mergo v0.3.7 // indirect
 	github.com/json-iterator/go v1.1.7 // indirect
