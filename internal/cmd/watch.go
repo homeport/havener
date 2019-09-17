@@ -76,8 +76,16 @@ func printWatchList(hvnr havener.Havener) error {
 	}
 
 	sort.Slice(pods, func(i, j int) bool {
+		if categoryI, categoryJ := humanReadableNamespaceCategory(*pods[i]), humanReadableNamespaceCategory(*pods[j]); categoryI != categoryJ {
+			return categoryI > categoryJ
+		}
+
 		if pods[i].Namespace != pods[j].Namespace {
 			return pods[i].Namespace < pods[j].Namespace
+		}
+
+		if statusI, statusJ := humanReadablePodStatus(*pods[i]), humanReadablePodStatus(*pods[j]); statusI != statusJ {
+			return statusI < statusJ
 		}
 
 		return pods[i].Name < pods[j].Name
@@ -90,11 +98,6 @@ func printWatchList(hvnr havener.Havener) error {
 	)
 
 	for _, pod := range pods {
-		switch pod.Namespace {
-		case "kube-system", "ibm-system":
-			continue
-		}
-
 		status := humanReadablePodStatus(*pod)
 
 		age := humanReadableDuration(
@@ -126,6 +129,9 @@ func printWatchList(hvnr havener.Havener) error {
 
 		case readyContainer != totalContainer:
 			styleOptions = append(styleOptions, bunt.Foreground(bunt.Gold))
+
+		case humanReadableNamespaceCategory(*pod) == "system namespace":
+			styleOptions = append(styleOptions, bunt.Foreground(bunt.LightSlateGray), bunt.Italic())
 		}
 
 		table = append(table, []string{
@@ -155,6 +161,16 @@ func printWatchList(hvnr havener.Havener) error {
 
 	print("\x1b[H", "\x1b[2J", out)
 	return nil
+}
+
+func humanReadableNamespaceCategory(pod corev1.Pod) string {
+	switch {
+	case strings.HasSuffix(pod.Namespace, "-system"):
+		return "system namespace"
+
+	default:
+		return "user namespace"
+	}
 }
 
 func humanReadablePodStatus(pod corev1.Pod) string {
