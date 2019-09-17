@@ -95,24 +95,7 @@ func printWatchList(hvnr havener.Havener) error {
 			continue
 		}
 
-		status := func() string {
-			if pod.DeletionTimestamp != nil {
-				return "Terminating"
-			}
-
-			switch pod.Status.Phase {
-			case corev1.PodPending:
-				for _, containerStatus := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
-					if containerStatus.State.Waiting != nil {
-						if len(containerStatus.State.Waiting.Reason) != 0 {
-							return containerStatus.State.Waiting.Reason
-						}
-					}
-				}
-			}
-
-			return string(pod.Status.Phase)
-		}()
+		status := humanReadablePodStatus(*pod)
 
 		age := humanReadableDuration(
 			time.Now().Sub(
@@ -172,6 +155,25 @@ func printWatchList(hvnr havener.Havener) error {
 
 	print("\x1b[H", "\x1b[2J", out)
 	return nil
+}
+
+func humanReadablePodStatus(pod corev1.Pod) string {
+	if pod.DeletionTimestamp != nil {
+		return "Terminating"
+	}
+
+	switch pod.Status.Phase {
+	case corev1.PodPending:
+		for _, containerStatus := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
+			if containerStatus.State.Waiting != nil {
+				if len(containerStatus.State.Waiting.Reason) != 0 {
+					return containerStatus.State.Waiting.Reason
+				}
+			}
+		}
+	}
+
+	return string(pod.Status.Phase)
 }
 
 func humanReadableDuration(duration time.Duration) string {
