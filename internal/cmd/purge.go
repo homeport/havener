@@ -21,10 +21,13 @@
 package cmd
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
+	"github.com/gonvenience/bunt"
+	"github.com/gonvenience/text"
 	"github.com/gonvenience/wait"
 	"github.com/gonvenience/wrap"
 	"github.com/homeport/havener/pkg/havener"
@@ -41,7 +44,6 @@ import (
 // purgeCmd represents the purge command
 var purgeCmd = &cobra.Command{
 	Use:   "purge <helm-release> [<helm-release>] [...]",
-	Args:  cobra.MinimumNArgs(1),
 	Short: "Deletes Helm Releases",
 	Long: `Deletes all specified Helm Releases as quickly as possible.
 
@@ -51,11 +53,34 @@ in parallel to the deletion of the Helm Release itself.
 
 If multiple Helm Releases are specified, then they will deleted concurrently.
 `,
+
 	SilenceUsage:  true,
 	SilenceErrors: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		//havener.VerboseMessage("Accessing cluster...")
 
+	Args: func() cobra.PositionalArgs {
+		return func(cmd *cobra.Command, args []string) error {
+			if len(args) < 1 {
+				var message string = "At least one Helm Release has to be specified."
+				if list, err := havener.ListHelmReleases(); err == nil {
+					names := make([]string, len(list))
+					for i, entry := range list {
+						names[i] = entry.Name
+					}
+
+					message = fmt.Sprintf("%s\n\nList of Helm Releases:\n%s",
+						message,
+						strings.Join(names, "\n"),
+					)
+				}
+
+				return wrap.Errorf(errors.New(message), "missing argument")
+			}
+
+			return nil
+		}
+	}(),
+
+	RunE: func(cmd *cobra.Command, args []string) error {
 		client, _, err := havener.OutOfClusterAuthentication("")
 		if err != nil {
 			return wrap.Error(err, "unable to get access to cluster")
@@ -64,29 +89,32 @@ If multiple Helm Releases are specified, then they will deleted concurrently.
 		if err := PurgeHelmReleases(client, args...); err != nil {
 			return wrap.Error(err, "failed to purge helm releases")
 		}
+
 		return nil
 	},
 }
 
 // PurgeHelmReleases delete releases via helm
 func PurgeHelmReleases(kubeClient kubernetes.Interface, helmReleaseNames ...string) error {
-	// Get a struct with existing releases, and access it by name
-	releasesList := havener.HelmReleases{}
-
-	stdOutput, err := havener.RunHelmBinary("list", "-a", "--output", "json")
+	list, err := havener.ListHelmReleases()
 	if err != nil {
 		return err
 	}
 
-	err = json.Unmarshal(stdOutput, &releasesList)
-	if err != nil {
-		return err
+	isExistingHelmRelease := func(list []havener.HelmRelease, name string) bool {
+		for _, helmRelease := range list {
+			if helmRelease.Name == name {
+				return true
+			}
+		}
+
+		return false
 	}
 
 	// Go through the list of actual helm releases to filter our non-existing releases.
 	toBeDeleted := []string{}
 	for _, helmReleaseName := range helmReleaseNames {
-		if havener.ReleaseExist(releasesList, helmReleaseName) {
+		if isExistingHelmRelease(list, helmReleaseName) {
 			toBeDeleted = append(toBeDeleted, helmReleaseName)
 		}
 	}
@@ -96,33 +124,39 @@ func PurgeHelmReleases(kubeClient kubernetes.Interface, helmReleaseNames ...stri
 		return nil
 	}
 
+	outputMsg := bunt.Sprintf("*Deleting %s*: %s",
+		text.Plural(len(toBeDeleted), "Helm Release"),
+		strings.Join(toBeDeleted, ", "),
+	)
+
 	// Show a wait indicator ...
-	pi := wait.NewProgressIndicator(fmt.Sprintf("Deleting Helm Releases: " + strings.Join(toBeDeleted, ",")))
+	pi := wait.NewProgressIndicator(outputMsg)
 	setCurrentProgressIndicator(pi)
 	pi.Start()
 	defer setCurrentProgressIndicator(nil)
 	defer pi.Stop()
 
-	// Start to purge the helm releaes in parallel
+	var wg sync.WaitGroup
+	wg.Add(len(toBeDeleted))
 	errors := make(chan error, len(toBeDeleted))
+
+	// Start to purge the helm releaes in parallel
 	for _, name := range toBeDeleted {
 		releaseMetaData, err := havener.GetReleaseByName(name)
 		if err != nil {
 			return err
 		}
+
 		go func(helmRelease string) {
 			errors <- havener.PurgeHelmRelease(kubeClient, releaseMetaData, helmRelease)
+			wg.Done()
 		}(name)
 	}
 
-	// Wait for the go-routines to finish before leaving this function
-	for i := 0; i < len(toBeDeleted); i++ {
-		if err := <-errors; err != nil {
-			return err
-		}
-	}
+	wg.Wait()
+	close(errors)
 
-	return nil
+	return combineErrorsFromChannel("foobar", errors)
 }
 
 func init() {

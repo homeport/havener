@@ -45,7 +45,7 @@ func PromptUser(message string) bool {
 		return true
 	}
 
-	fmt.Println(message)
+	fmt.Print(message)
 
 	scanner := bufio.NewScanner(os.Stdin)
 	if scanner.Scan() {

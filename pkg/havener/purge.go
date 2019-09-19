@@ -40,7 +40,7 @@ import (
 var defaultPropagationPolicy = metav1.DeletePropagationForeground
 
 // PurgeHelmRelease removes the given helm release including all its resources.
-func PurgeHelmRelease(kubeClient kubernetes.Interface, release Releases, helmRelease string) error {
+func PurgeHelmRelease(kubeClient kubernetes.Interface, release HelmRelease, helmRelease string) error {
 	if err := PurgeDeploymentsInNamespace(kubeClient, release.Namespace); err != nil {
 		return err
 	}
@@ -61,6 +61,11 @@ func PurgeHelmRelease(kubeClient kubernetes.Interface, release Releases, helmRel
 
 // PurgeDeploymentsInNamespace removes all deployments in the given namespace.
 func PurgeDeploymentsInNamespace(kubeClient kubernetes.Interface, namespace string) error {
+	// Skip known system namespaces
+	if isSystemNamespace(namespace) {
+		return nil
+	}
+
 	if deployments, err := ListDeploymentsInNamespace(kubeClient, namespace); err == nil {
 		for _, name := range deployments {
 			err := kubeClient.AppsV1beta1().Deployments(namespace).Delete(name, &metav1.DeleteOptions{
@@ -78,6 +83,11 @@ func PurgeDeploymentsInNamespace(kubeClient kubernetes.Interface, namespace stri
 
 // PurgeStatefulSetsInNamespace removes all stateful sets in the given namespace.
 func PurgeStatefulSetsInNamespace(kubeClient kubernetes.Interface, namespace string) error {
+	// Skip known system namespaces
+	if isSystemNamespace(namespace) {
+		return nil
+	}
+
 	if statefulsets, err := ListStatefulSetsInNamespace(kubeClient, namespace); err == nil {
 		for _, name := range statefulsets {
 			err := kubeClient.AppsV1beta1().StatefulSets(namespace).Delete(name, &metav1.DeleteOptions{
@@ -95,6 +105,11 @@ func PurgeStatefulSetsInNamespace(kubeClient kubernetes.Interface, namespace str
 
 // PurgeNamespace removes the namespace from the cluster.
 func PurgeNamespace(kubeClient kubernetes.Interface, namespace string) error {
+	// Skip known system namespaces
+	if isSystemNamespace(namespace) {
+		return nil
+	}
+
 	ns, err := kubeClient.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
 	if err != nil {
 		// Bail out if namespace is already deleted
