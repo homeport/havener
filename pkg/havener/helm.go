@@ -155,12 +155,12 @@ func GenerateConfigFile(valueOverrides []byte) (string, error) {
 // HelmReleases defines the struct when
 // listing releases via helm in json format
 type HelmReleases struct {
-	Next     string     `json:"Next"`
-	Releases []Releases `json:"Releases"`
+	Next     string        `json:"Next"`
+	Releases []HelmRelease `json:"Releases"`
 }
 
-// Releases defines the release metadata
-type Releases struct {
+// HelmRelease defines the release metadata
+type HelmRelease struct {
 	Name       string `json:"Name"`
 	Revision   int    `json:"Revision"`
 	Updated    string `json:"Updated"`
@@ -168,6 +168,22 @@ type Releases struct {
 	Chart      string `json:"Chart"`
 	AppVersion string `json:"AppVersion"`
 	Namespace  string `json:"Namespace"`
+}
+
+// ListHelmReleases lists all known Helm Releases
+func ListHelmReleases() ([]HelmRelease, error) {
+	stdOutput, err := RunHelmBinary("list", "--all", "--output", "json")
+	if err != nil {
+		return nil, err
+	}
+
+	releasesList := HelmReleases{}
+	if err := json.Unmarshal(stdOutput, &releasesList); err != nil {
+		return nil, err
+	}
+
+	// TODO Double check in which use cases the Next has to be evaluated.
+	return releasesList.Releases, nil
 }
 
 // ReleaseExist returns true for an existing release
@@ -181,24 +197,17 @@ func ReleaseExist(list HelmReleases, releaseName string) bool {
 }
 
 // GetReleaseByName returns true for an existing release
-func GetReleaseByName(releaseName string) (Releases, error) {
-	releasesList := HelmReleases{}
-
-	stdOutput, err := RunHelmBinary("list", "-a", "--output", "json")
+func GetReleaseByName(releaseName string) (HelmRelease, error) {
+	list, err := ListHelmReleases()
 	if err != nil {
-		return Releases{}, err
+		return HelmRelease{}, err
 	}
 
-	err = json.Unmarshal(stdOutput, &releasesList)
-	if err != nil {
-		return Releases{}, err
-	}
-
-	for _, release := range releasesList.Releases {
+	for _, release := range list {
 		if release.Name == releaseName {
 			return release, nil
 		}
 	}
 
-	return Releases{}, fmt.Errorf("Release %s not found", releaseName)
+	return HelmRelease{}, fmt.Errorf("Release %s not found", releaseName)
 }

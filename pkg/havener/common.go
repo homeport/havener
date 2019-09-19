@@ -136,3 +136,12 @@ func getSecretValue(namespace string, secretName string, secretKey string) (stri
 
 	return string(secretValue), nil
 }
+
+func isSystemNamespace(namespace string) bool {
+	switch namespace {
+	case "default", "kube-system", "ibm-system":
+		return true
+	}
+
+	return false
+}
