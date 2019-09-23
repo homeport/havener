@@ -30,6 +30,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/gonvenience/bunt"
 	"github.com/gonvenience/term"
 	"github.com/gonvenience/wrap"
 	"github.com/homeport/havener/pkg/havener"
@@ -53,16 +54,25 @@ var nodeExecCmd = &cobra.Command{
 	Use:     "node-exec [flags] [<node>[,<node>,...]] [<command>]",
 	Aliases: []string{"ne"},
 	Short:   "Execute command on Kubernetes node",
-	Long: `Execute a shell command on a node.
+	Long: bunt.Sprintf(`Execute a command on a node.
 
-This executes a command directly on the node itself. Therefore, havener
-creates a temporary pod which enables the user to access the shell
-of the node. The pod is deleted automatically afterwards.
+This executes a command directly on the node itself. Therefore, havener creates
+a temporary pod which enables the user to access the shell of the node. The pod
+is deleted automatically afterwards.
 
-The command can be omitted which will result in the default command: ` + nodeDefaultCommand + `. For example 
-'havener node-exec api-0' will search for a node named 'api-0' and open a shell if found.
+The command can be omitted which will result in the default command: _%s_. For
+example 'havener node-exec foo' will search for a node named 'foo' and open a
+shell if found.
 
-`,
+Typically, the TTY flag does have to be specified. By definition, if one one
+target node is provided, it is assumed that TTY is desired and STDIN is attached
+to the remote process. Analog, for the distributed mode with multiple nodes,
+no TTY is set and the STDIN is multiplexed into each remote process.
+
+For convenenience, if the target node name _all_ is used, havener will look up
+all nodes automatically.
+
+`, nodeDefaultCommand),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -86,27 +96,27 @@ func execInClusterNodes(args []string) error {
 	}
 
 	var (
-		nodes   []*corev1.Node
+		nodes   []corev1.Node
 		input   string
 		command []string
 	)
 
 	switch {
-	case len(args) >= 2: //node name and command is given
+	case len(args) >= 2: // node name and command is given
 		input, command = args[0], args[1:]
 		nodes, err = lookupNodesByName(client, input)
 		if err != nil {
 			return err
 		}
 
-	case len(args) == 1: //only node name is given
+	case len(args) == 1: // only node name is given
 		input, command = args[0], []string{nodeDefaultCommand}
 		nodes, err = lookupNodesByName(client, input)
 		if err != nil {
 			return err
 		}
 
-	default: //no arguments
+	default: // no arguments
 		return availableNodesError(client, "no node name and command specified")
 	}
 
@@ -145,7 +155,7 @@ func execInClusterNodes(args []string) error {
 
 	wg.Add(len(nodes))
 	for i, node := range nodes {
-		go func(node *corev1.Node, reader io.Reader) {
+		go func(node corev1.Node, reader io.Reader) {
 			defer func() {
 				wg.Done()
 			}()
@@ -189,16 +199,25 @@ func execInClusterNodes(args []string) error {
 	return nil
 }
 
-func lookupNodesByName(client kubernetes.Interface, input string) ([]*corev1.Node, error) {
-	inputList := strings.Split(input, ",")
+func lookupNodesByName(client kubernetes.Interface, input string) ([]corev1.Node, error) {
+	nodeList := []corev1.Node{}
 
-	nodeList := []*corev1.Node{}
-	for _, nodeName := range inputList {
-		if node, err := client.CoreV1().Nodes().Get(nodeName, metav1.GetOptions{}); err == nil {
-			nodeList = append(nodeList, node)
-		} else {
+	if input == "all" {
+		list, err := client.CoreV1().Nodes().List(metav1.ListOptions{})
+		if err != nil {
+			return nil, err
+		}
+
+		return list.Items, nil
+	}
+
+	for _, nodeName := range strings.Split(input, ",") {
+		node, err := client.CoreV1().Nodes().Get(nodeName, metav1.GetOptions{})
+		if err != nil {
 			return nil, availableNodesError(client, "node '%s' does not exist", nodeName)
 		}
+
+		nodeList = append(nodeList, *node)
 	}
 
 	return nodeList, nil
@@ -215,7 +234,7 @@ func availableNodesError(client kubernetes.Interface, title string, fArgs ...int
 	}
 
 	return wrap.Errorf(
-		fmt.Errorf("list of available nodes:\n%s",
+		bunt.Errorf("*list of available nodes:*\n%s\n\nor, use _all_ to target all nodes",
 			strings.Join(nodes, "\n"),
 		),
 		title, fArgs...,
