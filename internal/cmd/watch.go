@@ -76,18 +76,22 @@ func printWatchList(hvnr havener.Havener) error {
 	}
 
 	sort.Slice(pods, func(i, j int) bool {
+		// sort by system namespace (user namespaces before system namespaces)
 		if categoryI, categoryJ := humanReadableNamespaceCategory(*pods[i]), humanReadableNamespaceCategory(*pods[j]); categoryI != categoryJ {
 			return categoryI > categoryJ
 		}
 
+		// sort by namespace
 		if pods[i].Namespace != pods[j].Namespace {
 			return pods[i].Namespace < pods[j].Namespace
 		}
 
-		if statusI, statusJ := humanReadablePodStatus(*pods[i]), humanReadablePodStatus(*pods[j]); statusI != statusJ {
+		// sort by finish status (active before done)
+		if statusI, statusJ := humanReadablePodRunningStatus(*pods[i]), humanReadablePodRunningStatus(*pods[j]); statusI != statusJ {
 			return statusI < statusJ
 		}
 
+		// sort by name
 		return pods[i].Name < pods[j].Name
 	})
 
@@ -126,6 +130,15 @@ func printWatchList(hvnr havener.Havener) error {
 
 		case status == "Terminating":
 			styleOptions = append(styleOptions, bunt.Foreground(bunt.PeachPuff))
+
+		case status == "CrashLoopBackOff":
+			styleOptions = append(styleOptions, bunt.Foreground(bunt.LightCoral))
+
+		case status == "PodInitializing":
+			styleOptions = append(styleOptions, bunt.Foreground(bunt.LightCyan))
+
+		case status == "Pending":
+			styleOptions = append(styleOptions, bunt.Foreground(bunt.Bisque))
 
 		case readyContainer != totalContainer:
 			styleOptions = append(styleOptions, bunt.Foreground(bunt.Gold))
@@ -171,6 +184,14 @@ func humanReadableNamespaceCategory(pod corev1.Pod) string {
 	default:
 		return "user namespace"
 	}
+}
+
+func humanReadablePodRunningStatus(pod corev1.Pod) string {
+	if humanReadablePodStatus(pod) == "Succeeded" {
+		return "Done"
+	}
+
+	return "Active"
 }
 
 func humanReadablePodStatus(pod corev1.Pod) string {
