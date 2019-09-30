@@ -97,7 +97,7 @@ func printWatchList(hvnr havener.Havener) error {
 
 	var (
 		counter  = 0
-		maxLines = term.GetTerminalHeight() - 6
+		maxLines = term.GetTerminalHeight() - 5
 		table    = [][]string{}
 	)
 
