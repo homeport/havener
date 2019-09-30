@@ -55,8 +55,8 @@ github.com/gonvenience/bunt v1.0.7/go.mod h1:lsyhkmNpSAzhVx059BD0fQy5F29rWcS6AHb
 github.com/gonvenience/bunt v1.1.1 h1:isYxOpDqbRMOSRhZtoux1tYvhhQ/AIbVDFrs24l6t0M=
 github.com/gonvenience/bunt v1.1.1/go.mod h1:lsyhkmNpSAzhVx059BD0fQy5F29rWcS6AHb7UWNlT/s=
 github.com/gonvenience/neat v1.0.3/go.mod h1:QBRLwRxib88dGjs/1ncOjPxDsCUch/0CGJUvg2iOYXY=
-github.com/gonvenience/neat v1.0.4 h1:qrOm2HEuupc6KhhRDtJBtIBnNIhape2oJE7j9fIBbbc=
-github.com/gonvenience/neat v1.0.4/go.mod h1:Fqf64U87rL4m0BGk4cAwCWl8UkqKUpbuY5JJsZGZbLo=
+github.com/gonvenience/neat v1.0.5 h1:O1UDzL5iy6o1qVWY3oIhhqbpl2uD9ZF7dTER72h/hkg=
+github.com/gonvenience/neat v1.0.5/go.mod h1:Fqf64U87rL4m0BGk4cAwCWl8UkqKUpbuY5JJsZGZbLo=
 github.com/gonvenience/term v1.0.0 h1:joCB/j0Ngmdakd3muuLgAGPMf7DNKdoe708c1I6RiBs=
 github.com/gonvenience/term v1.0.0/go.mod h1:wohD4Iqso9Eol7qc2VnNhSFFhZxok5PvO7pZhdrAn4E=
 github.com/gonvenience/text v1.0.2 h1:rjfc70ouuOak6h9yPyTN3VKh9hNwO+r+1coDsJIeTjs=

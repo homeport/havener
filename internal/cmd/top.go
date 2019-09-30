@@ -78,7 +78,7 @@ var topCmd = &cobra.Command{
 			nodeDetails := renderNodeDetails(top)
 			namespaceDetails := renderNamespaceDetails(top)
 			availableLines := term.GetTerminalHeight() - lines(nodeDetails) - lines(namespaceDetails)
-			topContainers := renderTopContainers(top, availableLines-2)
+			topContainers := renderTopContainers(top, availableLines-1)
 
 			fmt.Print(
 				"\x1b[H",
@@ -419,9 +419,11 @@ func sideBySide(left string, right string) string {
 		tmp = append(tmp, []string{l, r})
 	}
 
-	out, err := neat.Table(tmp,
+	out, err := neat.Table(
+		tmp,
 		neat.DesiredWidth(term.GetTerminalWidth()),
 		neat.CustomSeparator("   "),
+		neat.OmitLinefeedAtTableEnd(),
 	)
 
 	if err != nil {
