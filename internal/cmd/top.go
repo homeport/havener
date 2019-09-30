@@ -78,7 +78,7 @@ var topCmd = &cobra.Command{
 			nodeDetails := renderNodeDetails(top)
 			namespaceDetails := renderNamespaceDetails(top)
 			availableLines := term.GetTerminalHeight() - lines(nodeDetails) - lines(namespaceDetails)
-			topContainers := renderTopContainers(top, availableLines-4)
+			topContainers := renderTopContainers(top, availableLines-2)
 
 			fmt.Print(
 				"\x1b[H",
@@ -227,7 +227,7 @@ func renderNamespaceDetails(topDetails *havener.TopDetails) string {
 	)
 }
 
-func renderTopContainers(topDetails *havener.TopDetails, x int) string {
+func renderTopContainers(topDetails *havener.TopDetails, maxNumberOfLines int) string {
 	type entry struct {
 		nodename  string
 		namespace string
@@ -280,15 +280,15 @@ func renderTopContainers(topDetails *havener.TopDetails, x int) string {
 
 	topPodsInCluster := func() string {
 		table := [][]string{}
-		x = func() int {
-			if x < len(topContainers) {
-				return x
+		maxNumberOfLines = func() int {
+			if maxNumberOfLines < len(topContainers) {
+				return maxNumberOfLines
 			}
 
 			return len(topContainers) - 1
 		}()
 
-		for _, entry := range topContainers[:x] {
+		for _, entry := range topContainers[:maxNumberOfLines] {
 			table = append(table, []string{
 				renderContainerName(entry.namespace, entry.pod, entry.container),
 				fmt.Sprintf("%.2f", float64(entry.cpu)/1000),
@@ -315,16 +315,15 @@ func renderTopContainers(topDetails *havener.TopDetails, x int) string {
 		table := [][]string{}
 		for _, node := range sortedNodeList(topDetails) {
 			list := topContainersPerNode[node]
-			j := func() int {
-				endIdx := x / len(topContainersPerNode)
-				if endIdx < len(topContainersPerNode) {
+			maxInnerLoop := func() int {
+				if endIdx := maxNumberOfLines / len(topContainersPerNode); endIdx < len(list) {
 					return endIdx
 				}
 
-				return len(topContainersPerNode) - 1
+				return len(list) - 1
 			}()
 
-			for i := 0; i < j; i++ {
+			for i := 0; i < maxInnerLoop; i++ {
 				var nodename string
 				if i == 0 {
 					nodename = node

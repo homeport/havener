@@ -159,7 +159,12 @@ func renderBoxWithTable(headline string, tablehead []string, table [][]string, s
 	}
 
 	// Wrap table output into a box and return result
-	return neat.ContentBox(headline, output, neat.HeadlineColor(bunt.SkyBlue)), nil
+	return neat.ContentBox(
+		headline,
+		output,
+		neat.HeadlineColor(bunt.SkyBlue),
+		neat.NoFinalEndOfLine(),
+	), nil
 }
 
 func printBoxWithTable(headline string, tablehead []string, table [][]string, styleOptions ...neat.TableOption) error {
