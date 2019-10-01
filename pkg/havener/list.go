@@ -103,14 +103,16 @@ func ListPods(client kubernetes.Interface) ([]*corev1.Pod, error) {
 	return hvnr.ListPods()
 }
 
-// ListPods lists all pods in all namespaces
-func (h *Hvnr) ListPods() ([]*corev1.Pod, error) {
-	namespaces, err := ListNamespaces(h.client)
-	if err != nil {
-		return nil, err
+// ListPods lists all pods in the given namespaces, if no namespace is given,
+// then all namespaces currently available in the cluster will be used
+func (h *Hvnr) ListPods(namespaces ...string) (result []*corev1.Pod, err error) {
+	if len(namespaces) == 0 {
+		namespaces, err = ListNamespaces(h.client)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	result := []*corev1.Pod{}
 	for _, namespace := range namespaces {
 		listResp, err := h.client.CoreV1().Pods(namespace).List(metav1.ListOptions{})
 		if err != nil {

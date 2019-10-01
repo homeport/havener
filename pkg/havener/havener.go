@@ -68,7 +68,7 @@ type Hvnr struct {
 // abstraction layer
 type Havener interface {
 	TopDetails() (*TopDetails, error)
-	ListPods() ([]*corev1.Pod, error)
+	ListPods(namespaces ...string) ([]*corev1.Pod, error)
 	ClusterName() string
 }
 
