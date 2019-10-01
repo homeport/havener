@@ -34,6 +34,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+var watchCmdSettings struct {
+	namespaces []string
+}
+
 // watchCmd represents the top command
 var watchCmd = &cobra.Command{
 	Use:   "watch",
@@ -67,10 +71,12 @@ var watchCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(watchCmd)
+
+	watchCmd.PersistentFlags().StringSliceVarP(&watchCmdSettings.namespaces, "namespace", "n", []string{}, "comma separated list of namespaces to filter (default is to use all namespaces")
 }
 
 func printWatchList(hvnr havener.Havener) error {
-	pods, err := hvnr.ListPods()
+	pods, err := hvnr.ListPods(watchCmdSettings.namespaces...)
 	if err != nil {
 		return err
 	}
