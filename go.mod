@@ -9,7 +9,7 @@ require (
 	github.com/gonvenience/bunt v1.1.1
 	github.com/gonvenience/neat v1.0.5
 	github.com/gonvenience/term v1.0.0
-	github.com/gonvenience/text v1.0.3
+	github.com/gonvenience/text v1.0.5
 	github.com/gonvenience/wait v1.0.2
 	github.com/gonvenience/wrap v1.1.0
 	github.com/googleapis/gnostic v0.3.0 // indirect
@@ -21,7 +21,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/nbutton23/zxcvbn-go v0.0.0-20180912185939-ae427f1e4c1d
-	github.com/onsi/ginkgo v1.10.1
+	github.com/onsi/ginkgo v1.10.2
 	github.com/onsi/gomega v1.7.0
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.4.0
@@ -29,7 +29,7 @@ require (
 	golang.org/x/sys v0.0.0-20190726091711-fc99dfbffb4e
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/src-d/go-git.v4 v4.13.1
-	gopkg.in/yaml.v2 v2.2.3
+	gopkg.in/yaml.v2 v2.2.4
 	k8s.io/api v0.0.0-20190704095032-f4ca3d3bdf1d
 	k8s.io/apimachinery v0.0.0-20190704094733-8f6ac2502e51
 	k8s.io/client-go v0.0.0-20190704100234-640d9f240853

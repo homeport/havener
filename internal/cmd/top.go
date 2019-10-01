@@ -37,9 +37,8 @@ import (
 )
 
 var (
-	cycles                 = -1
-	interval               = 2
-	maxContainerNameLength = 64
+	cycles   = -1
+	interval = 2
 )
 
 // topCmd represents the top command
@@ -237,6 +236,10 @@ func renderTopContainers(topDetails *havener.TopDetails, maxNumberOfLines int) s
 		mem       int64
 	}
 
+	// In order to keep the output as compact as possible, set the maximum size
+	// for the container display name to fraction of the display width
+	maxContainerNameLength := term.GetTerminalWidth() / 5
+
 	topContainers, topContainersPerNode := func() ([]entry, map[string][]entry) {
 		perNode := map[string][]entry{}
 		for node := range topDetails.Nodes {
@@ -290,7 +293,7 @@ func renderTopContainers(topDetails *havener.TopDetails, maxNumberOfLines int) s
 
 		for _, entry := range topContainers[:maxNumberOfLines] {
 			table = append(table, []string{
-				renderContainerName(entry.namespace, entry.pod, entry.container),
+				renderContainerName(entry.namespace, entry.pod, entry.container, maxContainerNameLength),
 				fmt.Sprintf("%.2f", float64(entry.cpu)/1000),
 				humanReadableSize(entry.mem),
 			})
@@ -331,7 +334,7 @@ func renderTopContainers(topDetails *havener.TopDetails, maxNumberOfLines int) s
 
 				table = append(table, []string{
 					nodename,
-					renderContainerName(list[i].namespace, list[i].pod, list[i].container),
+					renderContainerName(list[i].namespace, list[i].pod, list[i].container, maxContainerNameLength),
 					fmt.Sprintf("%.2f", float64(list[i].cpu)/1000),
 					humanReadableSize(list[i].mem),
 				})
@@ -433,7 +436,7 @@ func sideBySide(left string, right string) string {
 	return out
 }
 
-func renderContainerName(namespace string, pod string, container string) string {
+func renderContainerName(namespace string, pod string, container string, maxContainerNameLength int) string {
 	return text.FixedLength(
 		bunt.Sprintf("%s/%s/%s",
 			namespace,
@@ -441,6 +444,7 @@ func renderContainerName(namespace string, pod string, container string) string 
 			container,
 		),
 		maxContainerNameLength,
+		bunt.Sprint(" DimGray{[...]}"),
 	)
 }
 
