@@ -61,6 +61,8 @@ github.com/gonvenience/term v1.0.0 h1:joCB/j0Ngmdakd3muuLgAGPMf7DNKdoe708c1I6RiB
 github.com/gonvenience/term v1.0.0/go.mod h1:wohD4Iqso9Eol7qc2VnNhSFFhZxok5PvO7pZhdrAn4E=
 github.com/gonvenience/text v1.0.2 h1:rjfc70ouuOak6h9yPyTN3VKh9hNwO+r+1coDsJIeTjs=
 github.com/gonvenience/text v1.0.2/go.mod h1:0duUTsGjuLgfqqYRxrpDgeTQlQtuSYTpzq9UZEXeUOA=
+github.com/gonvenience/text v1.0.3 h1:v+yWUSH1Qbc0wRtL7KMfKZWsG0M7mUJqGp+1qjsUqgo=
+github.com/gonvenience/text v1.0.3/go.mod h1:sV1+6AWdrMESmsIERyHyIUbnWaFKY9eyWat1gvF5OOE=
 github.com/gonvenience/wait v1.0.2 h1:DoA3qcw75/iYdxX/BvlKT3bMN1Mv5VPKHsTzA5Y1oLw=
 github.com/gonvenience/wait v1.0.2/go.mod h1:bTPf2sNDz6WXJ7jhN3jZRPqnpU7MVv175qlMJSx+0kI=
 github.com/gonvenience/wrap v1.0.0/go.mod h1:L47Cm1sK1G8QmFAYQfkHcF/sQ1IBJUa0u4sjqiLqPdM=
