@@ -35,6 +35,7 @@ import (
 )
 
 var watchCmdSettings struct {
+	interval   int
 	namespaces []string
 }
 
@@ -57,7 +58,7 @@ var watchCmd = &cobra.Command{
 			return err
 		}
 
-		var ticker = time.NewTicker(time.Duration(interval) * time.Second)
+		var ticker = time.NewTicker(time.Duration(watchCmdSettings.interval) * time.Second)
 		for {
 			select {
 			case <-ticker.C:
@@ -72,6 +73,7 @@ var watchCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(watchCmd)
 
+	watchCmd.PersistentFlags().IntVarP(&watchCmdSettings.interval, "interval", "i", 2, "interval between measurements in seconds")
 	watchCmd.PersistentFlags().StringSliceVarP(&watchCmdSettings.namespaces, "namespace", "n", []string{}, "comma separated list of namespaces to filter (default is to use all namespaces")
 }
 

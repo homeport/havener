@@ -36,10 +36,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	cycles   = -1
-	interval = 2
-)
+var topCmdSettings struct {
+	cycles   int
+	interval int
+}
 
 // topCmd represents the top command
 var topCmd = &cobra.Command{
@@ -50,14 +50,14 @@ var topCmd = &cobra.Command{
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Fall back to default interval if unsupported interval was specified
-		if interval <= 0 {
-			interval = 2
+		if topCmdSettings.interval <= 0 {
+			topCmdSettings.interval = 4
 		}
 
 		// Restrict the output to one single measurement in case of a dumb
 		// terminal or used inside Concourse
 		if term.IsDumbTerminal() || term.IsGardenContainer() {
-			cycles = 1
+			topCmdSettings.cycles = 1
 		}
 
 		hvnr, err := havener.NewHavener()
@@ -95,10 +95,10 @@ var topCmd = &cobra.Command{
 			return err
 		}
 
-		var ticker = time.NewTicker(time.Duration(interval) * time.Second)
+		var ticker = time.NewTicker(time.Duration(topCmdSettings.interval) * time.Second)
 		var timeout = make(<-chan time.Time)
-		if cycles > 0 {
-			timeout = time.After(time.Duration(interval*cycles) * time.Second)
+		if topCmdSettings.cycles > 0 {
+			timeout = time.After(time.Duration(topCmdSettings.interval*topCmdSettings.cycles) * time.Second)
 		}
 
 		for {
@@ -118,15 +118,15 @@ var topCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(topCmd)
 
-	topCmd.PersistentFlags().IntVarP(&cycles, "cycles", "c", -1, "number of cycles to run, negative numbers means infinite cycles")
-	topCmd.PersistentFlags().IntVarP(&interval, "interval", "i", 2, "interval between measurements in seconds")
+	topCmd.PersistentFlags().IntVarP(&topCmdSettings.cycles, "cycles", "c", -1, "number of cycles to run, negative numbers means infinite cycles")
+	topCmd.PersistentFlags().IntVarP(&topCmdSettings.interval, "interval", "i", 4, "interval between measurements in seconds")
 
 	topCmd.Flags().SortFlags = false
 	topCmd.PersistentFlags().SortFlags = false
 }
 
 func renderNodeDetails(topDetails *havener.TopDetails) string {
-	progressBarWidth, maxLength := func() (int, int) {
+	progressBarWidth, maxNodeNameLength := func() (int, int) {
 		var maxLength int
 		for name := range topDetails.Nodes {
 			if length := len(name); length > maxLength {
@@ -145,7 +145,7 @@ func renderNodeDetails(topDetails *havener.TopDetails) string {
 		cpuUsage := fmt.Sprintf("%.1f%%", float64(stats.UsedCPU)/float64(stats.TotalCPU)*100.0)
 		memUsage := fmt.Sprintf("%s/%s", humanReadableSize(stats.UsedMemory), humanReadableSize(stats.TotalMemory))
 		bunt.Fprintf(&buf, "%s  %s  %s\n",
-			fill(name, maxLength),
+			fill(name, maxNodeNameLength),
 			renderProgressBar(stats.UsedCPU, stats.TotalCPU, "CPU", cpuUsage, progressBarWidth),
 			renderProgressBar(stats.UsedMemory, stats.TotalMemory, "Memory", memUsage, progressBarWidth),
 		)

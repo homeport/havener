@@ -23,6 +23,8 @@ package havener
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/gonvenience/wrap"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -128,10 +130,36 @@ func (h *Hvnr) ListPods(namespaces ...string) (result []*corev1.Pod, err error) 
 }
 
 // ListNodes lists all nodes of the cluster
+// Deprecated: Use Havener interface function ListNodeNames instead
 func ListNodes(client kubernetes.Interface) ([]string, error) {
 	nodeList, err := client.CoreV1().Nodes().List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
+	}
+
+	result := make([]string, len(nodeList.Items))
+	for i, node := range nodeList.Items {
+		result[i] = node.Name
+	}
+
+	return result, nil
+}
+
+// ListNodes returns a list of the nodes in the cluster
+func (h *Hvnr) ListNodes() ([]corev1.Node, error) {
+	nodeList, err := h.client.CoreV1().Nodes().List(metav1.ListOptions{})
+	if err != nil {
+		return nil, wrap.Error(err, "failed to get list of nodes")
+	}
+
+	return nodeList.Items, nil
+}
+
+// ListNodeNames returns a list of the names of the nodes in the cluster
+func (h *Hvnr) ListNodeNames() ([]string, error) {
+	nodeList, err := h.client.CoreV1().Nodes().List(metav1.ListOptions{})
+	if err != nil {
+		return nil, wrap.Error(err, "failed to get list of nodes")
 	}
 
 	result := make([]string, len(nodeList.Items))
