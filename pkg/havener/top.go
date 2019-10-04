@@ -25,10 +25,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gonvenience/wrap"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/gonvenience/wrap"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 // NodeDetails consists of the used and total values for CPU and Memory
@@ -148,11 +149,12 @@ func (h *Hvnr) TopDetails() (*TopDetails, error) {
 
 	var (
 		wg      sync.WaitGroup
-		errChan = make(chan error, 2)
+		errChan = make(chan error)
 	)
 
 	wg.Add(2)
 
+	// Reach out to Kubernetes metrics service to get node details
 	go func() {
 		defer wg.Done()
 
@@ -176,6 +178,7 @@ func (h *Hvnr) TopDetails() (*TopDetails, error) {
 		}
 	}()
 
+	// Reach out to Kubernetes metrics service to get pod details
 	go func() {
 		defer wg.Done()
 
