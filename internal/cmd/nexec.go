@@ -90,9 +90,9 @@ func init() {
 }
 
 func execInClusterNodes(args []string) error {
-	client, restconfig, err := havener.OutOfClusterAuthentication("")
+	hvnr, err := havener.NewHavener()
 	if err != nil {
-		return wrap.Error(err, "failed to connect to Kubernetes cluster")
+		return wrap.Error(err, "unable to get access to cluster")
 	}
 
 	var (
@@ -104,20 +104,20 @@ func execInClusterNodes(args []string) error {
 	switch {
 	case len(args) >= 2: // node name and command is given
 		input, command = args[0], args[1:]
-		nodes, err = lookupNodesByName(client, input)
+		nodes, err = lookupNodesByName(hvnr.Client(), input)
 		if err != nil {
 			return err
 		}
 
 	case len(args) == 1: // only node name is given
 		input, command = args[0], []string{nodeDefaultCommand}
-		nodes, err = lookupNodesByName(client, input)
+		nodes, err = lookupNodesByName(hvnr.Client(), input)
 		if err != nil {
 			return err
 		}
 
 	default: // no arguments
-		return availableNodesError(client, "no node name and command specified")
+		return availableNodesError(hvnr.Client(), "no node name and command specified")
 	}
 
 	// In case the current process does not run in a terminal, disable the
@@ -128,9 +128,7 @@ func execInClusterNodes(args []string) error {
 
 	// Single node mode, use default streams and run node execute function
 	if len(nodes) == 1 {
-		return havener.NodeExec(
-			client,
-			restconfig,
+		return hvnr.NodeExec(
 			nodes[0],
 			nodeExecImage,
 			nodeExecTimeout,
@@ -160,9 +158,7 @@ func execInClusterNodes(args []string) error {
 				wg.Done()
 			}()
 
-			errors <- havener.NodeExec(
-				client,
-				restconfig,
+			errors <- hvnr.NodeExec(
 				node,
 				nodeExecImage,
 				nodeExecTimeout,

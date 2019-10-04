@@ -35,17 +35,14 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
 )
 
-/* TODO In general, more comments and explanations are required. */
-
 // PodExec executes the provided command in the referenced pod's container.
-func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.Pod, container string, command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
+func (h *Hvnr) PodExec(pod *corev1.Pod, container string, command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
 	logf(Verbose, "Executing command on pod: %#v", command)
 
-	req := client.CoreV1().RESTClient().Post().
+	req := h.client.CoreV1().RESTClient().Post().
 		Resource("pods").
 		Name(pod.Name).
 		Namespace(pod.Namespace).
@@ -59,7 +56,7 @@ func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.P
 			TTY:       tty,
 		}, scheme.ParameterCodec)
 
-	executor, err := remotecommand.NewSPDYExecutor(restconfig, "POST", req.URL())
+	executor, err := remotecommand.NewSPDYExecutor(h.restconfig, "POST", req.URL())
 	if err != nil {
 		return wrap.Error(err, "failed to initialize remote executor")
 	}
@@ -89,7 +86,7 @@ func PodExec(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.P
 }
 
 // NodeExec executes the provided command on the given node.
-func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node corev1.Node, containerImage string, timeoutSeconds int, command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
+func (h *Hvnr) NodeExec(node corev1.Node, containerImage string, timeoutSeconds int, command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
 	logf(Verbose, "Executing command on node: %#v", command)
 
 	namespace := "kube-system"
@@ -97,9 +94,9 @@ func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node corev1.
 	trueThat := true
 
 	// Make sure to stop pod after command execution
-	defer PurgePod(client, namespace, podName, 10, metav1.DeletePropagationForeground)
+	defer PurgePod(h.client, namespace, podName, 10, metav1.DeletePropagationForeground)
 	AddShutdownFunction(func() {
-		PurgePod(client, namespace, podName, 10, metav1.DeletePropagationBackground)
+		PurgePod(h.client, namespace, podName, 10, metav1.DeletePropagationBackground)
 	})
 
 	// Pod confoguration
@@ -127,20 +124,18 @@ func NodeExec(client kubernetes.Interface, restconfig *rest.Config, node corev1.
 
 	// Create pod in given namespace based on configuration
 	logf(Verbose, "Creating temporary pod %s in namespace %s", podName, namespace)
-	pod, err := client.CoreV1().Pods(namespace).Create(pod)
+	pod, err := h.client.CoreV1().Pods(namespace).Create(pod)
 	if err != nil {
 		return err
 	}
 
 	logf(Verbose, "Waiting for temporary pod to be started...")
-	if err := waitForPodReadiness(client, namespace, pod, timeoutSeconds); err != nil {
+	if err := waitForPodReadiness(h.client, namespace, pod, timeoutSeconds); err != nil {
 		return err
 	}
 
 	// Execute command on pod and redirect output to users provided stdout and stderr
-	return PodExec(
-		client,
-		restconfig,
+	return h.PodExec(
 		pod,
 		podName,
 		append([]string{"nsenter", "--target", "1", "--mount", "--uts", "--ipc", "--net", "--pid", "--"}, command...),

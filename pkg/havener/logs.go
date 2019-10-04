@@ -36,8 +36,6 @@ import (
 
 	"github.com/gonvenience/wrap"
 	yaml "gopkg.in/yaml.v2"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 // LogDirName is the subdirectory name where retrieved logs are stored
@@ -118,13 +116,13 @@ func ClusterName() (string, error) {
 
 // RetrieveLogs downloads log and configuration files from some well known location of all the pods
 // of all the namespaces and stored them in the local file system.
-func RetrieveLogs(client kubernetes.Interface, restconfig *rest.Config, parallelDownloads int, target string, includeConfigFiles bool) error {
+func (h *Hvnr) RetrieveLogs(parallelDownloads int, target string, includeConfigFiles bool) error {
 	clusterName, err := ClusterName()
 	if err != nil {
 		return err
 	}
 
-	namespaces, err := ListNamespaces(client)
+	namespaces, err := ListNamespaces(h.client)
 	if err != nil {
 		return err
 	}
@@ -149,7 +147,7 @@ func RetrieveLogs(client kubernetes.Interface, restconfig *rest.Config, parallel
 			for task := range tasks {
 				switch task.assignment {
 				case "known-logs":
-					for _, err := range retrieveFilesFromPod(client, restconfig, task.pod, task.baseDir, logFinds) {
+					for _, err := range h.retrieveFilesFromPod(task.pod, task.baseDir, logFinds) {
 						switch err {
 						case io.EOF, gzip.ErrHeader, gzip.ErrChecksum:
 							continue
@@ -161,7 +159,7 @@ func RetrieveLogs(client kubernetes.Interface, restconfig *rest.Config, parallel
 					}
 
 				case "config-files":
-					for _, err := range retrieveFilesFromPod(client, restconfig, task.pod, task.baseDir, cfgFinds) {
+					for _, err := range h.retrieveFilesFromPod(task.pod, task.baseDir, cfgFinds) {
 						switch err {
 						case io.EOF, gzip.ErrHeader, gzip.ErrChecksum:
 							continue
@@ -175,7 +173,7 @@ func RetrieveLogs(client kubernetes.Interface, restconfig *rest.Config, parallel
 				case "container-logs":
 					errors = append(
 						errors,
-						retrieveContainerLogs(client, task.pod, task.baseDir)...,
+						h.retrieveContainerLogs(task.pod, task.baseDir)...,
 					)
 				}
 			}
@@ -185,7 +183,7 @@ func RetrieveLogs(client kubernetes.Interface, restconfig *rest.Config, parallel
 	}
 
 	for _, namespace := range namespaces {
-		listResult, err := client.CoreV1().Pods(namespace).List(metav1.ListOptions{})
+		listResult, err := h.client.CoreV1().Pods(namespace).List(metav1.ListOptions{})
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -236,12 +234,12 @@ func RetrieveLogs(client kubernetes.Interface, restconfig *rest.Config, parallel
 	return nil
 }
 
-func retrieveFilesFromPod(client kubernetes.Interface, restconfig *rest.Config, pod *corev1.Pod, baseDir string, findCommands []string) []error {
+func (h *Hvnr) retrieveFilesFromPod(pod *corev1.Pod, baseDir string, findCommands []string) []error {
 	errors := []error{}
 
 	for _, container := range pod.Spec.Containers {
 		// Ignore all container that have no shell available
-		if err := PodExec(client, restconfig, pod, container.Name, []string{"/bin/sh", "-c", "true"}, nil, ioutil.Discard, nil, false); err != nil {
+		if err := h.PodExec(pod, container.Name, []string{"/bin/sh", "-c", "true"}, nil, ioutil.Discard, nil, false); err != nil {
 			continue
 		}
 
@@ -254,9 +252,7 @@ func retrieveFilesFromPod(client kubernetes.Interface, restconfig *rest.Config, 
 		read, write := io.Pipe()
 		go func() {
 			defer write.Close()
-			err := PodExec(
-				client,
-				restconfig,
+			err := h.PodExec(
 				pod,
 				container.Name,
 				[]string{"/bin/sh", "-c",
@@ -331,11 +327,11 @@ func untar(inputStream io.Reader, targetPath string) error {
 	}
 }
 
-func retrieveContainerLogs(client kubernetes.Interface, pod *corev1.Pod, baseDir string) []error {
+func (h *Hvnr) retrieveContainerLogs(pod *corev1.Pod, baseDir string) []error {
 	errors := []error{}
 
 	for _, container := range pod.Spec.Containers {
-		req := client.CoreV1().RESTClient().
+		req := h.client.CoreV1().RESTClient().
 			Get().
 			Namespace(pod.GetNamespace()).
 			Name(pod.Name).

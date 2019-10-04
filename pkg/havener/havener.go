@@ -30,6 +30,8 @@ this kind of workload.
 package havener
 
 import (
+	"io"
+
 	"github.com/gonvenience/wrap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -67,9 +69,16 @@ type Hvnr struct {
 // Havener is an interface to work with a cluster through the havener
 // abstraction layer
 type Havener interface {
+	Client() kubernetes.Interface
+	RESTConfig() *rest.Config
+	ClusterName() string
+
 	TopDetails() (*TopDetails, error)
 	ListPods(namespaces ...string) ([]*corev1.Pod, error)
-	ClusterName() string
+	RetrieveLogs(parallelDownloads int, target string, includeConfigFiles bool) error
+
+	PodExec(pod *corev1.Pod, container string, command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error
+	NodeExec(node corev1.Node, containerImage string, timeoutSeconds int, command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error
 }
 
 // NewHavener returns a new Havener handle to perform cluster actions
@@ -94,4 +103,14 @@ func NewHavener() (*Hvnr, error) {
 // ClusterName returns the name of the currently configured cluster
 func (h *Hvnr) ClusterName() string {
 	return h.clusterName
+}
+
+// Client returns the Kubernetes interface client for the configured cluster
+func (h *Hvnr) Client() kubernetes.Interface {
+	return h.client
+}
+
+// RESTConfig returns the REST config handle for the configured cluster
+func (h *Hvnr) RESTConfig() *rest.Config {
+	return h.restconfig
 }

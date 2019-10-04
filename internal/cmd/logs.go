@@ -63,7 +63,7 @@ func init() {
 }
 
 func retrieveClusterLogs() error {
-	clientSet, restconfig, err := havener.OutOfClusterAuthentication("")
+	hvnr, err := havener.NewHavener()
 	if err != nil {
 		return wrap.Error(err, "unable to get access to cluster")
 	}
@@ -85,9 +85,7 @@ func retrieveClusterLogs() error {
 
 	resultChan := make(chan error, 1)
 	go func() {
-		resultChan <- havener.RetrieveLogs(
-			clientSet,
-			restconfig,
+		resultChan <- hvnr.RetrieveLogs(
 			parallelDownloads,
 			downloadLocation,
 			!excludeConfigFiles,
