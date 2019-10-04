@@ -81,9 +81,9 @@ func init() {
 }
 
 func execInClusterPods(args []string) error {
-	client, restconfig, err := havener.OutOfClusterAuthentication("")
+	hvnr, err := havener.NewHavener()
 	if err != nil {
-		return wrap.Error(err, "failed to connect to Kubernetes cluster")
+		return wrap.Error(err, "unable to get access to cluster")
 	}
 
 	var (
@@ -95,20 +95,20 @@ func execInClusterPods(args []string) error {
 	switch {
 	case len(args) >= 2: // pod and command is given
 		input, command = args[0], args[1:]
-		podMap, err = lookupPodsByName(client, input)
+		podMap, err = lookupPodsByName(hvnr.Client(), input)
 		if err != nil {
 			return err
 		}
 
 	case len(args) == 1: // only pod is given
 		input, command = args[0], []string{podDefaultCommand}
-		podMap, err = lookupPodsByName(client, input)
+		podMap, err = lookupPodsByName(hvnr.Client(), input)
 		if err != nil {
 			return err
 		}
 
 	default:
-		return availablePodsError(client, "no pod name specified")
+		return availablePodsError(hvnr.Client(), "no pod name specified")
 	}
 
 	// In case the current process does not run in a terminal, disable the
@@ -120,9 +120,7 @@ func execInClusterPods(args []string) error {
 	// Single pod mode, use default streams and run pod execute function
 	if len(podMap) == 1 {
 		for pod, container := range podMap {
-			return havener.PodExec(
-				client,
-				restconfig,
+			return hvnr.PodExec(
 				pod,
 				container,
 				command,
@@ -154,9 +152,7 @@ func execInClusterPods(args []string) error {
 			}()
 
 			origin := fmt.Sprintf("%s/%s", pod.Name, container)
-			errors <- havener.PodExec(
-				client,
-				restconfig,
+			errors <- hvnr.PodExec(
 				pod,
 				container,
 				command,
