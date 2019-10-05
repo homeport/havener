@@ -33,7 +33,6 @@ import (
 	"github.com/gonvenience/wrap"
 	"golang.org/x/crypto/ssh/terminal"
 	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/remotecommand"
 )
@@ -89,55 +88,23 @@ func (h *Hvnr) PodExec(pod *corev1.Pod, container string, command []string, stdi
 func (h *Hvnr) NodeExec(node corev1.Node, containerImage string, timeoutSeconds int, command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
 	logf(Verbose, "Executing command on node: %#v", command)
 
-	namespace := "kube-system"
-	podName := text.RandomStringWithPrefix("node-exec-", 15) // Create unique pod/container name
-	trueThat := true
+	var (
+		podName   = text.RandomStringWithPrefix("node-exec-", 15) // unique pod name
+		namespace = "kube-system"
+	)
 
-	// Make sure to stop pod after command execution
-	defer PurgePod(h.client, namespace, podName, 10, metav1.DeletePropagationForeground)
-	AddShutdownFunction(func() {
-		PurgePod(h.client, namespace, podName, 10, metav1.DeletePropagationBackground)
-	})
-
-	// Pod confoguration
-	pod := &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      podName,
-			Namespace: namespace,
-		},
-		Spec: corev1.PodSpec{
-			NodeSelector:  map[string]string{"kubernetes.io/hostname": node.Name}, // Deploy pod on specific node using label selector
-			HostPID:       true,
-			RestartPolicy: corev1.RestartPolicyNever,
-			Containers: []corev1.Container{
-				{
-					Name:  podName,
-					Image: containerImage,
-					SecurityContext: &corev1.SecurityContext{
-						Privileged: &trueThat,
-					},
-					Stdin: stdin != nil,
-				},
-			},
-		},
-	}
-
-	// Create pod in given namespace based on configuration
-	logf(Verbose, "Creating temporary pod %s in namespace %s", podName, namespace)
-	pod, err := h.client.CoreV1().Pods(namespace).Create(pod)
+	pod, err := h.preparePodOnNode(node, namespace, podName, containerImage, timeoutSeconds, stdin != nil)
 	if err != nil {
 		return err
 	}
 
-	logf(Verbose, "Waiting for temporary pod to be started...")
-	if err := waitForPodReadiness(h.client, namespace, pod, timeoutSeconds); err != nil {
-		return err
-	}
+	// Make sure to stop pod after command execution
+	defer PurgePod(h.client, pod.Namespace, pod.Name, 10, metav1.DeletePropagationForeground)
 
 	// Execute command on pod and redirect output to users provided stdout and stderr
 	return h.PodExec(
 		pod,
-		podName,
+		"node-exec-container",
 		append([]string{"nsenter", "--target", "1", "--mount", "--uts", "--ipc", "--net", "--pid", "--"}, command...),
 		stdin,
 		stdout,
@@ -146,8 +113,54 @@ func (h *Hvnr) NodeExec(node corev1.Node, containerImage string, timeoutSeconds 
 	)
 }
 
-func waitForPodReadiness(client kubernetes.Interface, namespace string, pod *corev1.Pod, timeoutSeconds int) error {
-	watcher, err := client.CoreV1().Pods(namespace).Watch(metav1.SingleObject(pod.ObjectMeta))
+func (h *Hvnr) preparePodOnNode(node corev1.Node, namespace string, name string, containerImage string, timeoutSeconds int, useStdin bool) (*corev1.Pod, error) {
+	trueThat := true
+
+	// Add pod deletion to shutdown sequence list (in case of Ctrl+C exit)
+	AddShutdownFunction(func() {
+		PurgePod(h.client, namespace, name, 10, metav1.DeletePropagationBackground)
+	})
+
+	// Pod confoguration
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: corev1.PodSpec{
+			NodeSelector:  map[string]string{"kubernetes.io/hostname": node.Name}, // Deploy pod on specific node using label selector
+			HostPID:       true,
+			RestartPolicy: corev1.RestartPolicyNever,
+			Containers: []corev1.Container{
+				{
+					Name:  "node-exec-container",
+					Image: containerImage,
+					Stdin: useStdin,
+					SecurityContext: &corev1.SecurityContext{
+						Privileged: &trueThat,
+					},
+				},
+			},
+		},
+	}
+
+	// Create pod in given namespace based on configuration
+	logf(Verbose, "Creating temporary pod *%s* in namespace *%s*", name, namespace)
+	pod, err := h.client.CoreV1().Pods(namespace).Create(pod)
+	if err != nil {
+		return nil, err
+	}
+
+	logf(Verbose, "Waiting for temporary pod to be started...")
+	if err := h.waitForPodReadiness(namespace, pod, timeoutSeconds); err != nil {
+		return nil, err
+	}
+
+	return pod, nil
+}
+
+func (h *Hvnr) waitForPodReadiness(namespace string, pod *corev1.Pod, timeoutSeconds int) error {
+	watcher, err := h.client.CoreV1().Pods(namespace).Watch(metav1.SingleObject(pod.ObjectMeta))
 	if err != nil {
 		return err
 	}
