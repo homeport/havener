@@ -31,8 +31,10 @@ package havener
 
 import (
 	"io"
+	"time"
 
 	"github.com/gonvenience/wrap"
+	"golang.org/x/sync/syncmap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -43,20 +45,25 @@ import (
 // corev1 "k8s.io/api/core/v1"
 // metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-var onShutdownFuncs = []func(){}
+var m = new(syncmap.Map)
 
 // AddShutdownFunction adds a function to be called in case GracefulShutdown is
 // called, for example to clean up resources.
 func AddShutdownFunction(f func()) {
-	onShutdownFuncs = append(onShutdownFuncs, f)
+	m.Store(time.Now().String(), f)
 }
 
 // GracefulShutdown brings down the havener package by going through registered
 // on-shutdown functions.
 func GracefulShutdown() {
-	for _, f := range onShutdownFuncs {
-		f()
-	}
+	m.Range(func(key, value interface{}) bool {
+		switch f := value.(type) {
+		case func():
+			f()
+		}
+
+		return true
+	})
 }
 
 // Hvnr is the internal handle to consolidate required cluster access variables
