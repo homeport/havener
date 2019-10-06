@@ -33,6 +33,7 @@ import (
 	"github.com/gonvenience/term"
 	"github.com/gonvenience/text"
 	"github.com/homeport/havener/pkg/havener"
+	colorful "github.com/lucasb-eyer/go-colorful"
 	"github.com/spf13/cobra"
 )
 
@@ -74,7 +75,7 @@ var topCmd = &cobra.Command{
 				return err
 			}
 
-			nodeDetails := renderNodeDetails(top)
+			nodeDetails := RenderNodeDetails(top)
 			namespaceDetails := renderNamespaceDetails(top)
 			availableLines := term.GetTerminalHeight() - lines(nodeDetails) - lines(namespaceDetails)
 			topContainers := renderTopContainers(top, availableLines-1)
@@ -125,8 +126,9 @@ func init() {
 	topCmd.PersistentFlags().SortFlags = false
 }
 
-func renderNodeDetails(topDetails *havener.TopDetails) string {
-	progressBarWidth, maxNodeNameLength := func() (int, int) {
+// RenderNodeDetails renders a box with usage details per node
+func RenderNodeDetails(topDetails *havener.TopDetails) string {
+	maxNodeNameLength := func() int {
 		var maxLength int
 		for name := range topDetails.Nodes {
 			if length := len(name); length > maxLength {
@@ -134,9 +136,28 @@ func renderNodeDetails(topDetails *havener.TopDetails) string {
 			}
 		}
 
-		// Subtract 6, 2 for the prefix, and 4 more for spaces
-		return (term.GetTerminalWidth() - maxLength - 6) / 2, maxLength
+		return maxLength
 	}()
+
+	var loadAvgStrings = map[string]string{}
+	for name, node := range topDetails.Nodes {
+		loadAvgStrings[name] = renderLoadAvg("Load", node)
+	}
+
+	maxLoadAvgStringLength := func() int {
+		var maxLength int
+		for _, value := range loadAvgStrings {
+			if length := bunt.PlainTextLength(value); length > maxLength {
+				maxLength = length
+			}
+		}
+
+		return maxLength
+	}()
+
+	// Based on the terminal width, subtract 2 for the prefix, 6 for the spaces
+	// and the respective longest name and load string
+	progressBarWidth := (term.GetTerminalWidth() - 2 - maxNodeNameLength - maxLoadAvgStringLength - 6) / 2
 
 	var buf bytes.Buffer
 	for _, name := range sortedNodeList(topDetails) {
@@ -144,8 +165,9 @@ func renderNodeDetails(topDetails *havener.TopDetails) string {
 
 		cpuUsage := fmt.Sprintf("%.1f%%", float64(stats.UsedCPU)/float64(stats.TotalCPU)*100.0)
 		memUsage := fmt.Sprintf("%s/%s", humanReadableSize(stats.UsedMemory), humanReadableSize(stats.TotalMemory))
-		bunt.Fprintf(&buf, "%s  %s  %s\n",
+		bunt.Fprintf(&buf, "%s  %s  %s  %s\n",
 			fill(name, maxNodeNameLength),
+			fill(loadAvgStrings[name], maxLoadAvgStringLength),
 			renderProgressBar(stats.UsedCPU, stats.TotalCPU, "CPU", cpuUsage, progressBarWidth),
 			renderProgressBar(stats.UsedMemory, stats.TotalMemory, "Memory", memUsage, progressBarWidth),
 		)
@@ -505,6 +527,29 @@ func renderProgressBar(value int64, max int64, caption string, text string, leng
 	}
 
 	return buf.String()
+}
+
+func renderLoadAvg(caption string, stats havener.NodeDetails) string {
+	colorForLoad := func(value float64, max float64) colorful.Color {
+		switch {
+		case value > max:
+			return bunt.Red
+
+		default:
+			return bunt.Gray.BlendLab(
+				bunt.Red,
+				0.5*(1.0-math.Cos(math.Pow(value/max, 2)*math.Pi)),
+			)
+		}
+	}
+
+	cores := float64(stats.TotalCPU / 1000)
+	return bunt.Sprintf("*%s* %s %s %s",
+		caption,
+		bunt.Style(fmt.Sprintf("%.1f", stats.LoadAvg[0]), bunt.Foreground(colorForLoad(stats.LoadAvg[0], cores))),
+		bunt.Style(fmt.Sprintf("%.1f", stats.LoadAvg[1]), bunt.Foreground(colorForLoad(stats.LoadAvg[1], cores))),
+		bunt.Style(fmt.Sprintf("%.1f", stats.LoadAvg[2]), bunt.Foreground(colorForLoad(stats.LoadAvg[2], cores))),
+	)
 }
 
 func humanReadableSize(bytes int64) string {

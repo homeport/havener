@@ -21,7 +21,11 @@
 package havener
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -38,6 +42,7 @@ type NodeDetails struct {
 	TotalCPU    int64
 	UsedMemory  int64
 	TotalMemory int64
+	LoadAvg     []float64
 }
 
 // ContainerDetails consists of the used values for CPU and Memory of a
@@ -152,7 +157,7 @@ func (h *Hvnr) TopDetails() (*TopDetails, error) {
 		errChan = make(chan error)
 	)
 
-	wg.Add(2)
+	wg.Add(2 + len(nodeList.Items))
 
 	// Reach out to Kubernetes metrics service to get node details
 	go func() {
@@ -204,6 +209,45 @@ func (h *Hvnr) TopDetails() (*TopDetails, error) {
 		}
 	}()
 
+	for _, node := range nodeList.Items {
+		go func(node corev1.Node) {
+			defer wg.Done()
+
+			podname := fmt.Sprintf("havener-usage-retriever-%s", node.Name)
+			pod, err := h.client.CoreV1().Pods("kube-system").Get(podname, metav1.GetOptions{})
+			if err != nil {
+				pod, err = h.preparePodOnNode(node, "kube-system", podname, "alpine", 5, true)
+				if err != nil {
+					errChan <- err
+				}
+			}
+
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+			err = h.PodExec(
+				pod,
+				"node-exec-container",
+				[]string{"nsenter", "--target", "1", "--mount", "--uts", "--ipc", "--net", "--pid", "--", "/bin/cat", "/proc/loadavg"},
+				strings.NewReader(""),
+				&stdout,
+				&stderr,
+				false,
+			)
+
+			if err != nil {
+				errChan <- wrap.Error(
+					fmt.Errorf(stderr.String()),
+					err.Error(),
+				)
+			}
+
+			nodeDetails := result.Nodes[node.Name]
+			nodeDetails.LoadAvg = parseProcLoadAvg(stdout.String())
+			result.Nodes[node.Name] = nodeDetails
+
+		}(node)
+	}
+
 	wg.Wait()
 	close(errChan)
 
@@ -222,4 +266,12 @@ func (h *Hvnr) TopDetails() (*TopDetails, error) {
 func parseQuantity(input string) *resource.Quantity {
 	quantity := resource.MustParse(input)
 	return &quantity
+}
+
+func parseProcLoadAvg(input string) []float64 {
+	parts := strings.Split(input, " ")
+	l1, _ := strconv.ParseFloat(parts[0], 64)
+	l5, _ := strconv.ParseFloat(parts[1], 64)
+	l15, _ := strconv.ParseFloat(parts[2], 64)
+	return []float64{l1, l5, l15}
 }
