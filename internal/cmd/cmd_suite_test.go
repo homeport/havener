@@ -25,9 +25,26 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/gonvenience/bunt"
+	"github.com/gonvenience/term"
 )
 
 func TestCmd(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Havener Command Package Suite")
 }
+
+var _ = BeforeSuite(func() {
+	bunt.ColorSetting = bunt.OFF
+	bunt.TrueColorSetting = bunt.OFF
+	term.FixedTerminalWidth = 120
+	term.FixedTerminalHeight = 40
+})
+
+var _ = AfterSuite(func() {
+	bunt.ColorSetting = bunt.AUTO
+	bunt.TrueColorSetting = bunt.AUTO
+	term.FixedTerminalWidth = -1
+	term.FixedTerminalHeight = -1
+})
