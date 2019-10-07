@@ -95,7 +95,7 @@ func NewHavener() (*Hvnr, error) {
 		return nil, wrap.Error(err, "unable to get access to cluster")
 	}
 
-	clusterName, err := ClusterName()
+	clusterName, err := clusterName()
 	if err != nil {
 		return nil, wrap.Error(err, "unable to get cluster name")
 	}
