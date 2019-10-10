@@ -182,8 +182,8 @@ func (h *Hvnr) ListConfigMaps(namespaces ...string) (result []*corev1.ConfigMap,
 	return result, nil
 }
 
-// ListCRDItems lists all instances of an specific CRD
-func (h *Hvnr) ListCRDItems(crdName string) (result []unstructured.Unstructured, err error) {
+// ListCustomResourceDefinition lists all instances of an specific CRD
+func (h *Hvnr) ListCustomResourceDefinition(crdName string) (result []unstructured.Unstructured, err error) {
 
 	var runtimeClassGVR schema.GroupVersionResource
 

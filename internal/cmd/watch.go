@@ -53,6 +53,10 @@ var watchCmd = &cobra.Command{
 			return err
 		}
 
+		if watchCmdSettings.crd != "" && watchCmdSettings.resource != "" {
+			return errors.New("--resource and --crd flags cannot be specified simultaneously")
+		}
+
 		term.HideCursor()
 		defer term.ShowCursor()
 
@@ -83,10 +87,6 @@ func init() {
 
 func printWatchList(hvnr havener.Havener) (err error) {
 	var out string
-
-	if watchCmdSettings.crd != "" && watchCmdSettings.resource != "" {
-		return errors.New("--resource and --crd flags cannot be specified simultaneously")
-	}
 
 	if watchCmdSettings.crd != "" {
 		out, err = generateCRDTable(hvnr)
@@ -295,7 +295,7 @@ func generateCRDTable(hvnr havener.Havener) (string, error) {
 	var (
 		tableSec = [][]string{}
 	)
-	bdplList, err := hvnr.ListCRDItems(watchCmdSettings.crd)
+	bdplList, err := hvnr.ListCustomResourceDefinition(watchCmdSettings.crd)
 	if err != nil {
 		return "", err
 	}

@@ -89,7 +89,7 @@ type Havener interface {
 	NodeExec(node corev1.Node, containerImage string, timeoutSeconds int, command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error
 	ListSecrets(namespaces ...string) ([]*corev1.Secret, error)
 	ListConfigMaps(namespaces ...string) ([]*corev1.ConfigMap, error)
-	ListCRDItems(string) ([]unstructured.Unstructured, error)
+	ListCustomResourceDefinition(string) ([]unstructured.Unstructured, error)
 }
 
 // NewHavener returns a new Havener handle to perform cluster actions
