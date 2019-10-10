@@ -16,10 +16,8 @@ require (
 	github.com/homeport/dyff v0.10.3
 	github.com/homeport/ytbx v1.1.2
 	github.com/imdario/mergo v0.3.7 // indirect
-	github.com/json-iterator/go v1.1.7 // indirect
 	github.com/lucasb-eyer/go-colorful v1.0.2
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/nbutton23/zxcvbn-go v0.0.0-20180912185939-ae427f1e4c1d
 	github.com/onsi/ginkgo v1.10.2
 	github.com/onsi/gomega v1.7.0
@@ -31,9 +29,16 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/src-d/go-git.v4 v4.13.1
 	gopkg.in/yaml.v2 v2.2.4
-	k8s.io/api v0.0.0-20190704095032-f4ca3d3bdf1d
-	k8s.io/apimachinery v0.0.0-20190704094733-8f6ac2502e51
-	k8s.io/client-go v0.0.0-20190704100234-640d9f240853
-	k8s.io/utils v0.0.0-20190712204705-3dccf664f023 // indirect
-	sigs.k8s.io/yaml v1.1.0 // indirect
+	k8s.io/api v0.0.0-20191005115622-2e41325d9e4b
+	k8s.io/apimachinery v0.0.0-20191006235458-f9f2f3f8ab02
+	k8s.io/cli-runtime v0.0.0-20191005121332-4d28aef60981
+	k8s.io/client-go v0.0.0-20191006235818-c918cd02a1a3
+	k8s.io/kubectl v0.0.0-20191007002032-340a90f4c38f
+)
+
+replace (
+	golang.org/x/crypto => github.com/golang/crypto v0.0.0-20191002192127-34f69633bfdc
+	golang.org/x/net => github.com/golang/net v0.0.0-20191007182048-72f939374954
+	golang.org/x/sync => github.com/golang/sync v0.0.0-20190911185100-cd5d95a43a6e
+	golang.org/x/sys => github.com/golang/sys v0.0.0-20191008105621-543471e840be
 )

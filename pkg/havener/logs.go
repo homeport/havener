@@ -22,20 +22,25 @@ package havener
 
 import (
 	"archive/tar"
+	"bytes"
 	"compress/gzip"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/gonvenience/wrap"
-	yaml "gopkg.in/yaml.v2"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/cli-runtime/pkg/printers"
+	"k8s.io/client-go/rest"
+	"k8s.io/kubectl/pkg/describe"
+	"k8s.io/kubectl/pkg/describe/versioned"
 )
 
 // LogDirName is the subdirectory name where retrieved logs are stored
@@ -88,45 +93,9 @@ func createDirectory(path string) error {
 	return nil
 }
 
-// ClusterName returns the name of the (first) cluster defined in the Kubernetes configuration file.
-func ClusterName() (string, error) {
-	data, err := ioutil.ReadFile(getKubeConfig())
-	if err != nil {
-		return "", err
-	}
-
-	var cfg map[string]interface{}
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return "", err
-	}
-
-	for _, entry := range cfg["clusters"].([]interface{}) {
-		switch entry.(type) {
-		case map[interface{}]interface{}:
-			for key, value := range entry.(map[interface{}]interface{}) {
-				if key == "name" {
-					return value.(string), nil
-				}
-			}
-		}
-	}
-
-	return "", fmt.Errorf("unable to determine cluster name based on Kubernetes configuration")
-}
-
 // RetrieveLogs downloads log and configuration files from some well known location of all the pods
 // of all the namespaces and stored them in the local file system.
 func (h *Hvnr) RetrieveLogs(parallelDownloads int, target string, includeConfigFiles bool) error {
-	clusterName, err := ClusterName()
-	if err != nil {
-		return err
-	}
-
-	namespaces, err := ListNamespaces(h.client)
-	if err != nil {
-		return err
-	}
-
 	if absolute, err := filepath.Abs(target); err == nil {
 		target = absolute
 	}
@@ -144,6 +113,7 @@ func (h *Hvnr) RetrieveLogs(parallelDownloads int, target string, includeConfigF
 	wg.Add(parallelDownloads)
 	for i := 0; i < parallelDownloads; i++ {
 		go func() {
+			defer wg.Done()
 			for task := range tasks {
 				switch task.assignment {
 				case "known-logs":
@@ -175,50 +145,81 @@ func (h *Hvnr) RetrieveLogs(parallelDownloads int, target string, includeConfigF
 						errors,
 						h.retrieveContainerLogs(task.pod, task.baseDir)...,
 					)
+
+				case "describe-pods":
+					if err := h.describePod(task.pod, task.baseDir); err != nil {
+						errors = append(errors, err)
+					}
+
+				case "store-yaml":
+					if err := h.saveDeploymentYAML(task.pod, task.baseDir); err != nil {
+						errors = append(errors, err)
+					}
 				}
 			}
-
-			wg.Done()
 		}()
 	}
 
-	for _, namespace := range namespaces {
-		listResult, err := h.client.CoreV1().Pods(namespace).List(metav1.ListOptions{})
-		if err != nil {
-			errors = append(errors, err)
-			continue
-		}
+	pods, err := h.ListPods()
+	if err != nil {
+		return err
+	}
 
+	sort.Slice(pods, func(i, j int) bool {
+		return pods[i].CreationTimestamp.
+			After(pods[j].CreationTimestamp.Time)
+	})
+
+	var clusterName = h.ClusterName()
+	for idx := range pods {
+		pod := pods[idx]
 		baseDir := filepath.Join(
 			target,
 			LogDirName,
 			clusterName,
-			namespace,
+			pod.Namespace,
 		)
 
-		for p := range listResult.Items {
-			// In any case, download the container logs
+		// Create an empty directory for the pod details
+		if err := createDirectory(filepath.Join(baseDir, pod.Name)); err != nil {
+			return err
+		}
+
+		// Store the describe output of the pod
+		tasks <- &task{
+			assignment: "describe-pods",
+			pod:        pod,
+			baseDir:    baseDir,
+		}
+
+		// Store the deployment YAML of the pod
+		tasks <- &task{
+			assignment: "store-yaml",
+			pod:        pod,
+			baseDir:    baseDir,
+		}
+
+		if pod.Status.Phase == corev1.PodRunning {
+			// Download the container logs
 			tasks <- &task{
 				assignment: "container-logs",
-				pod:        &listResult.Items[p],
+				pod:        pod,
 				baseDir:    baseDir,
 			}
 
-			if listResult.Items[p].Status.Phase == corev1.PodRunning {
-				// For running pods, download known log files
-				tasks <- &task{
-					assignment: "known-logs",
-					pod:        &listResult.Items[p],
-					baseDir:    baseDir,
-				}
+			// For running pods, download known log files
+			tasks <- &task{
+				assignment: "known-logs",
+				pod:        pod,
+				baseDir:    baseDir,
+			}
 
-				// For running pods, download configuration file
-				if includeConfigFiles {
-					tasks <- &task{
-						assignment: "config-files",
-						pod:        &listResult.Items[p],
-						baseDir:    baseDir,
-					}
+			// For running pods, download configuration file
+			if includeConfigFiles {
+				tasks <- &task{
+					assignment: "config-files",
+					pod:        pod,
+					baseDir:    baseDir,
 				}
 			}
 		}
@@ -330,41 +331,93 @@ func untar(inputStream io.Reader, targetPath string) error {
 func (h *Hvnr) retrieveContainerLogs(pod *corev1.Pod, baseDir string) []error {
 	errors := []error{}
 
-	for _, container := range pod.Spec.Containers {
+	streamToFile := func(req *rest.Request, filename string) error {
+		readCloser, err := req.Stream()
+		if err != nil {
+			return err
+		}
+
+		defer readCloser.Close()
+
+		file, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR, os.FileMode(0644))
+		if err != nil {
+			return err
+		}
+
+		if _, err := io.Copy(file, readCloser); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	for _, container := range append(pod.Spec.InitContainers, pod.Spec.Containers...) {
 		req := h.client.CoreV1().RESTClient().
 			Get().
 			Namespace(pod.GetNamespace()).
 			Name(pod.Name).
 			Resource("pods").
 			SubResource("log").
-			Param("container", container.Name)
+			Param("container", container.Name).
+			Param("timestamps", strconv.FormatBool(true))
 
-		readCloser, err := req.Stream()
-		if err != nil {
-			errors = append(errors, err)
-			continue
-		}
-
-		defer readCloser.Close()
-
-		targetDir := filepath.Join(baseDir, pod.Name)
-		if err := createDirectory(targetDir); err != nil {
-			errors = append(errors, err)
-			continue
-		}
-
-		target := filepath.Join(targetDir, container.Name+".log")
-		file, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(0644))
-		if err != nil {
-			errors = append(errors, err)
-			continue
-		}
-
-		if _, err := io.Copy(file, readCloser); err != nil {
+		filename := filepath.Join(baseDir, pod.Name, container.Name+".log")
+		if err := streamToFile(req, filename); err != nil {
 			errors = append(errors, err)
 			continue
 		}
 	}
 
 	return errors
+}
+
+func (h *Hvnr) describePod(pod *corev1.Pod, baseDir string) error {
+	if describer, ok := versioned.DescriberFor(schema.GroupKind{Group: corev1.GroupName, Kind: "Pod"}, h.restconfig); ok {
+		output, err := describer.Describe(
+			pod.Namespace,
+			pod.Name,
+			describe.DescriberSettings{
+				ShowEvents: true,
+			},
+		)
+
+		if err != nil {
+			return err
+		}
+
+		return ioutil.WriteFile(
+			filepath.Join(baseDir, pod.Name, "pod-describe.output"),
+			[]byte(output),
+			0644,
+		)
+	}
+
+	return nil
+}
+
+func (h *Hvnr) saveDeploymentYAML(pod *corev1.Pod, baseDir string) error {
+	// Whatever GroupVersionKind really is, but if it is empty the printer will
+	// refuse to work, so set `Kind` and `Version` with reasonable defaults
+	// knowing that this will only be pods.
+	if pod.GetObjectKind().GroupVersionKind().Empty() {
+		pod.GetObjectKind().SetGroupVersionKind(schema.GroupVersionKind{
+			Kind:    "Pod",
+			Version: "v1",
+		})
+	}
+
+	var (
+		printer printers.YAMLPrinter
+		buf     bytes.Buffer
+	)
+
+	if err := printer.PrintObj(pod, &buf); err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(
+		filepath.Join(baseDir, pod.Name, "pod.yaml"),
+		buf.Bytes(),
+		0644,
+	)
 }

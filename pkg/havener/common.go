@@ -145,3 +145,28 @@ func isSystemNamespace(namespace string) bool {
 
 	return false
 }
+
+func clusterName() (string, error) {
+	data, err := ioutil.ReadFile(getKubeConfig())
+	if err != nil {
+		return "", err
+	}
+
+	var cfg map[string]interface{}
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return "", err
+	}
+
+	for _, entry := range cfg["clusters"].([]interface{}) {
+		switch entry.(type) {
+		case map[interface{}]interface{}:
+			for key, value := range entry.(map[interface{}]interface{}) {
+				if key == "name" {
+					return value.(string), nil
+				}
+			}
+		}
+	}
+
+	return "", fmt.Errorf("unable to determine cluster name based on Kubernetes configuration")
+}
