@@ -405,9 +405,10 @@ func sortedNodeList(topDetails *havener.TopDetails) []string {
 }
 
 func fill(text string, length int) string {
+	var textLength = bunt.PlainTextLength(text)
 	switch {
-	case len(text) < length:
-		return text + strings.Repeat(" ", length-len(text))
+	case textLength < length:
+		return text + strings.Repeat(" ", length-textLength)
 
 	default:
 		return text
