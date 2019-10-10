@@ -21,10 +21,15 @@
 package havener
 
 import (
+	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/gonvenience/wrap"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -127,6 +132,79 @@ func (h *Hvnr) ListPods(namespaces ...string) (result []*corev1.Pod, err error) 
 	}
 
 	return result, nil
+}
+
+// ListSecrets lists all secrets in the given namespaces, if no namespace is given,
+// then all namespaces currently available in the cluster will be used
+func (h *Hvnr) ListSecrets(namespaces ...string) (result []*corev1.Secret, err error) {
+	if len(namespaces) == 0 {
+		namespaces, err = ListNamespaces(h.client)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	for _, namespace := range namespaces {
+		listResp, err := h.client.CoreV1().Secrets(namespace).List(metav1.ListOptions{})
+		if err != nil {
+			return nil, err
+		}
+
+		for i := range listResp.Items {
+			result = append(result, &listResp.Items[i])
+		}
+	}
+
+	return result, nil
+}
+
+// ListConfigMaps lists all confimaps in the given namespaces, if no namespace is given,
+// then all namespaces currently available in the cluster will be used
+func (h *Hvnr) ListConfigMaps(namespaces ...string) (result []*corev1.ConfigMap, err error) {
+	if len(namespaces) == 0 {
+		namespaces, err = ListNamespaces(h.client)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	for _, namespace := range namespaces {
+		listResp, err := h.client.CoreV1().ConfigMaps(namespace).List(metav1.ListOptions{})
+		if err != nil {
+			return nil, err
+		}
+
+		for i := range listResp.Items {
+			result = append(result, &listResp.Items[i])
+		}
+	}
+
+	return result, nil
+}
+
+// ListCustomResourceDefinition lists all instances of an specific CRD
+func (h *Hvnr) ListCustomResourceDefinition(crdName string) (result []unstructured.Unstructured, err error) {
+
+	var runtimeClassGVR schema.GroupVersionResource
+
+	apiResourceList, err := h.client.Discovery().ServerResources()
+	if err != nil {
+		return nil, err
+	}
+
+	crdExist, runtimeClassGVR := apiCRDResourceExist(apiResourceList, crdName)
+
+	if crdExist {
+		client, _ := dynamic.NewForConfig(h.restconfig)
+		list, _ := client.Resource(runtimeClassGVR).List(metav1.ListOptions{})
+
+		for i := range list.Items {
+			result = append(result, list.Items[i])
+		}
+		return result, nil
+	}
+
+	return result, fmt.Errorf("desired resource %s, was not found", crdName)
 }
 
 // ListNodes lists all nodes of the cluster

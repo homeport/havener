@@ -36,6 +36,7 @@ import (
 	"github.com/gonvenience/wrap"
 	"golang.org/x/sync/syncmap"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -86,6 +87,9 @@ type Havener interface {
 
 	PodExec(pod *corev1.Pod, container string, command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error
 	NodeExec(node corev1.Node, containerImage string, timeoutSeconds int, command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error
+	ListSecrets(namespaces ...string) ([]*corev1.Secret, error)
+	ListConfigMaps(namespaces ...string) ([]*corev1.ConfigMap, error)
+	ListCustomResourceDefinition(string) ([]unstructured.Unstructured, error)
 }
 
 // NewHavener returns a new Havener handle to perform cluster actions
