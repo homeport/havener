@@ -56,6 +56,9 @@ docker-build-test:
 # to test them, e.g. proper CI.
 test: lint misspell vet unit-test
 
+gen-docs:
+	go run internal/docs.go
+
 build:
 	@scripts/build.sh --local
 
