@@ -531,6 +531,10 @@ func renderProgressBar(value int64, max int64, caption string, text string, leng
 }
 
 func renderLoadAvg(caption string, stats havener.NodeDetails) string {
+	if len(stats.LoadAvg) == 0 {
+		return bunt.Sprintf("*%s* DimGray{_(no data)_}", caption)
+	}
+
 	colorForLoad := func(value float64, max float64) colorful.Color {
 		switch {
 		case value > max:

@@ -223,8 +223,12 @@ func (h *Hvnr) TopDetails() (*TopDetails, error) {
 			if err != nil {
 				pod, err = h.preparePodOnNode(node, "kube-system", podname, "alpine", 5, true)
 				if err != nil {
-					errChan <- err
+					return
 				}
+			}
+
+			if pod.Status.Phase == corev1.PodPending {
+				return
 			}
 
 			var stdout bytes.Buffer
