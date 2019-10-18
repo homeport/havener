@@ -157,3 +157,8 @@ func exitWithErrorAndIssue(msg string, err error) {
 
 	os.Exit(1)
 }
+
+// NewHvnrRootCmd returns the cobra base cmd
+func NewHvnrRootCmd() *cobra.Command {
+	return rootCmd
+}
