@@ -55,6 +55,7 @@ type ContainerDetails struct {
 
 // TopDetails contains the top statistics and data of Kubernetes resources
 type TopDetails struct {
+	sync.Mutex
 	Nodes      map[string]NodeDetails
 	Containers map[string]map[string]map[string]ContainerDetails
 }
@@ -175,12 +176,14 @@ func (h *Hvnr) TopDetails() (*TopDetails, error) {
 			return
 		}
 
+		result.Lock()
 		for _, node := range nodeMetrics.Items {
 			nodeDetails := result.Nodes[node.Metadata.Name]
 			nodeDetails.UsedCPU = parseQuantity(node.Usage.CPU).MilliValue()
 			nodeDetails.UsedMemory = parseQuantity(node.Usage.Memory).Value()
 			result.Nodes[node.Metadata.Name] = nodeDetails
 		}
+		result.Unlock()
 	}()
 
 	// Reach out to Kubernetes metrics service to get pod details
@@ -199,6 +202,7 @@ func (h *Hvnr) TopDetails() (*TopDetails, error) {
 			return
 		}
 
+		result.Lock()
 		for _, pod := range podMetrics.Items {
 			for _, container := range pod.Containers {
 				tmp := result.Containers[pod.Metadata.Namespace][pod.Metadata.Name][container.Name]
@@ -207,6 +211,7 @@ func (h *Hvnr) TopDetails() (*TopDetails, error) {
 				result.Containers[pod.Metadata.Namespace][pod.Metadata.Name][container.Name] = tmp
 			}
 		}
+		result.Unlock()
 	}()
 
 	for _, node := range nodeList.Items {
@@ -241,10 +246,11 @@ func (h *Hvnr) TopDetails() (*TopDetails, error) {
 				)
 			}
 
+			result.Lock()
 			nodeDetails := result.Nodes[node.Name]
 			nodeDetails.LoadAvg = parseProcLoadAvg(stdout.String())
 			result.Nodes[node.Name] = nodeDetails
-
+			result.Unlock()
 		}(node)
 	}
 
