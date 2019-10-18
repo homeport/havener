@@ -513,7 +513,7 @@ func renderProgressBar(value int64, max int64, caption string, text string, leng
 				buf.WriteString(
 					bunt.Style(
 						symbol,
-						bunt.Foreground(bunt.DimGray),
+						bunt.Foreground(bunt.DimGray.BlendLab(bunt.Black, 0.5)),
 					),
 				)
 
