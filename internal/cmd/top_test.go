@@ -57,5 +57,31 @@ var _ = Describe("usage details string rendering", func() {
 ╵
 `))
 		})
+
+		It("should render the node details even if not all details are available", func() {
+			Expect(term.GetTerminalWidth()).To(BeEquivalentTo(120))
+			Expect(RenderNodeDetails(&TopDetails{
+				Nodes: map[string]NodeDetails{
+					"node1": {
+						TotalCPU:    4000,
+						TotalMemory: 16384000,
+						UsedCPU:     2000,
+						UsedMemory:  8192000,
+						LoadAvg:     nil,
+					},
+					"node2": {
+						TotalCPU:    4000,
+						TotalMemory: 16384000,
+						UsedCPU:     4000,
+						UsedMemory:  16384000,
+						LoadAvg:     []float64{10.0, 10.0, 10.0},
+					},
+				},
+			})).To(BeEquivalentTo(`╭ CPU and Memory usage by Node
+│ node2  Load 10.0 10.0 10.0  CPU ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■ 100.0%  Memory ■■■■■■■■■■■■■■■■■■■ 15.6 MiB/15.6 MiB
+│ node1  Load (no data)       CPU ■■■■■■■■■■■■■■■■■                  50.0%  Memory ■■■■■■■■■■           7.8 MiB/15.6 MiB
+╵
+`))
+		})
 	})
 })
