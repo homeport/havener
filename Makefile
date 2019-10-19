@@ -58,6 +58,7 @@ test: lint misspell vet unit-test
 
 gen-docs:
 	go run internal/docs.go
+	perl -pi -e "s:$(HOME):~:g" docs/commands/*.md
 
 build:
 	@scripts/build.sh --local
