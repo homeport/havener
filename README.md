@@ -48,7 +48,7 @@ There are different ways to get `havener`. You are free to pick the one that mak
 
 ## Quick Command Overview
 
-To see a detail list of all havener commands, please refer to the command [docs](/docs/commands)
+To see a detail list of all havener commands, please refer to the command [docs](/.docs/commands/havener.md)
 
 Like `kubectl`, `havener` relies on the Kubernetes configuration that can be set via the `KUBECONFIG` environment variable. It can also be provided with the `--kubeconfig` flag, which takes the path to the YAML file (for example `$HOME/.kube/config`). `Havener` will use your local `helm` binary, so it is the user reponsability, to keep the `helm` binary in sync with tiller.
 
