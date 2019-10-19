@@ -65,6 +65,9 @@ for a pod named 'api-0' in all namespaces and open a shell if found.
 In case no container name is given, havener will assume you want to
 execute the command in the first container found in the pod.
 
+If you run the 'pod-exec' without any additional arguments, it will print a
+list of available pods.
+
 `,
 	SilenceUsage:  true,
 	SilenceErrors: true,

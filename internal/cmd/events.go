@@ -50,8 +50,8 @@ type note struct {
 // eventsCmd represents the top command
 var eventsCmd = &cobra.Command{
 	Use:           "events",
-	Short:         "Shows Cluster events",
-	Long:          `Creates listeners for each namespace and displays all incoming events`,
+	Short:         "Show Kubernetes cluster events",
+	Long:          `Show Kubernetes cluster events of all resources in all namespaces`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {

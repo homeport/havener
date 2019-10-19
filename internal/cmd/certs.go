@@ -29,8 +29,8 @@ import (
 // certCmd represents the cert command
 var certsCmd = &cobra.Command{
 	Use:   "certs",
-	Short: "Check certificates",
-	Long:  `Verify certificates from all secrets in all namespaces`,
+	Short: "Checks whether certificates are valid or not",
+	Long:  `Checks whether certificates are valid or not. It automatically searches all secrets in all namespaces, so it does not need any flags to specify where to look`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		details, err := havener.VerifyCertExpirations()
 		if err != nil {

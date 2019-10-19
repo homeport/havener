@@ -69,6 +69,9 @@ target node is provided, it is assumed that TTY is desired and STDIN is attached
 to the remote process. Analog, for the distributed mode with multiple nodes,
 no TTY is set and the STDIN is multiplexed into each remote process.
 
+If you run the 'node-exec' without any additional arguments, it will print a
+list of available nodes.
+
 For convenenience, if the target node name _all_ is used, havener will look up
 all nodes automatically.
 

@@ -40,8 +40,8 @@ const (
 // deployCmd represents the deploy command
 var deployCmd = &cobra.Command{
 	Use:           "deploy [havener config file]",
-	Short:         "Deploy to Kubernetes",
-	Long:          `Deploy to Kubernetes based on havener configuration`,
+	Short:         "Installs Helm Charts using a havener configuration",
+	Long:          `Installs Helm Charts using a havener configuration file.`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {

@@ -41,8 +41,8 @@ const (
 // upgradeCmd represents the upgrade command
 var upgradeCmd = &cobra.Command{
 	Use:           "upgrade [havener config file]",
-	Short:         "Upgrade Helm Release in Kubernetes",
-	Long:          `Upgrade Helm Release based on havener configuration`,
+	Short:         "Upgrades Helm Charts using a havener configuration",
+	Long:          `Upgrades Helm Charts using a havener configuration file.`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
