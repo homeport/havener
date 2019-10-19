@@ -6,7 +6,7 @@
 [![GoDoc](https://godoc.org/github.com/homeport/havener?status.svg)](https://godoc.org/github.com/homeport/havener)
 [![Release](https://img.shields.io/github/release/homeport/havener.svg)](https://github.com/homeport/havener/releases/latest)
 
-![havener](.docs/logo.png?raw=true "Havener logo - a pelican with pirate hat")
+![havener](.docs/images/logo.png?raw=true "Havener logo - a pelican with pirate hat")
 
 ## Table of Contents
 
