@@ -44,9 +44,18 @@ var topCmdSettings struct {
 
 // topCmd represents the top command
 var topCmd = &cobra.Command{
-	Use:           "top",
-	Short:         "Shows CPU and Memory usage",
-	Long:          `Shows more detailed CPU and Memory usage details`,
+	Use:   "top",
+	Short: "Shows CPU and Memory usage",
+	Long: `Shows more detailed CPU and Memory usage details
+
+The top command shows Load, CPU, and Memory usage details for all nodes.
+
+Based on the pod usage, aggregated usage details per namespace are generated
+and displayed to show CPU and Memory usage.
+
+Furthermore, the list of top pod consumers is displayed, both for the whole
+cluster as well as a list per node.
+`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {

@@ -43,9 +43,14 @@ var (
 
 // logsCmd represents the top command
 var logsCmd = &cobra.Command{
-	Use:           "logs",
-	Short:         "Retrieve log files from pods",
-	Long:          `Retrieve log files from pods`,
+	Use:   "logs",
+	Short: "Retrieve log files from all pods",
+	Long: `Loops over all pods and all namespaces to download log and configuration
+files from some well-known hard-coded locations to a local directory. Use this
+to quickly scan through multiple files from multiple locations in case you have
+to debug an issue where it is not clear yet where to look.
+
+The download includes all deployment YAMLs of the pods and the describe output.`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {

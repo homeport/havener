@@ -57,9 +57,10 @@ docker-build-test:
 test: lint misspell vet unit-test
 
 gen-docs:
-	rm .docs/commands/*.md
+	rm -f .docs/commands/*.md
 	go run internal/docs.go
-	perl -pi -e "s:$(HOME):~:g" .docs/commands/*.md
+	perl -pi -e "s:$(HOME):~:g" .docs/commands/*.md # omit username in docs
+	perl -pi -e 's/\e\[[0-9;]*m//g' .docs/commands/*.md # remove ANSI sequences
 
 build:
 	@scripts/build.sh --local

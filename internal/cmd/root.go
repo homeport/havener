@@ -42,13 +42,16 @@ import (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "havener",
-	Short: "Convenience tool to handle tasks around Containerized CF workloads on a Kubernetes cluster",
-	Long: `A convenience tool to handle tasks around Containerized CF workloads on a Kubernetes cluster, for example:
-- Deploy a new series of Helm Charts
-- Remove all Helm Releases
-- Retrieve log and configuration files from all pods
+	Short: "Convenience wrapper around both kubectl and helm",
+	Long: `Convenience wrapper around both kubectl and helm.
+
+Think of it as a swiss army knife for Kubernetes tasks. Possible use cases are
+for example executing a command on multiple pods at the same time, retrieving
+usage details, or deploying a sequence of Helm Charts with custom pre- and
+post-install hooks.
 
 See the individual commands to get the complete overview.
+
 `,
 }
 

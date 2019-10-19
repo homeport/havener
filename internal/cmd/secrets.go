@@ -38,8 +38,13 @@ import (
 
 var secretsCmd = &cobra.Command{
 	Use:   "secrets",
-	Short: "Check secrets",
-	Long:  `Verify secrets in all namespaces`,
+	Short: "Verify secrets in all namespaces",
+	Long: `Verify secrets in all namespaces
+
+Scans through all secrets of all namespaces to create a password strength
+scrore of all secrets that look like passwords. This can identify potentially
+weak passwords used by a deployment.
+`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return printSecretsAnalysis()
 	},
