@@ -199,19 +199,19 @@ func (h *Hvnr) RetrieveLogs(parallelDownloads int, target string, includeConfigF
 			baseDir:    baseDir,
 		}
 
-		if pod.Status.Phase == corev1.PodRunning {
-			// Download the container logs
-			tasks <- &task{
-				assignment: "container-logs",
-				pod:        pod,
-				baseDir:    baseDir,
-			}
+		// Download the container logs
+		tasks <- &task{
+			assignment: "container-logs",
+			pod:        pod,
+			baseDir:    filepath.Join(baseDir, pod.Name, "container-logs"),
+		}
 
+		if pod.Status.Phase == corev1.PodRunning {
 			// For running pods, download known log files
 			tasks <- &task{
 				assignment: "known-logs",
 				pod:        pod,
-				baseDir:    baseDir,
+				baseDir:    filepath.Join(baseDir, pod.Name, "container-filesystem"),
 			}
 
 			// For running pods, download configuration file
@@ -219,7 +219,7 @@ func (h *Hvnr) RetrieveLogs(parallelDownloads int, target string, includeConfigF
 				tasks <- &task{
 					assignment: "config-files",
 					pod:        pod,
-					baseDir:    baseDir,
+					baseDir:    filepath.Join(baseDir, pod.Name, "container-filesystem"),
 				}
 			}
 		}
@@ -244,11 +244,10 @@ func (h *Hvnr) retrieveFilesFromPod(pod *corev1.Pod, baseDir string, findCommand
 			continue
 		}
 
-		targetPath := filepath.Join(
-			baseDir,
-			pod.Name,
-			container.Name,
-		)
+		if err := createDirectory(baseDir); err != nil {
+			errors = append(errors, err)
+			continue
+		}
 
 		read, write := io.Pipe()
 		go func() {
@@ -272,7 +271,7 @@ func (h *Hvnr) retrieveFilesFromPod(pod *corev1.Pod, baseDir string, findCommand
 			}
 		}()
 
-		if err := untar(read, targetPath); err != nil {
+		if err := untar(read, filepath.Join(baseDir, container.Name)); err != nil {
 			errors = append(errors, err)
 		}
 	}
@@ -329,6 +328,10 @@ func untar(inputStream io.Reader, targetPath string) error {
 }
 
 func (h *Hvnr) retrieveContainerLogs(pod *corev1.Pod, baseDir string) []error {
+	if err := createDirectory(baseDir); err != nil {
+		return []error{err}
+	}
+
 	errors := []error{}
 
 	streamToFile := func(req *rest.Request, filename string) error {
@@ -351,20 +354,33 @@ func (h *Hvnr) retrieveContainerLogs(pod *corev1.Pod, baseDir string) []error {
 		return nil
 	}
 
-	for _, container := range append(pod.Spec.InitContainers, pod.Spec.Containers...) {
-		req := h.client.CoreV1().RESTClient().
-			Get().
-			Namespace(pod.GetNamespace()).
-			Name(pod.Name).
-			Resource("pods").
-			SubResource("log").
-			Param("container", container.Name).
-			Param("timestamps", strconv.FormatBool(true))
+	streamContainerLogs := func(container corev1.Container, filename string) error {
+		return streamToFile(
+			h.client.CoreV1().RESTClient().
+				Get().
+				Namespace(pod.GetNamespace()).
+				Name(pod.Name).
+				Resource("pods").
+				SubResource("log").
+				Param("container", container.Name).
+				Param("timestamps", strconv.FormatBool(true)),
+			filename,
+		)
+	}
 
-		filename := filepath.Join(baseDir, pod.Name, container.Name+".log")
-		if err := streamToFile(req, filename); err != nil {
+	for _, container := range pod.Spec.InitContainers {
+		if err := streamContainerLogs(container, filepath.Join(baseDir, "init-"+container.Name+".log")); err != nil {
 			errors = append(errors, err)
 			continue
+		}
+	}
+
+	if pod.Status.Phase == corev1.PodRunning {
+		for _, container := range pod.Spec.Containers {
+			if err := streamContainerLogs(container, filepath.Join(baseDir, "container-"+container.Name+".log")); err != nil {
+				errors = append(errors, err)
+				continue
+			}
 		}
 	}
 
