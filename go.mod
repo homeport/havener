@@ -16,7 +16,7 @@ require (
 	github.com/homeport/dyff v0.10.3
 	github.com/homeport/ytbx v1.1.2
 	github.com/imdario/mergo v0.3.7 // indirect
-	github.com/lucasb-eyer/go-colorful v1.0.2
+	github.com/lucasb-eyer/go-colorful v1.0.3
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/nbutton23/zxcvbn-go v0.0.0-20180912185939-ae427f1e4c1d
 	github.com/onsi/ginkgo v1.10.3
