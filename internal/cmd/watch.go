@@ -127,6 +127,11 @@ func generatePodsTable(hvnr havener.Havener) (string, error) {
 		return "", err
 	}
 
+	nodes, err := hvnr.ListNodes()
+	if err != nil {
+		return "", err
+	}
+
 	sort.Slice(pods, func(i, j int) bool {
 		// sort by system namespace (user namespaces before system namespaces)
 		if categoryI, categoryJ := humanReadableNamespaceCategory(*pods[i]), humanReadableNamespaceCategory(*pods[j]); categoryI != categoryJ {
@@ -147,12 +152,16 @@ func generatePodsTable(hvnr havener.Havener) (string, error) {
 		return pods[i].Name < pods[j].Name
 	})
 
-	var (
-		counter  = 0
-		maxLines = term.GetTerminalHeight() - 5
-		table    = [][]string{}
-	)
+	var nodeDetails = map[string]string{}
+	for _, node := range nodes {
+		nodeDetails[node.Name] = bunt.Sprintf("DarkGray{_(N/A)_}")
 
+		if zone, hasZone := node.ObjectMeta.Labels["ibm-cloud.kubernetes.io/zone"]; hasZone {
+			nodeDetails[node.Name] = zone
+		}
+	}
+
+	var table = [][]string{}
 	for _, pod := range pods {
 		status := humanReadablePodStatus(*pod)
 
@@ -204,24 +213,24 @@ func generatePodsTable(hvnr havener.Havener) (string, error) {
 			bunt.Style(pod.Name, styleOptions...),
 			bunt.Style(ready, styleOptions...),
 			bunt.Style(status, styleOptions...),
+			bunt.Style(pod.Spec.NodeName, styleOptions...),
+			bunt.Style(nodeDetails[pod.Spec.NodeName], styleOptions...),
 			bunt.Style(age, styleOptions...),
 		})
-
-		if counter++; counter > maxLines {
-			table = append(table, []string{"[...]", "", "", "", ""})
-			break
-		}
 	}
 
 	out, err := renderBoxWithTable(
 		bunt.Sprintf("Pods running in cluster _%s_", hvnr.ClusterName()),
-		[]string{"Namespace", "Pod", "Ready", "Status", "Age"},
+		[]string{"Namespace", "Pod", "Ready", "Status", "Node", "Location", "Age"},
 		table,
 		neat.CustomSeparator("  "),
+		neat.LimitRows(term.GetTerminalHeight()-3),
 	)
+
 	if err != nil {
 		return "", err
 	}
+
 	return out, nil
 }
 

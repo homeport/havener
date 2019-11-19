@@ -83,6 +83,7 @@ type Havener interface {
 
 	TopDetails() (*TopDetails, error)
 	ListPods(namespaces ...string) ([]*corev1.Pod, error)
+	ListNodes() ([]corev1.Node, error)
 	RetrieveLogs(parallelDownloads int, target string, includeConfigFiles bool) error
 
 	PodExec(pod *corev1.Pod, container string, command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error
