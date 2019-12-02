@@ -35,12 +35,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-/* TODO Currently, purge will ignore all non-existing helm releases that were
-   provided by the user. Think about making the behaviour configurable: For
-   example by introducing a flag like `--ignore-non-existent` or similar. */
-
-/* TODO Should we make getConfiguredHelmClient a havener package function? */
-
 // purgeCmd represents the purge command
 var purgeCmd = &cobra.Command{
 	Use:   "purge <helm-release> [<helm-release>] [...]",

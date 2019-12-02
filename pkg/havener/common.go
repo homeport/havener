@@ -149,8 +149,8 @@ func isSystemNamespace(namespace string) bool {
 	return false
 }
 
-func clusterName() (string, error) {
-	data, err := ioutil.ReadFile(getKubeConfig())
+func clusterName(kubeConfig string) (string, error) {
+	data, err := ioutil.ReadFile(kubeConfig)
 	if err != nil {
 		return "", err
 	}

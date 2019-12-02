@@ -21,11 +21,24 @@
 package e2e
 
 import (
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
+	"time"
 
-	"github.com/homeport/havener/e2e/environment"
+	"github.com/gonvenience/text"
+	"github.com/homeport/havener/pkg/havener"
+
+	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"sigs.k8s.io/kind/pkg/cluster"
 )
 
 func TestE2E(t *testing.T) {
@@ -33,15 +46,92 @@ func TestE2E(t *testing.T) {
 	RunSpecs(t, "E2E Suite")
 }
 
-var _ = BeforeSuite(func() {
-	env := environment.NewEnvironment()
-	err := env.SetUpEnvironment()
-	Expect(err).NotTo(HaveOccurred())
-})
+type testEnvironment struct {
+	provider       *cluster.Provider
+	clusterName    string
+	kubeConfigPath string
+}
 
-var _ = AfterSuite(func() {
-	err := env.SetUpEnvironment()
-	Expect(err).NotTo(HaveOccurred())
-	err = env.DeleteAllReleases()
-	Expect(err).NotTo(HaveOccurred())
-})
+func (t *testEnvironment) helm(args ...string) {
+	if output, err := havener.RunHelmBinary(args...); err != nil {
+		fmt.Print(string(output))
+		Fail(err.Error())
+	}
+}
+
+func setupKindCluster() *testEnvironment {
+	tempDir, err := ioutil.TempDir("", "kube-config-dir-")
+	Expect(err).ToNot(HaveOccurred())
+
+	testEnv := &testEnvironment{
+		provider:       cluster.NewProvider(),
+		clusterName:    text.RandomStringWithPrefix("test-cluster-", 16),
+		kubeConfigPath: filepath.Join(tempDir, "config"),
+	}
+
+	Expect(testEnv.provider.Create(
+		testEnv.clusterName,
+		cluster.CreateWithNodeImage("kindest/node:v1.15.6"),
+		cluster.CreateWithKubeconfigPath(testEnv.kubeConfigPath),
+		cluster.CreateWithWaitForReady(time.Duration(120*time.Second))),
+	).ToNot(HaveOccurred())
+
+	_, err = os.Stat(testEnv.kubeConfigPath)
+	Expect(err).ToNot(HaveOccurred())
+
+	hvnr, err := havener.NewHavener(testEnv.kubeConfigPath)
+	Expect(err).ToNot(HaveOccurred())
+
+	_, err = hvnr.Client().CoreV1().ServiceAccounts("kube-system").Create(&corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "tiller",
+			Namespace: "kube-system",
+		},
+	})
+	Expect(err).ToNot(HaveOccurred())
+
+	_, err = hvnr.Client().RbacV1().ClusterRoleBindings().Create(&rbacv1.ClusterRoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "tiller",
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "ClusterRole",
+			Name:     "cluster-admin",
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      "tiller",
+				Namespace: "kube-system",
+			},
+		},
+	})
+	Expect(err).ToNot(HaveOccurred())
+
+	testEnv.helm("init",
+		"--kubeconfig", testEnv.kubeConfigPath,
+		"--service-account", "tiller",
+		"--history-max", "200",
+		"--wait",
+	)
+
+	Expect(os.Setenv("KUBECONFIG", testEnv.kubeConfigPath)).
+		ToNot(HaveOccurred())
+
+	return testEnv
+}
+
+func teardownKindCluster(testEnv *testEnvironment) {
+	Expect(os.Unsetenv("KUBECONFIG")).
+		ToNot(HaveOccurred())
+
+	Expect(testEnv.provider.Delete(
+		testEnv.clusterName,
+		testEnv.kubeConfigPath),
+	).ToNot(HaveOccurred())
+
+	Expect(os.RemoveAll(
+		testEnv.kubeConfigPath),
+	).ToNot(HaveOccurred())
+}

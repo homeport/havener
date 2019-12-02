@@ -30,6 +30,7 @@ this kind of workload.
 package havener
 
 import (
+	"fmt"
 	"io"
 	"time"
 
@@ -69,9 +70,10 @@ func GracefulShutdown() {
 
 // Hvnr is the internal handle to consolidate required cluster access variables
 type Hvnr struct {
-	client      kubernetes.Interface
-	restconfig  *rest.Config
-	clusterName string
+	kubeConfigPath string
+	client         kubernetes.Interface
+	restconfig     *rest.Config
+	clusterName    string
 }
 
 // Havener is an interface to work with a cluster through the havener
@@ -94,21 +96,34 @@ type Havener interface {
 }
 
 // NewHavener returns a new Havener handle to perform cluster actions
-func NewHavener() (*Hvnr, error) {
-	client, restconfig, err := OutOfClusterAuthentication("")
+func NewHavener(kubeConfigs ...string) (*Hvnr, error) {
+	var kubeConfigPath string
+	switch len(kubeConfigs) {
+	case 0:
+		kubeConfigPath = getKubeConfig()
+
+	case 1:
+		kubeConfigPath = kubeConfigs[0]
+
+	default:
+		return nil, fmt.Errorf("multiple Kubernetes configurations are currently not supported")
+	}
+
+	client, restconfig, err := OutOfClusterAuthentication(kubeConfigPath)
 	if err != nil {
 		return nil, wrap.Error(err, "unable to get access to cluster")
 	}
 
-	clusterName, err := clusterName()
+	clusterName, err := clusterName(kubeConfigPath)
 	if err != nil {
 		return nil, wrap.Error(err, "unable to get cluster name")
 	}
 
 	return &Hvnr{
-		client:      client,
-		restconfig:  restconfig,
-		clusterName: clusterName,
+		client:         client,
+		restconfig:     restconfig,
+		clusterName:    clusterName,
+		kubeConfigPath: kubeConfigPath,
 	}, nil
 }
 

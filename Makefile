@@ -41,20 +41,38 @@ vet:
 	@scripts/vet.sh
 
 unit-test:
-	@scripts/unit-test.sh
+	GO111MODULE=on ginkgo \
+	  -randomizeAllSpecs \
+	  -randomizeSuites \
+	  -failOnPending \
+	  -nodes=4 \
+	  -compilers=2 \
+	  -slowSpecThreshold=240 \
+	  -race \
+	  -cover \
+	  -trace \
+	  internal/... \
+	  pkg/...
 
 e2e-test:
-	@scripts/e2e-test.sh
+	GO111MODULE=on ginkgo \
+	  -randomizeAllSpecs \
+	  -randomizeSuites \
+	  -failOnPending \
+	  -nodes=1 \
+	  -compilers=1 \
+	  -slowSpecThreshold=240 \
+	  -race \
+	  -cover \
+	  -trace \
+	  e2e/...
 
 docker-build-test:
 	@docker build -t build-system:dev -f Build-System.dockerfile .
 	@docker build -t havener-alpine:dev -f Havener-Alpine.dockerfile .
 	@docker build -t havener-ubuntu:dev -f Havener-Ubuntu.dockerfile .
 
-# e2e-test is not used in target test,
-# while we do not have a proper place
-# to test them, e.g. proper CI.
-test: lint misspell vet unit-test
+test: lint misspell vet unit-test e2e-test
 
 gen-docs:
 	rm -f .docs/commands/*.md

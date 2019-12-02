@@ -26,11 +26,12 @@ import (
 	"os"
 	"time"
 
+	"github.com/gonvenience/bunt"
+	"github.com/gonvenience/term"
+
+	. "github.com/homeport/havener/internal/cmd"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	. "github.com/gonvenience/bunt"
-	. "github.com/homeport/havener/internal/cmd"
 )
 
 var exampleOutput = []OutputMsg{
@@ -87,13 +88,17 @@ var _ = Describe("Output message printing", func() {
 	}
 
 	BeforeEach(func() {
-		ColorSetting = OFF
-		TrueColorSetting = OFF
+		bunt.ColorSetting = bunt.OFF
+		bunt.TrueColorSetting = bunt.OFF
+		term.FixedTerminalWidth = 120
+		term.FixedTerminalHeight = 40
 	})
 
 	AfterEach(func() {
-		ColorSetting = AUTO
-		TrueColorSetting = AUTO
+		bunt.ColorSetting = bunt.AUTO
+		bunt.TrueColorSetting = bunt.AUTO
+		term.FixedTerminalWidth = -1
+		term.FixedTerminalHeight = -1
 	})
 
 	It("should add leading zeros to single-digit time units", func() {

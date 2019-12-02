@@ -33,11 +33,17 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-/* TODO Currently, purge will ignore all non-existing helm releases that were
-   provided by the user. Think about making the behaviour configurable: For
-   example by introducing a flag like `--ignore-non-existent` or similar. */
-
 var defaultPropagationPolicy = metav1.DeletePropagationForeground
+
+// PurgeHelmReleaseByName purges the helm release with the given name
+func (h *Hvnr) PurgeHelmReleaseByName(name string) error {
+	helmRelease, err := GetReleaseByName(name)
+	if err != nil {
+		return err
+	}
+
+	return PurgeHelmRelease(h.Client(), helmRelease, helmRelease.Name)
+}
 
 // PurgeHelmRelease removes the given helm release including all its resources.
 func PurgeHelmRelease(kubeClient kubernetes.Interface, release HelmRelease, helmRelease string) error {
