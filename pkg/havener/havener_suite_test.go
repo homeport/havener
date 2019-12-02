@@ -29,5 +29,5 @@ import (
 
 func TestHavener(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Havener Suite")
+	RunSpecs(t, "Havener Library Package Suite")
 }

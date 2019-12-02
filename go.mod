@@ -25,15 +25,16 @@ require (
 	github.com/spf13/viper v1.6.2
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
-	golang.org/x/sys v0.0.0-20190726091711-fc99dfbffb4e
+	golang.org/x/sys v0.0.0-20191105231009-c1f44814a5cd
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/src-d/go-git.v4 v4.13.1
 	gopkg.in/yaml.v2 v2.2.8
 	k8s.io/api v0.0.0-20191005115622-2e41325d9e4b
-	k8s.io/apimachinery v0.0.0-20191006235458-f9f2f3f8ab02
+	k8s.io/apimachinery v0.0.0-20191028221656-72ed19daf4bb
 	k8s.io/cli-runtime v0.0.0-20191005121332-4d28aef60981
 	k8s.io/client-go v0.0.0-20191006235818-c918cd02a1a3
 	k8s.io/kubectl v0.0.0-20191007002032-340a90f4c38f
+	sigs.k8s.io/kind v0.6.0
 )
 
 replace (
@@ -41,4 +42,5 @@ replace (
 	golang.org/x/net => github.com/golang/net v0.0.0-20191007182048-72f939374954
 	golang.org/x/sync => github.com/golang/sync v0.0.0-20190911185100-cd5d95a43a6e
 	golang.org/x/sys => github.com/golang/sys v0.0.0-20191008105621-543471e840be
+	k8s.io/apimachinery => github.com/kubernetes/apimachinery v0.0.0-20191006235458-f9f2f3f8ab02
 )

@@ -21,16 +21,30 @@
 package cmd_test
 
 import (
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/gonvenience/bunt"
+	"github.com/gonvenience/term"
 
 	. "github.com/homeport/havener/internal/cmd"
 	. "github.com/homeport/havener/pkg/havener"
-
-	"github.com/gonvenience/term"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("usage details string rendering", func() {
+	BeforeEach(func() {
+		bunt.ColorSetting = bunt.OFF
+		bunt.TrueColorSetting = bunt.OFF
+		term.FixedTerminalWidth = 120
+		term.FixedTerminalHeight = 40
+	})
+
+	AfterEach(func() {
+		bunt.ColorSetting = bunt.AUTO
+		bunt.TrueColorSetting = bunt.AUTO
+		term.FixedTerminalWidth = -1
+		term.FixedTerminalHeight = -1
+	})
+
 	Context("render node details", func() {
 		It("should render the node details in a somehow pleasant and readable form", func() {
 			Expect(term.GetTerminalWidth()).To(BeEquivalentTo(120))

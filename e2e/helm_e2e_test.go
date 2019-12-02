@@ -21,117 +21,77 @@
 package e2e
 
 import (
-	"encoding/json"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
 	"github.com/homeport/havener/e2e/environment"
 	"github.com/homeport/havener/internal/cmd"
 	"github.com/homeport/havener/pkg/havener"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
-var (
-	env *environment.Environment
-)
 var _ = Describe("Helm functionalities", func() {
-
-	Context("when calling the tiller server via helm", func() {
-		BeforeEach(func() {
-			env = environment.NewEnvironment()
+	Context("using local helm binary", func() {
+		It("should exit with error if not present", func() {
+			err := havener.VerifyHelmBinary()
+			Expect(err).To(BeNil())
 		})
 
-		It("should get a client/server version", func() {
-			err := env.RunBinary(env.HelmBinary, "version")
-			Expect(err).NotTo(HaveOccurred())
-		})
-	})
-
-	Context("when listing releases via helm", func() {
-		BeforeEach(func() {
-			env = environment.NewEnvironment()
-		})
-
-		It("should get all available releases", func() {
-			err := env.RunBinary(env.HelmBinary, "list")
-			Expect(err).NotTo(HaveOccurred())
+		It("should be able to use the helm binary cmds", func() {
+			_, err := havener.RunHelmBinary("list", "--help")
+			Expect(err).To(BeNil())
 		})
 	})
 
 	Context("when installing releases via havener", func() {
-		var installConfigBytes []byte
+		var testEnv *testEnvironment
 
 		BeforeEach(func() {
-			env = environment.NewEnvironment()
-			installConfigBytes = []byte(`---
+			testEnv = setupKindCluster()
+		})
+
+		AfterEach(func() {
+			teardownKindCluster(testEnv)
+		})
+
+		It("should install and list them correctly", func() {
+			installConfigBytes := []byte(`---
 name: mysql deployment
 releases:
 - name: mysql-release-install-test
   namespace: install
   location: stable/mysql
 `)
-		})
 
-		It("should install them correctly", func() {
 			filePath, err := environment.GenerateConfigFile(installConfigBytes)
 			Expect(err).NotTo(HaveOccurred())
 
-			err = cmd.DeployViaHavenerConfig(filePath)
+			Expect(cmd.DeployViaHavenerConfig(filePath)).NotTo(HaveOccurred())
+
+			helmReleases, err := havener.ListHelmReleases()
 			Expect(err).NotTo(HaveOccurred())
-		})
+			Expect(len(helmReleases)).To(BeEquivalentTo(1))
+			Expect(helmReleases[0].Name).To(BeEquivalentTo("mysql-release-install-test"))
 
-		It("should list them correctly", func() {
-			releasesList := havener.HelmReleases{}
-
-			stdOutput, err := env.RunBinaryWithStdOutput(env.HelmBinary, "list", "--output", "json")
-			Expect(err).NotTo(HaveOccurred())
-
-			err = json.Unmarshal(stdOutput, &releasesList)
+			hvnr, err := havener.NewHavener()
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(havener.ReleaseExist(releasesList, "mysql-release-install-test")).Should(BeTrue())
-
-			err = env.RunBinary(env.HelmBinary, "delete", "mysql-release-install-test", "--purge")
-			Expect(err).NotTo(HaveOccurred())
+			Expect(havener.PurgeHelmRelease(hvnr.Client(), helmReleases[0], helmReleases[0].Name)).ToNot(HaveOccurred())
 		})
 	})
 
 	Context("when upgrading releases via havener", func() {
-		var (
-			testUpgradeConfigBytes          []byte
-			testUpdgradeOverridesBytes      []byte
-			testUpgradeMongoConfigBytes     []byte
-			testUpdgradeMongoOverridesBytes []byte
-		)
+		var testEnv *testEnvironment
+
 		BeforeEach(func() {
-			env = environment.NewEnvironment()
-			testUpgradeMongoConfigBytes = []byte(`---
-name: mongodb deployment
-releases:
-- name: mongodb-release-upgrade-test
-  namespace: upgrade-mongo
-  location: stable/mongodb
-  overrides:
-    mongodbUsername: "fake-user"
-    mongodbDatabase: "fake-db"
-    mongodbPassword: "fake-pwd"
-`)
-			testUpdgradeMongoOverridesBytes = []byte(`---
-name: mongodb deployment
-releases:
-- name: mongodb-release-upgrade-test
-  namespace: upgrade-mongo
-  location: stable/mongodb
-  overrides:
-    mongodbUsername: "fake-user"
-`)
-			testUpgradeConfigBytes = []byte(`---
-name: mysql deployment
-releases:
-- name: mysql-release-upgrade-test
-  namespace: upgrade
-  location: stable/mysql
-`)
-			testUpdgradeOverridesBytes = []byte(`---
+			testEnv = setupKindCluster()
+		})
+
+		AfterEach(func() {
+			teardownKindCluster(testEnv)
+		})
+
+		It("should upgrade them correctly", func() {
+			installConfig := []byte(`---
 name: mysql deployment
 releases:
 - name: mysql-release-upgrade-test
@@ -140,67 +100,69 @@ releases:
   overrides:
     imageTag: "5.6"
 `)
-		})
 
-		It("should upgrade them correctly", func() {
-			installFilePath, err := environment.GenerateConfigFile(testUpgradeConfigBytes)
+			installFilePath, err := environment.GenerateConfigFile(installConfig)
 			Expect(err).NotTo(HaveOccurred())
 
 			err = cmd.DeployViaHavenerConfig(installFilePath)
 			Expect(err).NotTo(HaveOccurred())
 
-			upgradeFilePath, err := environment.GenerateConfigFile(testUpdgradeOverridesBytes)
+			upgradeConfig := []byte(`---
+name: mysql deployment
+releases:
+- name: mysql-release-upgrade-test
+  namespace: upgrade
+  location: stable/mysql
+`)
+
+			upgradeFilePath, err := environment.GenerateConfigFile(upgradeConfig)
 			Expect(err).NotTo(HaveOccurred())
 
 			err = cmd.UpgradeViaHavenerConfig(upgradeFilePath)
 			Expect(err).NotTo(HaveOccurred())
 
-			err = env.RunBinary(env.HelmBinary, "delete", "mysql-release-upgrade-test", "--purge")
+			hvnr, err := havener.NewHavener()
 			Expect(err).NotTo(HaveOccurred())
 
-			installFilePath, err = environment.GenerateConfigFile(testUpgradeMongoConfigBytes)
-			Expect(err).NotTo(HaveOccurred())
-
-			err = cmd.DeployViaHavenerConfig(installFilePath)
-			Expect(err).NotTo(HaveOccurred())
-
-			upgradeFilePath, err = environment.GenerateConfigFile(testUpdgradeMongoOverridesBytes)
-			Expect(err).NotTo(HaveOccurred())
-
-			err = cmd.UpgradeViaHavenerConfig(upgradeFilePath)
-			Expect(err).NotTo(HaveOccurred())
-
-			err = env.RunBinary(env.HelmBinary, "delete", "mongodb-release-upgrade-test", "--purge")
-			Expect(err).NotTo(HaveOccurred())
+			Expect(hvnr.PurgeHelmReleaseByName("mysql-release-upgrade-test")).NotTo(HaveOccurred())
 		})
 	})
 
 	Context("when purging releases via havener", func() {
-		var purgeConfigBytes []byte
+		var testEnv *testEnvironment
+		var tmp = false
+
 		BeforeEach(func() {
-			env = environment.NewEnvironment()
-			purgeConfigBytes = []byte(`---
+			testEnv = setupKindCluster()
+			tmp = cmd.NoUserPrompt
+			cmd.NoUserPrompt = true
+		})
+
+		AfterEach(func() {
+			teardownKindCluster(testEnv)
+			cmd.NoUserPrompt = tmp
+		})
+
+		It("should delete existing releases correctly", func() {
+			purgeConfigBytes := []byte(`---
 name: mysql deployment
 releases:
 - name: mysql-release-purge-test
   namespace: purge
   location: stable/mysql
 `)
-		})
 
-		It("should delete existing releases correctly", func() {
 			installFilePath, err := environment.GenerateConfigFile(purgeConfigBytes)
 			Expect(err).NotTo(HaveOccurred())
 
 			err = cmd.DeployViaHavenerConfig(installFilePath)
 			Expect(err).NotTo(HaveOccurred())
 
-			client, _, err := havener.OutOfClusterAuthentication("")
+			hvnr, err := havener.NewHavener()
 			Expect(err).NotTo(HaveOccurred())
 
-			err = cmd.PurgeHelmReleases(client, "mysql-release-purge-test", "--non-interactive")
+			err = cmd.PurgeHelmReleases(hvnr.Client(), "mysql-release-purge-test")
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
-
 })

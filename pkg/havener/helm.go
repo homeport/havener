@@ -172,18 +172,36 @@ type HelmRelease struct {
 
 // ListHelmReleases lists all known Helm Releases
 func ListHelmReleases() ([]HelmRelease, error) {
-	stdOutput, err := RunHelmBinary("list", "--all", "--output", "json")
-	if err != nil {
-		return nil, err
+	result := []HelmRelease{}
+
+	var next string
+	for {
+		stdOutput, err := RunHelmBinary(
+			"list",
+			"--all",
+			"--output", "json",
+			"--max", "1",
+			"--offset", next,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		releasesList := HelmReleases{}
+		if err := json.Unmarshal(stdOutput, &releasesList); err != nil {
+			return nil, err
+		}
+
+		next = releasesList.Next
+		result = append(result, releasesList.Releases...)
+
+		if len(next) == 0 {
+			break
+		}
 	}
 
-	releasesList := HelmReleases{}
-	if err := json.Unmarshal(stdOutput, &releasesList); err != nil {
-		return nil, err
-	}
-
-	// TODO Double check in which use cases the Next has to be evaluated.
-	return releasesList.Releases, nil
+	return result, nil
 }
 
 // ReleaseExist returns true for an existing release

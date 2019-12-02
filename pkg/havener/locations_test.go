@@ -21,10 +21,12 @@
 package havener_test
 
 import (
+	"io/ioutil"
 	"os"
 	"path/filepath"
 
 	"github.com/homeport/havener/pkg/havener"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -35,9 +37,20 @@ const wrongChartTempLocation = "stable/wrong-chart"
 const goodChartTempLocation = "tomcat/stable"
 
 var _ = Describe("Charts Locations", func() {
+	var originalHome string
 
 	BeforeEach(func() {
-		os.Setenv("HOME", "/tmp")
+		tempDir, err := ioutil.TempDir("", "test-home")
+		Expect(err).ToNot(HaveOccurred())
+
+		originalHome = os.Getenv("HOME")
+		os.Setenv("HOME", tempDir)
+	})
+
+	AfterEach(func() {
+		os.RemoveAll(os.Getenv("HOME") + "/.havener")
+		os.RemoveAll(os.Getenv("HOME") + "/fake-chart")
+		os.Setenv("HOME", originalHome)
 	})
 
 	Describe("loading a Helm Chart", func() {
@@ -59,6 +72,7 @@ var _ = Describe("Charts Locations", func() {
 				Expect(helmChartPath).Should(Equal(absolutePath))
 			})
 		})
+
 		Context("when the Helm Chart exists remotely", func() {
 			It("should find a remote chart and place in under the ~/.havener repo", func() {
 				remoteHelmChartPath, err := havener.PathToHelmChart(goodChartTempLocation)
@@ -67,6 +81,7 @@ var _ = Describe("Charts Locations", func() {
 				Expect(remoteHelmChartPath).Should(Equal(absoluteChartPath))
 			})
 		})
+
 		Context("when the Helm Chart does not exists", func() {
 			It("should exit with error when the helm chart path does not exist", func() {
 				_, err := havener.PathToHelmChart(os.Getenv("HOME") + wrongChartTempLocation)
@@ -75,6 +90,7 @@ var _ = Describe("Charts Locations", func() {
 				Expect(err.Error()).Should(Equal(constructedError))
 			})
 		})
+
 		Context("when the Helm Chart exists as a zip file in a github release", func() {
 			JustBeforeEach(func() {
 				os.Setenv("HOME", "/tmp/home")
@@ -89,6 +105,7 @@ var _ = Describe("Charts Locations", func() {
 				Expect(path).Should(Equal("/tmp/home/.havener/extracted/helm/cf-opensuse"))
 			})
 		})
+
 		Context("when the Helm Chart zip file location contains an invalid dir path", func() {
 			JustBeforeEach(func() {
 				os.Setenv("HOME", "/tmp/home-invalid-path")
@@ -103,6 +120,7 @@ var _ = Describe("Charts Locations", func() {
 				Expect(err.Error()).Should(Equal(constructedError))
 			})
 		})
+
 		Context("when the Helm Chart zip file location does not contains a .zip file", func() {
 			JustBeforeEach(func() {
 				os.Setenv("HOME", "/tmp/home-invalid-file")
@@ -116,12 +134,5 @@ var _ = Describe("Charts Locations", func() {
 				Expect(err.Error()).Should(Equal(constructedError))
 			})
 		})
-
 	})
-})
-
-var _ = AfterSuite(func() {
-	os.RemoveAll(os.Getenv("HOME") + "/.havener")
-	os.RemoveAll(os.Getenv("HOME") + "/fake-chart")
-	os.Unsetenv("HOME")
 })
