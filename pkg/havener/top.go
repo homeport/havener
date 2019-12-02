@@ -280,6 +280,10 @@ func parseQuantity(input string) *resource.Quantity {
 
 func parseProcLoadAvg(input string) []float64 {
 	parts := strings.Split(input, " ")
+	if len(parts) != 5 {
+		return []float64{}
+	}
+
 	l1, _ := strconv.ParseFloat(parts[0], 64)
 	l5, _ := strconv.ParseFloat(parts[1], 64)
 	l15, _ := strconv.ParseFloat(parts[2], 64)
