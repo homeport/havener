@@ -14,7 +14,7 @@ require (
 	github.com/gonvenience/wrap v1.1.0
 	github.com/googleapis/gnostic v0.3.0 // indirect
 	github.com/homeport/dyff v0.10.3
-	github.com/homeport/ytbx v1.1.2
+	github.com/homeport/ytbx v1.1.3
 	github.com/imdario/mergo v0.3.7 // indirect
 	github.com/lucasb-eyer/go-colorful v1.0.3
 	github.com/mitchellh/go-homedir v1.1.0
