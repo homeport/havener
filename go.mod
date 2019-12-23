@@ -20,7 +20,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/nbutton23/zxcvbn-go v0.0.0-20180912185939-ae427f1e4c1d
 	github.com/onsi/ginkgo v1.11.0
-	github.com/onsi/gomega v1.7.1
+	github.com/onsi/gomega v1.8.1
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.5.0
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
