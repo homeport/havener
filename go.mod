@@ -28,7 +28,7 @@ require (
 	golang.org/x/sys v0.0.0-20190726091711-fc99dfbffb4e
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/src-d/go-git.v4 v4.13.1
-	gopkg.in/yaml.v2 v2.2.7
+	gopkg.in/yaml.v2 v2.2.8
 	k8s.io/api v0.0.0-20191005115622-2e41325d9e4b
 	k8s.io/apimachinery v0.0.0-20191006235458-f9f2f3f8ab02
 	k8s.io/cli-runtime v0.0.0-20191005121332-4d28aef60981
