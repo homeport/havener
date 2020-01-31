@@ -3,6 +3,10 @@ language: go
 go:
 - 1.12.x
 
+cache:
+  directories:
+  - $GOPATH/pkg/mod
+
 services:
 - docker
 
