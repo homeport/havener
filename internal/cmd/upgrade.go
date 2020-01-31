@@ -48,11 +48,16 @@ var upgradeCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		havenerConfig := viper.GetString(envVarUpgradeConfig)
 
+		hvnr, err := havener.NewHavener()
+		if err != nil {
+			return err
+		}
+
 		switch {
 		case len(args) == 1:
-			return UpgradeViaHavenerConfig(args[0])
+			return UpgradeViaHavenerConfig(hvnr, args[0])
 		case len(havenerConfig) > 0:
-			return UpgradeViaHavenerConfig(havenerConfig)
+			return UpgradeViaHavenerConfig(hvnr, havenerConfig)
 		default:
 			cmd.Usage()
 		}
@@ -75,7 +80,7 @@ func init() {
 }
 
 // UpgradeViaHavenerConfig override an existing helm chart
-func UpgradeViaHavenerConfig(havenerConfig string) error {
+func UpgradeViaHavenerConfig(hvnr havener.Havener, havenerConfig string) error {
 	timeoutInMin := viper.GetInt(envVarUpgradeTimeout)
 	reuseValues := viper.GetBool(envVarUpgradeValueReuse)
 
@@ -98,7 +103,7 @@ func UpgradeViaHavenerConfig(havenerConfig string) error {
 			return wrap.Error(err, "failed to evaluate before release steps")
 		}
 
-		if err := showHelmReleaseDiff(release.ChartName, release.ChartLocation, overridesData, reuseValues); err != nil {
+		if err := showHelmReleaseDiff(hvnr, release.ChartName, release.ChartLocation, overridesData, reuseValues); err != nil {
 			return wrap.Error(err, "failed to show differences before upgrade")
 		}
 
@@ -107,7 +112,7 @@ func UpgradeViaHavenerConfig(havenerConfig string) error {
 		setCurrentProgressIndicator(pi)
 		pi.Start()
 
-		err = havener.UpdateHelmRelease(
+		err = hvnr.UpdateHelmRelease(
 			release.ChartName,
 			release.ChartLocation,
 			overridesData,
@@ -125,7 +130,7 @@ func UpgradeViaHavenerConfig(havenerConfig string) error {
 			release.ChartNamespace,
 		)
 
-		message, err = getReleaseMessage(release, message)
+		message, err = hvnr.GetReleaseMessage(release, message)
 		if err != nil {
 			return err
 		}

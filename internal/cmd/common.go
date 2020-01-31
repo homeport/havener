@@ -202,24 +202,6 @@ func marshallOverrideSection(release havener.Release) ([]byte, error) {
 	return overridesData, nil
 }
 
-// getReleaseMessage combines a custom message with the release notes
-// from the helm binary.
-func getReleaseMessage(release havener.Release, message string) (string, error) {
-	var releaseNotes string
-
-	result, err := havener.RunHelmBinary("status", release.ChartName)
-	if err != nil {
-		return "", wrap.Error(err, "failed to get notes of release")
-	}
-	releaseNotes = substringFrom(string(result), "NOTES:")
-
-	if len(releaseNotes) != 0 {
-		message = message + "\n\n" + releaseNotes
-	}
-
-	return message, nil
-}
-
 // duplicateReader creates a given number of io.Reader duplicates based on the
 // provided input reader. This way it is possible to use one input reader for
 // more than one consumer.
@@ -263,14 +245,4 @@ func combineErrorsFromChannel(context string, c chan error) error {
 	default:
 		return wrap.Errors(errors, context)
 	}
-}
-
-// substringFrom gets substring from the beginning of sep string to the end
-func substringFrom(value string, sep string) string {
-	pos := strings.LastIndex(value, sep)
-	if pos == -1 {
-		return ""
-	}
-
-	return value[pos:]
 }

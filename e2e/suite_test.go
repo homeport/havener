@@ -53,7 +53,10 @@ type testEnvironment struct {
 }
 
 func (t *testEnvironment) helm(args ...string) {
-	if output, err := havener.RunHelmBinary(args...); err != nil {
+	hvnr, err := havener.NewHavener(t.kubeConfigPath)
+	Expect(err).ToNot(HaveOccurred())
+
+	if output, err := hvnr.RunHelmBinary(args...); err != nil {
 		fmt.Print(string(output))
 		Fail(err.Error())
 	}

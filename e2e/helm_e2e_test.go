@@ -30,29 +30,29 @@ import (
 )
 
 var _ = Describe("Helm functionalities", func() {
-	Context("using local helm binary", func() {
-		It("should exit with error if not present", func() {
-			err := havener.VerifyHelmBinary()
-			Expect(err).To(BeNil())
-		})
+	var (
+		tmp     bool
+		hvnr    havener.Havener
+		testEnv *testEnvironment
+	)
 
-		It("should be able to use the helm binary cmds", func() {
-			_, err := havener.RunHelmBinary("list", "--help")
-			Expect(err).To(BeNil())
-		})
+	BeforeEach(func() {
+		testEnv = setupKindCluster()
+
+		tmp = cmd.NoUserPrompt
+		cmd.NoUserPrompt = true
+
+		var err error
+		hvnr, err = havener.NewHavener(testEnv.kubeConfigPath)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	AfterEach(func() {
+		teardownKindCluster(testEnv)
+		cmd.NoUserPrompt = tmp
 	})
 
 	Context("when installing releases via havener", func() {
-		var testEnv *testEnvironment
-
-		BeforeEach(func() {
-			testEnv = setupKindCluster()
-		})
-
-		AfterEach(func() {
-			teardownKindCluster(testEnv)
-		})
-
 		It("should install and list them correctly", func() {
 			installConfigBytes := []byte(`---
 name: mysql deployment
@@ -65,31 +65,18 @@ releases:
 			filePath, err := environment.GenerateConfigFile(installConfigBytes)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(cmd.DeployViaHavenerConfig(filePath)).NotTo(HaveOccurred())
+			Expect(cmd.DeployViaHavenerConfig(hvnr, filePath)).NotTo(HaveOccurred())
 
-			helmReleases, err := havener.ListHelmReleases()
+			helmReleases, err := hvnr.ListHelmReleases()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(len(helmReleases)).To(BeEquivalentTo(1))
 			Expect(helmReleases[0].Name).To(BeEquivalentTo("mysql-release-install-test"))
 
-			hvnr, err := havener.NewHavener()
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(havener.PurgeHelmRelease(hvnr.Client(), helmReleases[0], helmReleases[0].Name)).ToNot(HaveOccurred())
+			Expect(hvnr.PurgeHelmRelease(helmReleases[0], helmReleases[0].Name)).ToNot(HaveOccurred())
 		})
 	})
 
 	Context("when upgrading releases via havener", func() {
-		var testEnv *testEnvironment
-
-		BeforeEach(func() {
-			testEnv = setupKindCluster()
-		})
-
-		AfterEach(func() {
-			teardownKindCluster(testEnv)
-		})
-
 		It("should upgrade them correctly", func() {
 			installConfig := []byte(`---
 name: mysql deployment
@@ -104,7 +91,7 @@ releases:
 			installFilePath, err := environment.GenerateConfigFile(installConfig)
 			Expect(err).NotTo(HaveOccurred())
 
-			err = cmd.DeployViaHavenerConfig(installFilePath)
+			err = cmd.DeployViaHavenerConfig(hvnr, installFilePath)
 			Expect(err).NotTo(HaveOccurred())
 
 			upgradeConfig := []byte(`---
@@ -118,10 +105,7 @@ releases:
 			upgradeFilePath, err := environment.GenerateConfigFile(upgradeConfig)
 			Expect(err).NotTo(HaveOccurred())
 
-			err = cmd.UpgradeViaHavenerConfig(upgradeFilePath)
-			Expect(err).NotTo(HaveOccurred())
-
-			hvnr, err := havener.NewHavener()
+			err = cmd.UpgradeViaHavenerConfig(hvnr, upgradeFilePath)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(hvnr.PurgeHelmReleaseByName("mysql-release-upgrade-test")).NotTo(HaveOccurred())
@@ -129,20 +113,6 @@ releases:
 	})
 
 	Context("when purging releases via havener", func() {
-		var testEnv *testEnvironment
-		var tmp = false
-
-		BeforeEach(func() {
-			testEnv = setupKindCluster()
-			tmp = cmd.NoUserPrompt
-			cmd.NoUserPrompt = true
-		})
-
-		AfterEach(func() {
-			teardownKindCluster(testEnv)
-			cmd.NoUserPrompt = tmp
-		})
-
 		It("should delete existing releases correctly", func() {
 			purgeConfigBytes := []byte(`---
 name: mysql deployment
@@ -155,13 +125,10 @@ releases:
 			installFilePath, err := environment.GenerateConfigFile(purgeConfigBytes)
 			Expect(err).NotTo(HaveOccurred())
 
-			err = cmd.DeployViaHavenerConfig(installFilePath)
+			err = cmd.DeployViaHavenerConfig(hvnr, installFilePath)
 			Expect(err).NotTo(HaveOccurred())
 
-			hvnr, err := havener.NewHavener()
-			Expect(err).NotTo(HaveOccurred())
-
-			err = cmd.PurgeHelmReleases(hvnr.Client(), "mysql-release-purge-test")
+			err = cmd.PurgeHelmReleases(hvnr, "mysql-release-purge-test")
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})

@@ -47,11 +47,16 @@ var deployCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		havenerConfig := viper.GetString(envVarDeployConfig)
 
+		hvnr, err := havener.NewHavener()
+		if err != nil {
+			return err
+		}
+
 		switch {
 		case len(args) == 1:
-			return DeployViaHavenerConfig(args[0])
+			return DeployViaHavenerConfig(hvnr, args[0])
 		case len(havenerConfig) > 0:
-			return DeployViaHavenerConfig(havenerConfig)
+			return DeployViaHavenerConfig(hvnr, havenerConfig)
 		default:
 			cmd.Usage()
 		}
@@ -72,7 +77,7 @@ func init() {
 }
 
 // DeployViaHavenerConfig entry function for running a helm install
-func DeployViaHavenerConfig(havenerConfig string) error {
+func DeployViaHavenerConfig(hvnr havener.Havener, havenerConfig string) error {
 	timeoutInMin := viper.GetInt(envVarDeployTimeout)
 
 	config, err := havener.ProcessConfigFile(havenerConfig)
@@ -98,7 +103,7 @@ func DeployViaHavenerConfig(havenerConfig string) error {
 		pi.SetTimeout(time.Duration(timeoutInMin) * time.Minute)
 		setCurrentProgressIndicator(pi)
 		pi.Start()
-		err = havener.DeployHelmRelease(
+		err = hvnr.DeployHelmRelease(
 			release.ChartName,
 			release.ChartNamespace,
 			release.ChartLocation,
@@ -116,7 +121,7 @@ func DeployViaHavenerConfig(havenerConfig string) error {
 			release.ChartNamespace,
 		)
 
-		message, err = getReleaseMessage(release, message)
+		message, err = hvnr.GetReleaseMessage(release, message)
 		if err != nil {
 			return err
 		}

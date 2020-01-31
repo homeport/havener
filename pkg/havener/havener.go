@@ -83,16 +83,26 @@ type Havener interface {
 	RESTConfig() *rest.Config
 	ClusterName() string
 
-	TopDetails() (*TopDetails, error)
+	ListHelmReleases() ([]HelmRelease, error)
+	DeployHelmRelease(chartname string, namespace string, chartPath string, timeOut int, valueOverrides []byte) error
+	GetReleaseMessage(release Release, message string) (string, error)
+	RunHelmBinary(args ...string) ([]byte, error)
+	GetReleaseByName(releaseName string) (HelmRelease, error)
+	PurgeHelmRelease(release HelmRelease, helmRelease string) error
+	PurgeHelmReleaseByName(name string) error
+	UpdateHelmRelease(chartname string, chartPath string, valueOverrides []byte, reuseVal bool) error
+
 	ListPods(namespaces ...string) ([]*corev1.Pod, error)
 	ListNodes() ([]corev1.Node, error)
+	ListSecrets(namespaces ...string) ([]*corev1.Secret, error)
+	ListConfigMaps(namespaces ...string) ([]*corev1.ConfigMap, error)
+	ListCustomResourceDefinition(string) ([]unstructured.Unstructured, error)
+
+	TopDetails() (*TopDetails, error)
 	RetrieveLogs(parallelDownloads int, target string, includeConfigFiles bool) error
 
 	PodExec(pod *corev1.Pod, container string, command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error
 	NodeExec(node corev1.Node, containerImage string, timeoutSeconds int, command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error
-	ListSecrets(namespaces ...string) ([]*corev1.Secret, error)
-	ListConfigMaps(namespaces ...string) ([]*corev1.ConfigMap, error)
-	ListCustomResourceDefinition(string) ([]unstructured.Unstructured, error)
 }
 
 // NewHavener returns a new Havener handle to perform cluster actions
