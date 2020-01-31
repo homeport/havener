@@ -42,8 +42,8 @@ const (
 )
 
 // showHelmReleaseDiff provides a difference report using the packages of the `dyff` tool.
-func showHelmReleaseDiff(chartname string, chartPath string, valueOverrides []byte, reuseVal bool) error {
-	manifestBytes, err := havener.RunHelmBinary("get", chartname)
+func showHelmReleaseDiff(hvnr havener.Havener, chartname string, chartPath string, valueOverrides []byte, reuseVal bool) error {
+	manifestBytes, err := hvnr.RunHelmBinary("get", chartname)
 	if err != nil {
 		return err
 	}
@@ -58,7 +58,7 @@ func showHelmReleaseDiff(chartname string, chartPath string, valueOverrides []by
 		return err
 	}
 
-	dryRunBytes, err := havener.RunHelmBinary("upgrade", chartname, helmChartPath,
+	dryRunBytes, err := hvnr.RunHelmBinary("upgrade", chartname, helmChartPath,
 		"--dry-run",
 		"--reuse-values",
 		"--debug",

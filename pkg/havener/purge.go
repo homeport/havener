@@ -37,24 +37,24 @@ var defaultPropagationPolicy = metav1.DeletePropagationForeground
 
 // PurgeHelmReleaseByName purges the helm release with the given name
 func (h *Hvnr) PurgeHelmReleaseByName(name string) error {
-	helmRelease, err := GetReleaseByName(name)
+	helmRelease, err := h.GetReleaseByName(name)
 	if err != nil {
 		return err
 	}
 
-	return PurgeHelmRelease(h.Client(), helmRelease, helmRelease.Name)
+	return h.PurgeHelmRelease(helmRelease, helmRelease.Name)
 }
 
 // PurgeHelmRelease removes the given helm release including all its resources.
-func PurgeHelmRelease(kubeClient kubernetes.Interface, release HelmRelease, helmRelease string) error {
-	if err := PurgeDeploymentsInNamespace(kubeClient, release.Namespace); err != nil {
+func (h *Hvnr) PurgeHelmRelease(release HelmRelease, helmRelease string) error {
+	if err := PurgeDeploymentsInNamespace(h.client, release.Namespace); err != nil {
 		return err
 	}
 
-	if err := PurgeStatefulSetsInNamespace(kubeClient, release.Namespace); err != nil {
+	if err := PurgeStatefulSetsInNamespace(h.client, release.Namespace); err != nil {
 		return err
 	}
-	_, err := RunHelmBinary("delete",
+	_, err := h.RunHelmBinary("delete",
 		helmRelease,
 		"--purge",
 		"--timeout", strconv.Itoa(MinutesToSeconds(15)))
@@ -62,7 +62,7 @@ func PurgeHelmRelease(kubeClient kubernetes.Interface, release HelmRelease, helm
 		return err
 	}
 
-	return PurgeNamespace(kubeClient, release.Namespace)
+	return PurgeNamespace(h.client, release.Namespace)
 }
 
 // PurgeDeploymentsInNamespace removes all deployments in the given namespace.

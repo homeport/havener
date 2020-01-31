@@ -32,7 +32,6 @@ import (
 	"github.com/gonvenience/wrap"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
-	"k8s.io/client-go/kubernetes"
 )
 
 // purgeCmd represents the purge command
@@ -53,9 +52,14 @@ If multiple Helm Releases are specified, then they will deleted concurrently.
 
 	Args: func() cobra.PositionalArgs {
 		return func(cmd *cobra.Command, args []string) error {
+			hvnr, err := havener.NewHavener()
+			if err != nil {
+				return err
+			}
+
 			if len(args) < 1 {
 				var message string = "At least one Helm Release has to be specified."
-				if list, err := havener.ListHelmReleases(); err == nil {
+				if list, err := hvnr.ListHelmReleases(); err == nil {
 					names := make([]string, len(list))
 					for i, entry := range list {
 						names[i] = entry.Name
@@ -75,12 +79,12 @@ If multiple Helm Releases are specified, then they will deleted concurrently.
 	}(),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, err := havener.OutOfClusterAuthentication("")
+		hvnr, err := havener.NewHavener()
 		if err != nil {
-			return wrap.Error(err, "unable to get access to cluster")
+			return err
 		}
 
-		if err := PurgeHelmReleases(client, args...); err != nil {
+		if err := PurgeHelmReleases(hvnr, args...); err != nil {
 			return wrap.Error(err, "failed to purge helm releases")
 		}
 
@@ -89,8 +93,8 @@ If multiple Helm Releases are specified, then they will deleted concurrently.
 }
 
 // PurgeHelmReleases delete releases via helm
-func PurgeHelmReleases(kubeClient kubernetes.Interface, helmReleaseNames ...string) error {
-	list, err := havener.ListHelmReleases()
+func PurgeHelmReleases(hvnr havener.Havener, helmReleaseNames ...string) error {
+	list, err := hvnr.ListHelmReleases()
 	if err != nil {
 		return err
 	}
@@ -136,13 +140,13 @@ func PurgeHelmReleases(kubeClient kubernetes.Interface, helmReleaseNames ...stri
 
 	// Start to purge the helm releaes in parallel
 	for _, name := range toBeDeleted {
-		releaseMetaData, err := havener.GetReleaseByName(name)
+		releaseMetaData, err := hvnr.GetReleaseByName(name)
 		if err != nil {
 			return err
 		}
 
 		go func(helmRelease string) {
-			errors <- havener.PurgeHelmRelease(kubeClient, releaseMetaData, helmRelease)
+			errors <- hvnr.PurgeHelmRelease(releaseMetaData, helmRelease)
 			wg.Done()
 		}(name)
 	}

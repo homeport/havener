@@ -27,6 +27,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 
 	"github.com/gonvenience/wrap"
 )
@@ -36,13 +37,13 @@ var (
 )
 
 // UpdateHelmRelease will upgrade an existing release with provided override values
-func UpdateHelmRelease(chartname string, chartPath string, valueOverrides []byte, reuseVal bool) error {
+func (h *Hvnr) UpdateHelmRelease(chartname string, chartPath string, valueOverrides []byte, reuseVal bool) error {
 	err := VerifyHelmBinary()
 	if err != nil {
 		return err
 	}
 
-	_, err = RunHelmBinary("version")
+	_, err = h.RunHelmBinary("version")
 	if err != nil {
 		return err
 	}
@@ -57,7 +58,7 @@ func UpdateHelmRelease(chartname string, chartPath string, valueOverrides []byte
 		return err
 	}
 
-	_, err = RunHelmBinary("upgrade", chartname, helmChartPath,
+	_, err = h.RunHelmBinary("upgrade", chartname, helmChartPath,
 		"--timeout", strconv.Itoa(MinutesToSeconds(3)),
 		"--wait",
 		"--reuse-values",
@@ -73,13 +74,13 @@ func UpdateHelmRelease(chartname string, chartPath string, valueOverrides []byte
 }
 
 // DeployHelmRelease will initialize a helm in both client and server
-func DeployHelmRelease(chartname string, namespace string, chartPath string, timeOut int, valueOverrides []byte) error {
+func (h *Hvnr) DeployHelmRelease(chartname string, namespace string, chartPath string, timeOut int, valueOverrides []byte) error {
 	err := VerifyHelmBinary()
 	if err != nil {
 		return err
 	}
 
-	_, err = RunHelmBinary("version")
+	_, err = h.RunHelmBinary("version")
 	if err != nil {
 		return err
 	}
@@ -97,7 +98,7 @@ func DeployHelmRelease(chartname string, namespace string, chartPath string, tim
 		return err
 	}
 
-	_, err = RunHelmBinary("install", helmChartPath, "--name", chartname,
+	_, err = h.RunHelmBinary("install", helmChartPath, "--name", chartname,
 		"--namespace", namespace,
 		"--timeout", strconv.Itoa(MinutesToSeconds(5)),
 		"--wait",
@@ -114,13 +115,17 @@ func DeployHelmRelease(chartname string, namespace string, chartPath string, tim
 
 // RunHelmBinary will execute helm with the provided
 // arguments.
-func RunHelmBinary(args ...string) ([]byte, error) {
-	cmd := exec.Command(helmBinary, args...)
+func (h *Hvnr) RunHelmBinary(args ...string) ([]byte, error) {
+	cmd := exec.Command(helmBinary,
+		append([]string{"--kubeconfig", h.kubeConfigPath}, args...)...,
+	)
+
 	stdOutput, err := cmd.CombinedOutput()
 	if err != nil {
 		output := string(stdOutput)
 		return nil, wrap.Errorf(err, "helm failed: %s", output)
 	}
+
 	return stdOutput, nil
 }
 
@@ -171,12 +176,12 @@ type HelmRelease struct {
 }
 
 // ListHelmReleases lists all known Helm Releases
-func ListHelmReleases() ([]HelmRelease, error) {
+func (h *Hvnr) ListHelmReleases() ([]HelmRelease, error) {
 	result := []HelmRelease{}
 
 	var next string
 	for {
-		stdOutput, err := RunHelmBinary(
+		stdOutput, err := h.RunHelmBinary(
 			"list",
 			"--all",
 			"--output", "json",
@@ -205,7 +210,7 @@ func ListHelmReleases() ([]HelmRelease, error) {
 }
 
 // ReleaseExist returns true for an existing release
-func ReleaseExist(list HelmReleases, releaseName string) bool {
+func (h *Hvnr) ReleaseExist(list HelmReleases, releaseName string) bool {
 	for _, release := range list.Releases {
 		if release.Name == releaseName {
 			return true
@@ -215,8 +220,8 @@ func ReleaseExist(list HelmReleases, releaseName string) bool {
 }
 
 // GetReleaseByName returns true for an existing release
-func GetReleaseByName(releaseName string) (HelmRelease, error) {
-	list, err := ListHelmReleases()
+func (h *Hvnr) GetReleaseByName(releaseName string) (HelmRelease, error) {
+	list, err := h.ListHelmReleases()
 	if err != nil {
 		return HelmRelease{}, err
 	}
@@ -228,4 +233,32 @@ func GetReleaseByName(releaseName string) (HelmRelease, error) {
 	}
 
 	return HelmRelease{}, fmt.Errorf("Release %s not found", releaseName)
+}
+
+// GetReleaseMessage combines a custom message with the release notes
+// from the helm binary.
+func (h *Hvnr) GetReleaseMessage(release Release, message string) (string, error) {
+	var releaseNotes string
+
+	result, err := h.RunHelmBinary("status", release.ChartName)
+	if err != nil {
+		return "", wrap.Error(err, "failed to get notes of release")
+	}
+
+	releaseNotes = substringFrom(string(result), "NOTES:")
+	if len(releaseNotes) != 0 {
+		message = message + "\n\n" + releaseNotes
+	}
+
+	return message, nil
+}
+
+// substringFrom gets substring from the beginning of sep string to the end
+func substringFrom(value string, sep string) string {
+	pos := strings.LastIndex(value, sep)
+	if pos == -1 {
+		return ""
+	}
+
+	return value[pos:]
 }
