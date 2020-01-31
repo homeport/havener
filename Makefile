@@ -65,6 +65,7 @@ e2e-test:
 	  -race \
 	  -cover \
 	  -trace \
+	  -flakeAttempts=4 \
 	  e2e/...
 
 docker-build-test:
