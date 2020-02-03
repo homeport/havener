@@ -6,7 +6,8 @@ import (
 	. "github.com/homeport/havener/internal/cmd"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	yaml "gopkg.in/yaml.v2"
+
+	yamlv3 "gopkg.in/yaml.v3"
 )
 
 var exampleService = `apiVersion: v1
@@ -89,8 +90,8 @@ var exampleManifest = fmt.Sprintf(`
 %s
 `, exampleService, exampleDeployment)
 
-func mrshll(obj yaml.MapSlice) string {
-	out, err := yaml.Marshal(obj)
+func mrshll(obj *yamlv3.Node) string {
+	out, err := yamlv3.Marshal(obj)
 	Expect(err).ToNot(HaveOccurred())
 	return string(out)
 }
@@ -98,13 +99,12 @@ func mrshll(obj yaml.MapSlice) string {
 var _ = Describe("Helm Release details", func() {
 	Context("Given a Helm Release", func() {
 		It("should break-up the manifest string into individual YAML files", func() {
-			// output, err := ListManifestFiles(&release.Release{Manifest: exampleManifest})
 			output, err := ListManifestFiles(exampleManifest)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(output).ToNot(BeNil())
 
-			Expect(mrshll(output["tomcat/templates/appsrv-svc.yaml"])).To(BeEquivalentTo(exampleService))
-			Expect(mrshll(output["tomcat/templates/appsrv.yaml"])).To(BeEquivalentTo(exampleDeployment))
+			Expect(mrshll(output["tomcat/templates/appsrv-svc.yaml"])).To(MatchYAML(exampleService))
+			Expect(mrshll(output["tomcat/templates/appsrv.yaml"])).To(MatchYAML(exampleDeployment))
 		})
 	})
 })

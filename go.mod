@@ -12,8 +12,9 @@ require (
 	github.com/gonvenience/text v1.0.5
 	github.com/gonvenience/wait v1.0.2
 	github.com/gonvenience/wrap v1.1.0
+	github.com/gonvenience/ytbx v1.2.2
 	github.com/googleapis/gnostic v0.3.0 // indirect
-	github.com/homeport/dyff v0.10.3
+	github.com/homeport/dyff v1.0.2
 	github.com/homeport/ytbx v1.1.3
 	github.com/imdario/mergo v0.3.7 // indirect
 	github.com/lucasb-eyer/go-colorful v1.0.3
@@ -29,6 +30,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/src-d/go-git.v4 v4.13.1
 	gopkg.in/yaml.v2 v2.2.8
+	gopkg.in/yaml.v3 v3.0.0-20191120175047-4206685974f2
 	k8s.io/api v0.0.0-20191005115622-2e41325d9e4b
 	k8s.io/apimachinery v0.0.0-20191028221656-72ed19daf4bb
 	k8s.io/cli-runtime v0.0.0-20191005121332-4d28aef60981

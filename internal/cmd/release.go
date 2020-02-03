@@ -23,14 +23,14 @@ package cmd
 import (
 	"strings"
 
-	yaml "gopkg.in/yaml.v2"
+	yamlv3 "gopkg.in/yaml.v3"
 )
 
 // ListManifestFiles breaks up the manifest string of a Helm Release to return
 // a map with the template filename as the key and the unmarshaled YAML data
 // as the value.
-func ListManifestFiles(release string) (map[string]yaml.MapSlice, error) {
-	result := make(map[string]yaml.MapSlice)
+func ListManifestFiles(release string) (map[string]*yamlv3.Node, error) {
+	result := make(map[string]*yamlv3.Node)
 
 	for _, document := range strings.Split(release, "---\n") {
 		if document == "\n" {
@@ -41,12 +41,12 @@ func ListManifestFiles(release string) (map[string]yaml.MapSlice, error) {
 			if firstLine := lines[0]; strings.HasPrefix(firstLine, "# Source: ") {
 				source := strings.Replace(firstLine, "# Source: ", "", -1)
 
-				var data yaml.MapSlice
-				err := yaml.Unmarshal([]byte(strings.Join(lines[1:], "\n")), &data)
+				var data yamlv3.Node
+				err := yamlv3.Unmarshal([]byte(strings.Join(lines[1:], "\n")), &data)
 				if err != nil {
 					return nil, err
 				}
-				result[source] = data
+				result[source] = &data
 			}
 		}
 	}

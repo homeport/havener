@@ -29,10 +29,10 @@ import (
 
 	"github.com/gonvenience/bunt"
 	"github.com/gonvenience/wrap"
-	"github.com/homeport/dyff/pkg/v1/dyff"
+	"github.com/gonvenience/ytbx"
+	"github.com/homeport/dyff/pkg/dyff"
 	"github.com/homeport/havener/pkg/havener"
-	"github.com/homeport/ytbx/pkg/v1/ytbx"
-	yaml "gopkg.in/yaml.v2"
+	yamlv3 "gopkg.in/yaml.v3"
 )
 
 const (
@@ -127,13 +127,13 @@ func regexSplit(rgxMatch string, stdOutDryRun string) ([]string, error) {
 	return re, nil
 }
 
-func compare(filename string, from yaml.MapSlice, to yaml.MapSlice) error {
+func compare(filename string, from *yamlv3.Node, to *yamlv3.Node) error {
 	report, err := dyff.CompareInputFiles(
 		ytbx.InputFile{
-			Documents: []interface{}{from},
+			Documents: []*yamlv3.Node{from},
 		},
 		ytbx.InputFile{
-			Documents: []interface{}{to},
+			Documents: []*yamlv3.Node{to},
 		})
 
 	if err != nil {
