@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-FROM golang:1.12 AS build
+FROM golang:1.13 AS build
 
 RUN go get -u github.com/mvdan/sh/cmd/shfmt && \
     git clone https://github.com/direnv/direnv $GOPATH/src/github.com/direnv/direnv && \
@@ -74,7 +74,7 @@ RUN apt-get update > /dev/null && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Golang
-RUN curl --progress-bar --location https://storage.googleapis.com/golang/go1.12.linux-amd64.tar.gz | tar -xzf - -C /usr/local
+RUN curl --progress-bar --location https://storage.googleapis.com/golang/go1.13.linux-amd64.tar.gz | tar -xzf - -C /usr/local
 ENV GOPATH=/go
 ENV PATH=$PATH:/usr/local/go/bin:$GOPATH/bin
 

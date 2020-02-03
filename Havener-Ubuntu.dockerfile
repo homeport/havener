@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-FROM golang:1.12 AS build
+FROM golang:1.13 AS build
 COPY . /go/src/github.com/homeport/havener
 RUN apt-get update >/dev/null && \
   apt-get install -y file jq >/dev/null && \
