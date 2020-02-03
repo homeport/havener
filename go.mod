@@ -34,7 +34,7 @@ require (
 	k8s.io/cli-runtime v0.0.0-20191005121332-4d28aef60981
 	k8s.io/client-go v0.0.0-20191006235818-c918cd02a1a3
 	k8s.io/kubectl v0.0.0-20191007002032-340a90f4c38f
-	sigs.k8s.io/kind v0.6.0
+	sigs.k8s.io/kind v0.7.0
 )
 
 replace (
