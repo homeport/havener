@@ -68,6 +68,8 @@ execute the command in the first container found in the pod.
 If you run the 'pod-exec' without any additional arguments, it will print a
 list of available pods.
 
+For convenenience, if the target pod name _all_ is used, havener will look up
+all pods in all namespaces automatically.
 `,
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -193,6 +195,23 @@ func execInClusterPods(args []string) error {
 	return nil
 }
 
+func lookupAllPods(client kubernetes.Interface, namespaces []string) (map[*corev1.Pod]string, error) {
+
+	var podLists map[*corev1.Pod]string
+	podLists = make(map[*corev1.Pod]string)
+	for _, namespace := range namespaces {
+		podsPerNs, err := client.CoreV1().Pods(namespace).List(metav1.ListOptions{})
+		if err != nil {
+			return nil, err
+		}
+
+		for i := range podsPerNs.Items {
+			podLists[&(podsPerNs.Items[i])] = podsPerNs.Items[i].Spec.Containers[0].Name
+		}
+	}
+	return podLists, nil
+}
+
 func lookupPodsByName(client kubernetes.Interface, input string) (map[*corev1.Pod]string, error) {
 	inputList := strings.Split(input, ",")
 
@@ -205,6 +224,10 @@ func lookupPodsByName(client kubernetes.Interface, input string) (map[*corev1.Po
 			namespaces, err := havener.ListNamespaces(client)
 			if err != nil {
 				return nil, err
+			}
+
+			if input == "all" {
+				return lookupAllPods(client, namespaces)
 			}
 
 			pods := []*corev1.Pod{}
