@@ -117,7 +117,7 @@ var _ = Describe("Output message printing", func() {
 		}()
 
 		actual := captureStdout(func() {
-			PrintOutputMessage(exampleChannel, 2)
+			PrintOutputMessage(exampleChannel)
 		})
 
 		expected := "08:20:16 Prefix1 │ bin    etc    lib    mnt    proc   run    srv    tmp    var\n" +
@@ -140,7 +140,7 @@ var _ = Describe("Output message printing", func() {
 		}()
 
 		actual := captureStdout(func() {
-			PrintOutputMessageAsBlock(exampleChannel, 2)
+			PrintOutputMessageAsBlock(exampleChannel)
 		})
 
 		expected := "08:20:16 Prefix1 │ bin    etc    lib    mnt    proc   run    srv    tmp    var\n" +

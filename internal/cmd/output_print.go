@@ -60,17 +60,19 @@ func chanWriter(stream string, origin string, c chan OutputMsg) io.Writer {
 
 // PrintOutputMessage reads from the given output message channel and prints the
 // respective messages without any buffering or sorting.
-func PrintOutputMessage(messages chan OutputMsg, items int) error {
+func PrintOutputMessage(messages chan OutputMsg) error {
 	var (
-		colors        = bunt.RandomTerminalFriendlyColors(items)
-		originCounter = 0
-		originColors  = map[string]colorful.Color{}
+		numberOfColors = 64
+		colors         = bunt.RandomTerminalFriendlyColors(numberOfColors)
+		originCounter  = 0
+		originColors   = map[string]colorful.Color{}
 	)
 
 	for msg := range messages {
 		if _, ok := originColors[msg.Origin]; !ok {
 			originColors[msg.Origin] = colors[originCounter]
-			originCounter++
+
+			originCounter = (originCounter + 1) % numberOfColors
 		}
 
 		printMessage(originColors[msg.Origin], msg)
@@ -82,11 +84,12 @@ func PrintOutputMessage(messages chan OutputMsg, items int) error {
 // PrintOutputMessageAsBlock reads from the given output message channel and
 // buffers the input until the channel is closed. Once closed, it prints the
 // output messages sorted by the origin.
-func PrintOutputMessageAsBlock(messages chan OutputMsg, items int) {
+func PrintOutputMessageAsBlock(messages chan OutputMsg) {
 	var (
-		colors = bunt.RandomTerminalFriendlyColors(items)
-		data   = map[string][]OutputMsg{}
-		keys   = []string{}
+		numberOfColors = 64
+		colors         = bunt.RandomTerminalFriendlyColors(numberOfColors)
+		data           = map[string][]OutputMsg{}
+		keys           = []string{}
 	)
 
 	// Fully read the input channel and store the output messages indexed by the
@@ -109,7 +112,7 @@ func PrintOutputMessageAsBlock(messages chan OutputMsg, items int) {
 		for _, msg := range data[key] {
 			printMessage(colors[i], msg)
 		}
-		i++
+		i = (i + 1) % numberOfColors
 	}
 }
 

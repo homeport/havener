@@ -177,10 +177,10 @@ func execInClusterNodes(args []string) error {
 	// Start the respective output printer in a separate Go routine
 	go func() {
 		if nodeExecBlock {
-			PrintOutputMessageAsBlock(output, len(nodes))
+			PrintOutputMessageAsBlock(output)
 
 		} else {
-			PrintOutputMessage(output, len(nodes))
+			PrintOutputMessage(output)
 		}
 
 		printer <- true
