@@ -76,7 +76,7 @@ func (h *Hvnr) PodExec(pod *corev1.Pod, container string, command []string, stdi
 	}
 
 	if err = executor.Stream(remotecommand.StreamOptions{Stdin: stdin, Stdout: stdout, Stderr: stderr, Tty: tty, TerminalSizeQueue: tsq}); err != nil {
-		return wrap.Errorf(err, "failed to exectue command on pod %s, container %s", pod.Name, container)
+		return wrap.Errorf(err, "failed to execute command on pod %s, container %s", pod.Name, container)
 	}
 
 	logf(Verbose, "Successfully executed command.")
