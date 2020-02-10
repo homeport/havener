@@ -32,18 +32,20 @@ import (
 	"github.com/gonvenience/wrap"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var waitCmdSettings struct {
-	quiet        bool
-	namespace    string
-	podStartWith string
-	interval     time.Duration
-	timeout      time.Duration
+// WaitCmdSettings contains all possible settings of the wait command
+type WaitCmdSettings struct {
+	Quiet        bool
+	Namespace    string
+	PodStartWith string
+	Interval     time.Duration
+	Timeout      time.Duration
 }
+
+var waitCmdSettings WaitCmdSettings
 
 // waitCmd represents the top command
 var waitCmd = &cobra.Command{
@@ -59,7 +61,7 @@ whether all pods that match the configured prefix to become ready.`,
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		switch {
-		case len(waitCmdSettings.podStartWith) == 0:
+		case len(waitCmdSettings.PodStartWith) == 0:
 			return wrap.Errorf(
 				bunt.Errorf("There was no pod name prefix defined to watch for.\n\n%s", cmd.UsageString()),
 				"Mandatory condition is missing",
@@ -71,44 +73,64 @@ whether all pods that match the configured prefix to become ready.`,
 			return wrap.Error(err, "unable to get access to cluster")
 		}
 
-		var (
-			pi *wait.ProgressIndicator
+		return WaitCmdFunc(hvnr, waitCmdSettings)
+	},
+}
 
-			waitString = func(pods ...corev1.Pod) string {
-				switch len(pods) {
-				case 0:
-					return bunt.Sprintf("Waiting for pods starting with *%s* to become ready in namespace _%s_ ...",
-						waitCmdSettings.podStartWith,
-						waitCmdSettings.namespace,
-					)
+func init() {
+	rootCmd.AddCommand(waitCmd)
 
-				default:
-					names := make([]string, len(pods))
-					for i, pod := range pods {
-						names[i] = bunt.Sprintf("*%s*", pod.Name)
-					}
+	waitCmd.PersistentFlags().BoolVar(&waitCmdSettings.Quiet, "quiet", false, "be quiet and do not output status updates")
+	waitCmd.PersistentFlags().StringVar(&waitCmdSettings.Namespace, "namespace", "default", "namespace to watch for")
+	waitCmd.PersistentFlags().StringVar(&waitCmdSettings.PodStartWith, "pod-starts-with", "", "name prefix of pods to wait for")
+	waitCmd.PersistentFlags().DurationVar(&waitCmdSettings.Timeout, "timeout", time.Duration(1*time.Minute), "timeout until giving up waiting on condition")
+	waitCmd.PersistentFlags().DurationVar(&waitCmdSettings.Interval, "interval", time.Duration(10*time.Second), "interval to check for updates")
+}
 
-					return fmt.Sprintf("Waiting for %s in namespace _%s_: %s",
-						text.Plural(len(pods), "unready pod"),
-						waitCmdSettings.namespace,
-						text.List(names),
-					)
+// WaitCmdFunc blocks until either the configured condition is reached or the
+// timeout occurred.
+func WaitCmdFunc(hvnr *havener.Hvnr, settings WaitCmdSettings) error {
+	var (
+		pi *wait.ProgressIndicator
+
+		waitString = func(pods ...corev1.Pod) string {
+			switch len(pods) {
+			case 0:
+				return bunt.Sprintf("Waiting for pods starting with *%s* to become ready in namespace _%s_ ...",
+					settings.PodStartWith,
+					settings.Namespace,
+				)
+
+			default:
+				names := make([]string, len(pods))
+				for i, pod := range pods {
+					names[i] = bunt.Sprintf("*%s*", pod.Name)
 				}
+
+				return fmt.Sprintf("Waiting for %s in namespace _%s_: %s",
+					text.Plural(len(pods), "unready pod"),
+					settings.Namespace,
+					text.List(names),
+				)
+			}
+		}
+
+		listUnreadyPods = func() ([]corev1.Pod, int, error) {
+			list, err := hvnr.Client().CoreV1().Pods(settings.Namespace).List(metav1.ListOptions{})
+			if err != nil {
+				return nil, 0, wrap.Errorf(err, "failed to get a list of pods in namespace %s", settings.Namespace)
 			}
 
-			listUnreadyPods = func() ([]corev1.Pod, error) {
-				list, err := hvnr.Client().CoreV1().Pods(waitCmdSettings.namespace).List(metav1.ListOptions{})
-				if err != nil {
-					return nil, wrap.Errorf(err, "failed to get a list of pods in namespace %s", waitCmdSettings.namespace)
-				}
+			var (
+				unreadyPods    = []corev1.Pod{}
+				podsWithPrefix = 0
+			)
 
-				var unreadyPods = []corev1.Pod{}
-				for i := range list.Items {
-					pod := list.Items[i]
+			for i := range list.Items {
+				pod := list.Items[i]
 
-					if !strings.HasPrefix(pod.Name, waitCmdSettings.podStartWith) {
-						continue
-					}
+				if strings.HasPrefix(pod.Name, settings.PodStartWith) {
+					podsWithPrefix++
 
 					var ready int
 					for _, containerStatus := range pod.Status.ContainerStatuses {
@@ -117,93 +139,81 @@ whether all pods that match the configured prefix to become ready.`,
 						}
 					}
 
-					if ready == len(pod.Status.ContainerStatuses) {
-						continue
+					if ready != len(pod.Status.ContainerStatuses) {
+						unreadyPods = append(unreadyPods, pod)
 					}
-
-					unreadyPods = append(unreadyPods, pod)
 				}
-
-				return unreadyPods, nil
 			}
 
-			checkFunc = func() (bool, error) {
-				list, err := listUnreadyPods()
-				if err != nil {
-					return false, err
-				}
-
-				if len(list) == 0 {
-					return true, nil
-				}
-
-				if pi != nil {
-					pi.SetText(waitString(list...))
-				}
-
-				return false, nil
-			}
-		)
-
-		if !waitCmdSettings.quiet {
-			pi = wait.NewProgressIndicator(waitString())
-			pi.SetTimeout(waitCmdSettings.timeout)
-			pi.Start()
-			defer pi.Stop()
+			return unreadyPods, podsWithPrefix, nil
 		}
 
-		ticker := time.NewTicker(waitCmdSettings.interval)
-		timeout := time.After(waitCmdSettings.timeout)
-		defer ticker.Stop()
+		checkFunc = func() (bool, error) {
+			unreadyPods, podsWithPrefix, err := listUnreadyPods()
+			if err != nil {
+				return false, err
+			}
 
-		for {
-			select {
-			case <-timeout:
-				list, err := listUnreadyPods()
-				if err != nil {
-					return err
-				}
+			if len(unreadyPods) == 0 && podsWithPrefix > 0 {
+				return true, nil
+			}
 
-				if len(list) == 0 {
-					return wrap.Errorf(
-						bunt.Errorf("There are no pods that start with *%s* in namespace _%s_",
-							waitCmdSettings.podStartWith,
-							waitCmdSettings.namespace,
-						),
-						"Giving up waiting for pods to become ready",
-					)
-				}
+			if pi != nil {
+				pi.SetText(waitString(unreadyPods...))
+			}
 
-				var buf bytes.Buffer
-				for _, pod := range list {
-					fmt.Fprintf(&buf, "- %s\n", pod.Name)
-				}
+			return false, nil
+		}
+	)
 
+	if !settings.Quiet {
+		pi = wait.NewProgressIndicator(waitString())
+		pi.SetTimeout(settings.Timeout)
+		pi.Start()
+		defer pi.Stop()
+	}
+
+	ticker := time.NewTicker(settings.Interval)
+	timeout := time.After(settings.Timeout)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-timeout:
+			list, _, err := listUnreadyPods()
+			if err != nil {
+				return err
+			}
+
+			if len(list) == 0 {
 				return wrap.Errorf(
-					fmt.Errorf("Pods that are not ready:\n%s", buf.String()),
+					bunt.Errorf("There are no pods that start with *%s* in namespace _%s_",
+						settings.PodStartWith,
+						settings.Namespace,
+					),
 					"Giving up waiting for pods to become ready",
 				)
+			}
 
-			case <-ticker.C:
-				complete, err := checkFunc()
-				if err != nil {
-					return err
-				}
+			var buf bytes.Buffer
+			for _, pod := range list {
+				fmt.Fprintf(&buf, "- %s\n", pod.Name)
+			}
 
-				if complete {
-					return nil
-				}
+			return wrap.Errorf(
+				fmt.Errorf("Pods that are not ready:\n%s", buf.String()),
+				"Giving up waiting for pods to become ready",
+			)
+
+		case <-ticker.C:
+			complete, err := checkFunc()
+			if err != nil {
+				return err
+			}
+
+			if complete {
+				return nil
 			}
 		}
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(waitCmd)
-
-	waitCmd.PersistentFlags().BoolVar(&waitCmdSettings.quiet, "quiet", false, "be quiet and do not output status updates")
-	waitCmd.PersistentFlags().StringVar(&waitCmdSettings.namespace, "namespace", "default", "namespace to watch for")
-	waitCmd.PersistentFlags().StringVar(&waitCmdSettings.podStartWith, "pod-starts-with", "", "name prefix of pods to wait for")
-	waitCmd.PersistentFlags().DurationVar(&waitCmdSettings.timeout, "timeout", time.Duration(1*time.Minute), "timeout until giving up waiting on condition")
-	waitCmd.PersistentFlags().DurationVar(&waitCmdSettings.interval, "interval", time.Duration(10*time.Second), "interval to check for updates")
+	}
 }
