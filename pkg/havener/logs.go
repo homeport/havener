@@ -39,8 +39,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/printers"
 	"k8s.io/client-go/rest"
-	"k8s.io/kubectl/pkg/describe"
-	"k8s.io/kubectl/pkg/describe/versioned"
 )
 
 // LogDirName is the subdirectory name where retrieved logs are stored
@@ -147,7 +145,7 @@ func (h *Hvnr) RetrieveLogs(parallelDownloads int, target string, includeConfigF
 					)
 
 				case "describe-pods":
-					if err := h.describePod(task.pod, task.baseDir); err != nil {
+					if err := h.writeDescribePodToDisk(task.pod, task.baseDir); err != nil {
 						errors = append(errors, err)
 					}
 
@@ -387,28 +385,17 @@ func (h *Hvnr) retrieveContainerLogs(pod *corev1.Pod, baseDir string) []error {
 	return errors
 }
 
-func (h *Hvnr) describePod(pod *corev1.Pod, baseDir string) error {
-	if describer, ok := versioned.DescriberFor(schema.GroupKind{Group: corev1.GroupName, Kind: "Pod"}, h.restconfig); ok {
-		output, err := describer.Describe(
-			pod.Namespace,
-			pod.Name,
-			describe.DescriberSettings{
-				ShowEvents: true,
-			},
-		)
-
-		if err != nil {
-			return err
-		}
-
-		return ioutil.WriteFile(
-			filepath.Join(baseDir, pod.Name, "pod-describe.output"),
-			[]byte(output),
-			0644,
-		)
+func (h *Hvnr) writeDescribePodToDisk(pod *corev1.Pod, baseDir string) error {
+	description, err := h.describePod(pod)
+	if err != nil {
+		return err
 	}
 
-	return nil
+	return ioutil.WriteFile(
+		filepath.Join(baseDir, pod.Name, "pod-describe.output"),
+		[]byte(description),
+		0644,
+	)
 }
 
 func (h *Hvnr) saveDeploymentYAML(pod *corev1.Pod, baseDir string) error {
