@@ -192,7 +192,17 @@ func (h *Hvnr) waitForPodReadiness(namespace string, pod *corev1.Pod, timeoutSec
 			return err
 
 		case <-timeout:
-			return fmt.Errorf("failed to get pod after %d seconds", timeoutSeconds)
+			description, err := h.describePod(pod)
+			if err != nil {
+				description = "Unable to provide further details regarding the state of the pod."
+			}
+
+			return wrap.Errorf(fmt.Errorf("Status of pod at the moment of the timeout:\n\n%s", description),
+				"Giving up waiting for pod %s in namespace %s to become ready within %s",
+				pod.Name,
+				pod.Namespace,
+				text.Plural(timeoutSeconds, "second"),
+			)
 		}
 	}
 }

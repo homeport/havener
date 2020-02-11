@@ -38,8 +38,11 @@ import (
 	"golang.org/x/sync/syncmap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/kubectl/pkg/describe"
+	"k8s.io/kubectl/pkg/describe/versioned"
 )
 
 // Helpful imports:
@@ -150,4 +153,19 @@ func (h *Hvnr) Client() kubernetes.Interface {
 // RESTConfig returns the REST config handle for the configured cluster
 func (h *Hvnr) RESTConfig() *rest.Config {
 	return h.restconfig
+}
+
+func (h *Hvnr) describePod(pod *corev1.Pod) (string, error) {
+	describer, ok := versioned.DescriberFor(schema.GroupKind{Group: corev1.GroupName, Kind: "Pod"}, h.restconfig)
+	if !ok {
+		return "", fmt.Errorf("failed to setup up describer for pods")
+	}
+
+	return describer.Describe(
+		pod.Namespace,
+		pod.Name,
+		describe.DescriberSettings{
+			ShowEvents: true,
+		},
+	)
 }
