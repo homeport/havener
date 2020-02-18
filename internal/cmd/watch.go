@@ -195,7 +195,7 @@ func generatePodsTable(hvnr havener.Havener) (string, error) {
 		case status == "CrashLoopBackOff":
 			styleOptions = append(styleOptions, bunt.Foreground(bunt.LightCoral))
 
-		case status == "PodInitializing":
+		case strings.HasPrefix(status, "Initializing"):
 			styleOptions = append(styleOptions, bunt.Foreground(bunt.LightCyan))
 
 		case status == "Pending":
@@ -361,7 +361,18 @@ func humanReadablePodStatus(pod corev1.Pod) string {
 
 	switch pod.Status.Phase {
 	case corev1.PodPending:
-		for _, containerStatus := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
+		var readyInitContainer int
+		for _, containerStatus := range pod.Status.InitContainerStatuses {
+			if containerStatus.Ready {
+				readyInitContainer++
+			}
+		}
+
+		if readyInitContainer != len(pod.Status.InitContainerStatuses) {
+			return fmt.Sprintf("Initializing (%d/%d)", readyInitContainer, len(pod.Status.InitContainerStatuses))
+		}
+
+		for _, containerStatus := range pod.Status.ContainerStatuses {
 			if containerStatus.State.Waiting != nil {
 				if len(containerStatus.State.Waiting.Reason) != 0 {
 					return containerStatus.State.Waiting.Reason
