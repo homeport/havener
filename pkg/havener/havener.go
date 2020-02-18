@@ -108,6 +108,17 @@ type Havener interface {
 	NodeExec(node corev1.Node, containerImage string, timeoutSeconds int, command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error
 }
 
+// NewHavenerFromFields returns a new Havener handle using the provided
+// input arguments (use for unit testing only)
+func NewHavenerFromFields(client kubernetes.Interface, restconfig *rest.Config, clusterName string, kubeConfigPath string) *Hvnr {
+	return &Hvnr{
+		client:         client,
+		restconfig:     restconfig,
+		clusterName:    clusterName,
+		kubeConfigPath: kubeConfigPath,
+	}
+}
+
 // NewHavener returns a new Havener handle to perform cluster actions
 func NewHavener(kubeConfigs ...string) (*Hvnr, error) {
 	var kubeConfigPath string
