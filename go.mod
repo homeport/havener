@@ -17,7 +17,7 @@ require (
 	github.com/onsi/ginkgo v1.12.0
 	github.com/onsi/gomega v1.9.0
 	github.com/spf13/cobra v0.0.7
-	github.com/spf13/viper v1.6.2
+	github.com/spf13/viper v1.6.3
 	golang.org/x/crypto v0.0.0-20190820162420-60c769a6c586
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
 	golang.org/x/sys v0.0.0-20200113162924-86b910548bc1
