@@ -14,7 +14,7 @@ require (
 	github.com/lucasb-eyer/go-colorful v1.0.3
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/nbutton23/zxcvbn-go v0.0.0-20180912185939-ae427f1e4c1d
-	github.com/onsi/ginkgo v1.12.0
+	github.com/onsi/ginkgo v1.12.1
 	github.com/onsi/gomega v1.9.0
 	github.com/spf13/cobra v0.0.7
 	github.com/spf13/viper v1.6.2
