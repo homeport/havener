@@ -27,6 +27,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/gonvenience/wrap"
 	"github.com/spf13/viper"
 	yaml "gopkg.in/yaml.v2"
@@ -36,7 +37,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc" //from https://github.com/kubernetes/client-go/issues/345
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 var kubeconfig *string
@@ -55,15 +55,19 @@ func getKubeConfig() string {
 //OutOfClusterAuthentication for kube authentication from the outside
 func OutOfClusterAuthentication(kubeConfig string) (*kubernetes.Clientset, *rest.Config, error) {
 	logf(Verbose, "Connecting to Kubernetes cluster...")
+	spew.Dump("perrito")
 
-	if kubeConfig == "" {
-		kubeConfig = getKubeConfig()
-	}
+	// if kubeConfig == "" {
+	// 	kubeConfig = getKubeConfig()
+	// }
 
 	// BuildConfigFromFlags is a helper function that builds configs from a master
 	// url or a kubeconfig filepath.
-	config, err := clientcmd.BuildConfigFromFlags("", kubeConfig)
+	// config, err := clientcmd.BuildConfigFromFlags("", kubeConfig)
+	config, err := rest.InClusterConfig()
 	if err != nil {
+		spew.Dump("here")
+		spew.Dump(err)
 		return nil, nil, err
 	}
 

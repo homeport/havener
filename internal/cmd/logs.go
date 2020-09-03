@@ -26,10 +26,20 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/spf13/cobra"
-
 	"github.com/gonvenience/wait"
 	"github.com/gonvenience/wrap"
+	homedir "github.com/mitchellh/go-homedir"
+	"github.com/spf13/cobra"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/tools/clientcmd"
+	"knative.dev/pkg/apis"
+	knativev1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 
 	"github.com/homeport/havener/pkg/havener"
 )
@@ -39,6 +49,11 @@ var (
 	parallelDownloads    int
 	totalDownloadTimeout int
 	downloadLocation     string
+	taskRunResource      = schema.GroupVersionResource{
+		Group:    pipelinev1.SchemeGroupVersion.Group,
+		Version:  pipelinev1.SchemeGroupVersion.Version,
+		Resource: "taskruns",
+	}
 )
 
 // logsCmd represents the top command
@@ -68,6 +83,61 @@ func init() {
 }
 
 func retrieveClusterLogs() error {
+
+	homedir, err := homedir.Dir()
+	if err != nil {
+		return err
+	}
+
+	var kubeconfig string = filepath.Join(homedir, ".kube", "config")
+
+	restConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		return err
+	}
+
+	dynClient, err := dynamic.NewForConfig(restConfig)
+	if err != nil {
+		return err
+	}
+
+	taskRun := &v1beta1.TaskRun{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "TaskRun",
+			APIVersion: "tekton.dev/v1alpha1",
+		},
+
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "sample",
+		},
+		Spec: v1beta1.TaskRunSpec{
+			TaskRef: &v1beta1.TaskRef{Name: "giraffe"},
+			Timeout: &metav1.Duration{Duration: 30 * time.Second},
+		},
+		Status: v1beta1.TaskRunStatus{
+			Status: knativev1beta1.Status{
+				Conditions: knativev1beta1.Conditions{
+					{
+						Type: apis.ConditionSucceeded,
+					},
+				},
+			},
+		},
+	}
+
+	obj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&taskRun)
+	if err != nil {
+		return err
+	}
+	_, err = dynClient.Resource(taskRunResource).Namespace("default").Create(&unstructured.Unstructured{Object: obj}, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+	// we exit above
+
 	hvnr, err := havener.NewHavener()
 	if err != nil {
 		return wrap.Error(err, "unable to get access to cluster")

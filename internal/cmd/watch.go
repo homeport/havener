@@ -21,6 +21,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
@@ -317,17 +318,36 @@ func generateCRDTable(hvnr havener.Havener) (string, error) {
 				bdpl.GetCreationTimestamp().Time,
 			),
 		)
-		tableSec = append(tableSec, []string{
-			bunt.Style(bdpl.GetNamespace(), styleOptions...),
-			bunt.Style(bdpl.GetName(), styleOptions...),
-			bunt.Style(age, styleOptions...),
-		})
+
+		if watchCmdSettings.crd == "build" {
+			var r map[string]interface{}
+			n, _ := bdpl.MarshalJSON()
+			json.Unmarshal(n, &r)
+
+			spec := r["spec"].(map[string]interface{})
+			status := r["status"].(map[string]interface{})
+			str := spec["strategy"].(map[string]interface{})
+			tableSec = append(tableSec, []string{
+				bunt.Style(bdpl.GetName(), styleOptions...),
+				bunt.Style(status["registered"].(string), styleOptions...),
+				bunt.Style(status["reason"].(string), styleOptions...),
+				bunt.Style(str["kind"].(string), styleOptions...),
+				bunt.Style(age, styleOptions...),
+			})
+		} else {
+			tableSec = append(tableSec, []string{
+				bunt.Style(bdpl.GetNamespace(), styleOptions...),
+				bunt.Style(bdpl.GetName(), styleOptions...),
+				bunt.Style(age, styleOptions...),
+			})
+		}
+
 	}
 	outBDPL, err := renderBoxWithTable(
 		bunt.Sprintf("%s running in cluster _%s_", watchCmdSettings.crd, hvnr.ClusterName()),
-		[]string{"Namespace", "Name", "Age"},
+		[]string{"Name", "Registered", "Reason", "BUILDSTRATEGYKIND", "Age"},
 		tableSec,
-		neat.CustomSeparator("  "),
+		neat.CustomSeparator("/"),
 	)
 
 	if err != nil {
