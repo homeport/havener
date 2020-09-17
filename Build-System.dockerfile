@@ -74,7 +74,7 @@ RUN apt-get update > /dev/null && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Golang
-RUN curl --progress-bar --location https://storage.googleapis.com/golang/go1.13.linux-amd64.tar.gz | tar -xzf - -C /usr/local
+RUN curl --progress-bar --location https://storage.googleapis.com/golang/go1.15.linux-amd64.tar.gz | tar -xzf - -C /usr/local
 ENV GOPATH=/go
 ENV PATH=$PATH:/usr/local/go/bin:$GOPATH/bin
 
