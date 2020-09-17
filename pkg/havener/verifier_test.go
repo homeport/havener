@@ -42,52 +42,6 @@ func errorCount(certMap map[string]*VerifiedCert) (count int) {
 
 var _ = Describe("Valid?", func() {
 	Context("check certificates", func() {
-		It("should check whether the certificate is valid, and return true", func() {
-			input := `
------BEGIN CERTIFICATE-----
-MIIGjTCCBXWgAwIBAgIQB1bcrVT4VnHncFBc5Ox0GDANBgkqhkiG9w0BAQsFADBg
-MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
-d3cuZGlnaWNlcnQuY29tMR8wHQYDVQQDExZHZW9UcnVzdCBUTFMgUlNBIENBIEcx
-MB4XDTE4MDMxNjAwMDAwMFoXDTIwMDMxNTEyMDAwMFowezELMAkGA1UEBhMCVVMx
-ETAPBgNVBAgTCE5ldyBZb3JrMQ8wDQYDVQQHEwZBcm1vbmsxNDAyBgNVBAoTK0lu
-dGVybmF0aW9uYWwgQnVzaW5lc3MgTWFjaGluZXMgQ29ycG9yYXRpb24xEjAQBgNV
-BAMMCSouaWJtLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANjv
-ihG7I0exBs0XEwTzySVnjI06R1dY5Q9mMhwtxVKPRzZpDs0r4YleaJyh2+AwwB3V
-qfuYyiGrbrGb6X6S8+Ik0xmXkp6A8UI9m23ZOF5YopoV0+rda9F8k3mw3SDKbRA4
-DJIXZeykHmGDff0kr27AGIkWlgZTWT3d2yzew0fTNg5swQ1TTqcJFobc5eo6XXYR
-NSAGVoxs/cr7ONCFipFsRYDXaa0ZVc2MOC0tMlBi/5k2shjTDF8hGoBfUv3s4uuE
-fd4ZG/8m2rQSnUYxMmcyV9AhoMo0BCoz1qdq+c1GQ9auvEBNvcAe/NDtxcr36ccf
-NPHWbE/oKTDRolC/OPUCAwEAAaOCAyYwggMiMB8GA1UdIwQYMBaAFJRP1F2L5KTi
-poD+/dj5AO+jvgJXMB0GA1UdDgQWBBS+ot+5azUF1uKuRUf4xbLBTavNKTAdBgNV
-HREEFjAUggkqLmlibS5jb22CB2libS5jb20wDgYDVR0PAQH/BAQDAgWgMB0GA1Ud
-JQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjA/BgNVHR8EODA2MDSgMqAwhi5odHRw
-Oi8vY2RwLmdlb3RydXN0LmNvbS9HZW9UcnVzdFRMU1JTQUNBRzEuY3JsMEwGA1Ud
-IARFMEMwNwYJYIZIAYb9bAEBMCowKAYIKwYBBQUHAgEWHGh0dHBzOi8vd3d3LmRp
-Z2ljZXJ0LmNvbS9DUFMwCAYGZ4EMAQICMHYGCCsGAQUFBwEBBGowaDAmBggrBgEF
-BQcwAYYaaHR0cDovL3N0YXR1cy5nZW90cnVzdC5jb20wPgYIKwYBBQUHMAKGMmh0
-dHA6Ly9jYWNlcnRzLmdlb3RydXN0LmNvbS9HZW9UcnVzdFRMU1JTQUNBRzEuY3J0
-MAkGA1UdEwQCMAAwggF+BgorBgEEAdZ5AgQCBIIBbgSCAWoBaAB1AKS5CZC0GFgU
-h7sTosxncAo8NZgE+RvfuON3zQ7IDdwQAAABYjB51hEAAAQDAEYwRAIgBjf3pU/s
-4ebuDH8njpvZeGFRmDOkzshfALM0iPSb6ncCIGXbcn7ZlCQjjbCAl0MaIGRCg/Ha
-p61q/fM3Ldq/aMTHAHcAb1N2rDHwMRnYmQCkURX/dxUcEdkCwQApBo2yCJo32RMA
-AAFiMHnXgwAABAMASDBGAiEAyuqf0fCgssHtDK+ZoDmoEulGmR8IlC+oinpCVmI+
-NvsCIQDhDhpjp+DQ6So9sAKJmhzyMI5H1iOvrNeX88cc5IgZDgB2ALvZ37wfinG1
-k5Qjl6qSe0c4V5UKq1LoGpCWZDaOHtGFAAABYjB51t0AAAQDAEcwRQIhAL2iaiFI
-EehgEE9OSSLXiKJsWdGLw6dPcFH78bX/L4lJAiAWyVKBCiyWOEz0GuUYbJKeNcSs
-5TrdPwRAkmYfUBQAozANBgkqhkiG9w0BAQsFAAOCAQEAkx45MJBT+BLAasI3392g
-N7M0ARaCmIWr1/oDqJpJCc+vRWfzuoKPNn5EPgmtTr6ea1Bd3ttdA3ys4IlRlrc8
-TP58OewboGjXOdLczHDT8Kqvco/+71d779HDtf3zRfLOj6j0io0H5tnCkNcpeAuN
-seJH0GV7y3bcxcVEIslQsUwHcRSiGIWoS+7tyLldXpouTSQz+XBzclXXXfTqQQG0
-a9rbC4BLhJ0QfZlN6yjvIhs0R0aQV3fFYcqFhuAXWlNAlX/74tCR9fq2XzFaDgIR
-w58BqAkjgyZmRCI25KRC4wypPo2Vx2Ixzb1R3lLkYi/sXtqntb9KO1fF69zx7rtQ
-ag==
------END CERTIFICATE-----`
-
-			cert, err := GetCert(input)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(cert).NotTo(BeNil())
-		})
-
 		It("should return false", func() {
 			input := `
 -----BEGIN CERTIFICATE-----
@@ -139,18 +93,6 @@ E+FdDynG49hiV4MhWpmLdY5xzOWqb7+xmPdo3947SoHe9ZO2Mg==
 		})
 
 		pwDir, _ := os.Getwd()
-
-		It("should return no error if the certificate's valid -- from file", func() {
-			fileContent, err := ioutil.ReadFile(pwDir + "/../../test/valid_cert.json")
-			Expect(err).NotTo(HaveOccurred())
-
-			var datamap map[string][]uint8
-			err = json.Unmarshal(fileContent, &datamap)
-			Expect(err).NotTo(HaveOccurred())
-
-			certMap := GetCertificateFromSecret(datamap, "namespace", "secret")
-			Expect(errorCount(certMap)).To(BeEquivalentTo(0))
-		})
 
 		It("should return an error if the certificate's invalid -- from file", func() {
 			fileContent, err := ioutil.ReadFile(pwDir + "/../../test/invalid_cert.json")

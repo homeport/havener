@@ -186,6 +186,7 @@ func RenderNodeDetails(topDetails *havener.TopDetails) string {
 		"CPU and Memory usage by Node",
 		buf.String(),
 		neat.HeadlineColor(bunt.SkyBlue),
+		neat.NoLineWrap(),
 	)
 }
 
