@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-FROM golang:1.13 AS build
+FROM golang:1.15 AS build
 COPY . /go/src/github.com/homeport/havener
 RUN apt-get update >/dev/null && \
   apt-get install -y file jq >/dev/null && \
@@ -52,7 +52,7 @@ RUN curl --progress-bar --location "https://storage.googleapis.com/kubernetes-re
   chmod +x /usr/bin/kubectl
 
 # Install latest helm
-RUN curl --progress-bar --location "https://kubernetes-helm.storage.googleapis.com/helm-$(curl --silent --location "https://api.github.com/repos/kubernetes/helm/releases/latest" | jq -r .tag_name)-linux-amd64.tar.gz" | tar -xzf - -C /tmp linux-amd64/helm && \
+RUN curl --progress-bar --location "https://kubernetes-helm.storage.googleapis.com/helm-dev-v3-linux-amd64.tar.gz" | tar -xzf - -C /tmp linux-amd64/helm && \
   mv /tmp/linux-amd64/helm /usr/bin/helm && \
   rmdir /tmp/linux-amd64/
 
