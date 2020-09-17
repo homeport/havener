@@ -18,9 +18,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-FROM golang:1.13 AS build
+FROM golang:1.15 AS build
 
-RUN go get -u github.com/mvdan/sh/cmd/shfmt && \
+RUN GO111MODULE=on go get mvdan.cc/sh/v3/cmd/shfmt && \
     git clone https://github.com/direnv/direnv $GOPATH/src/github.com/direnv/direnv && \
     cd $GOPATH/src/github.com/direnv/direnv && \
     make install
