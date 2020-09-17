@@ -139,7 +139,7 @@ Operators are written in the format `(( <name> <args> ))` and dynamically resolv
 
 We are happy to have other people contributing to the project. If you decide to do that, here's how to:
 
-- get Go (`havener` requires Go version 1.13 or greater)
+- get Go (`havener` requires Go version 1.15 or greater)
 - fork the project
 - create a new branch
 - make your changes
@@ -175,7 +175,7 @@ docker run \
   --rm \
   --volume $GOPATH/src/github.com/homeport/havener:/go/src/github.com/homeport/havener \
   --workdir /go/src/github.com/homeport/havener \
-  golang:1.13 /bin/bash
+  golang:1.15 /bin/bash
 ```
 
 ### Package dependencies (Go modules)

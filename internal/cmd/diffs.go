@@ -144,7 +144,7 @@ func compare(filename string, from *yamlv3.Node, to *yamlv3.Node) error {
 		Report:            report,
 		DoNotInspectCerts: false,
 		NoTableStyle:      false,
-		ShowBanner:        false,
+		OmitHeader:        true,
 	}
 
 	if len(report.Diffs) > 0 {
