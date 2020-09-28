@@ -10,6 +10,7 @@ require (
 	github.com/gonvenience/wait v1.0.2
 	github.com/gonvenience/wrap v1.1.0
 	github.com/gonvenience/ytbx v1.3.0
+	github.com/gophercloud/gophercloud v0.1.0 // indirect
 	github.com/homeport/dyff v1.1.0
 	github.com/lucasb-eyer/go-colorful v1.0.3
 	github.com/mitchellh/go-homedir v1.1.0
@@ -24,10 +25,10 @@ require (
 	gopkg.in/src-d/go-git.v4 v4.13.1
 	gopkg.in/yaml.v2 v2.3.0
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
-	k8s.io/api v0.17.3
-	k8s.io/apimachinery v0.17.3
-	k8s.io/cli-runtime v0.17.3
-	k8s.io/client-go v0.17.3
-	k8s.io/kubectl v0.17.3
+	k8s.io/api v0.19.2
+	k8s.io/apimachinery v0.19.2
+	k8s.io/cli-runtime v0.19.2
+	k8s.io/client-go v0.19.2
+	k8s.io/kubectl v0.19.2
 	sigs.k8s.io/kind v0.7.0
 )
