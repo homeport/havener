@@ -693,6 +693,7 @@ k8s.io/apimachinery v0.17.3/go.mod h1:gxLnyZcGNdZTCLnq3fgzyg2A5BVCHTNDFrw8AmuJ+0
 k8s.io/apimachinery v0.19.3/go.mod h1:DnPGDnARWFvYa3pMHgSxtbZb7gpzzAZ1pTfaUNDVlmA=
 k8s.io/cli-runtime v0.17.3 h1:0ZlDdJgJBKsu77trRUynNiWsRuAvAVPBNaQfnt/1qtc=
 k8s.io/cli-runtime v0.17.3/go.mod h1:X7idckYphH4SZflgNpOOViSxetiMj6xI0viMAjM81TA=
+k8s.io/cli-runtime v0.19.3/go.mod h1:q+l845i5/uWzcUpCrl+L4f3XLaJi8ZeLVQ/decwty0A=
 k8s.io/client-go v0.17.3 h1:deUna1Ksx05XeESH6XGCyONNFfiQmDdqeqUvicvP6nU=
 k8s.io/client-go v0.17.3/go.mod h1:cLXlTMtWHkuK4tD360KpWz2gG2KtdWEr/OT02i3emRQ=
 k8s.io/client-go v0.19.3/go.mod h1:+eEMktZM+MG0KO+PTkci8xnbCZHvj9TqR6Q1XDUIJOM=
