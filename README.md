@@ -1,6 +1,6 @@
 # Havener /ˈheɪvənə/
 
-[![License](https://img.shields.io/github/license/homeport/havener.svg)](https://github.com/homeport/havener/blob/master/LICENSE)
+[![License](https://img.shields.io/github/license/homeport/havener.svg)](https://github.com/homeport/havener/blob/main/LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/homeport/havener)](https://goreportcard.com/report/github.com/homeport/havener)
 [![Build Status](https://travis-ci.com/homeport/havener.svg?branch=develop)](https://travis-ci.com/homeport/havener)
 [![GoDoc](https://godoc.org/github.com/homeport/havener?status.svg)](https://godoc.org/github.com/homeport/havener)
@@ -64,7 +64,7 @@ There are different ways to get `havener`. You are free to pick the one that mak
 - Use a convenience script to download the latest release to install it in a suitable location on your local machine:
 
   ```sh
-  curl -sL https://raw.githubusercontent.com/homeport/havener/master/scripts/download-latest.sh | bash
+  curl -sL https://raw.githubusercontent.com/homeport/havener/main/scripts/download-latest.sh | bash
   ```
 
 - Docker Hub serves curated Docker images with `havener` as well as  `kubectl` and other important CLI tools. There are two flavours available:
@@ -184,4 +184,4 @@ The Go module setup can be frustrating, if you have to update Kubernetes API lib
 
 ## License
 
-Licensed under [MIT License](https://github.com/homeport/havener/blob/master/LICENSE)
+Licensed under [MIT License](https://github.com/homeport/havener/blob/main/LICENSE)
