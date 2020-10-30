@@ -478,7 +478,7 @@ func renderContainerName(namespace string, pod string, container string, maxCont
 			container,
 		),
 		maxContainerNameLength,
-		bunt.Sprint(" DimGray{[...]}"),
+		bunt.Sprint(" DimGray{[…]}"),
 	)
 }
 
