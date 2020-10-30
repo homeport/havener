@@ -87,7 +87,7 @@ cluster as well as a list per node.
 			nodeDetails := RenderNodeDetails(top)
 			namespaceDetails := renderNamespaceDetails(top)
 			availableLines := term.GetTerminalHeight() - lines(nodeDetails) - lines(namespaceDetails)
-			topContainers := renderTopContainers(top, availableLines-1)
+			topContainers := renderTopContainers(top, max(0, availableLines-1))
 
 			fmt.Print(
 				"\x1b[H",
@@ -255,6 +255,7 @@ func renderNamespaceDetails(topDetails *havener.TopDetails) string {
 		"CPU and Memory usage by Namespace",
 		buf.String(),
 		neat.HeadlineColor(bunt.SkyBlue),
+		neat.NoLineWrap(),
 	)
 }
 
@@ -578,4 +579,12 @@ func humanReadableSize(bytes int64) string {
 	}
 
 	return fmt.Sprintf("%.1f %s", value, mods[i])
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+
+	return b
 }

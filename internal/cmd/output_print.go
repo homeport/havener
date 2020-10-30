@@ -167,6 +167,7 @@ func renderBoxWithTable(headline string, tablehead []string, table [][]string, s
 		output,
 		neat.HeadlineColor(bunt.SkyBlue),
 		neat.NoFinalEndOfLine(),
+		neat.NoLineWrap(),
 	), nil
 }
 
