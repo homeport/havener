@@ -14,13 +14,13 @@ require (
 	github.com/lucasb-eyer/go-colorful v1.0.3
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/nbutton23/zxcvbn-go v0.0.0-20180912185939-ae427f1e4c1d
-	github.com/onsi/ginkgo v1.14.1
-	github.com/onsi/gomega v1.10.2
+	github.com/onsi/ginkgo v1.14.2
+	github.com/onsi/gomega v1.10.3
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/viper v1.7.1
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
-	golang.org/x/sys v0.0.0-20200917073148-efd3b9a0ff20
+	golang.org/x/sys v0.0.0-20200930185726-fdedc70b468f
 	gopkg.in/src-d/go-git.v4 v4.13.1
 	gopkg.in/yaml.v2 v2.3.0
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
