@@ -27,7 +27,7 @@ To see a detail list of all havener commands, please refer to the command [docum
 
 Like `kubectl`, `havener` relies on the Kubernetes configuration that can be set via the `KUBECONFIG` environment variable. It can also be provided with the `--kubeconfig` flag, which takes the path to the YAML file (for example `$HOME/.kube/config`).
 
-_Please note_: `havener` will use your local `helm` binary, so it is the user reponsability to keep the `helm` binary in sync with tiller.
+_Please note_: `havener` will use your local `helm` binary, so it is the user responsibility to keep the `helm` binary in sync with tiller.
 
 ### Notable Use Cases
 
