@@ -24,6 +24,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -333,7 +334,7 @@ func (h *Hvnr) retrieveContainerLogs(pod *corev1.Pod, baseDir string) []error {
 	errors := []error{}
 
 	streamToFile := func(req *rest.Request, filename string) error {
-		readCloser, err := req.Stream()
+		readCloser, err := req.Stream(context.TODO())
 		if err != nil {
 			return err
 		}

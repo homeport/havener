@@ -21,6 +21,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -220,7 +221,7 @@ func lookupAllPods(client kubernetes.Interface, namespaces []string) (map[*corev
 	var podLists map[*corev1.Pod][]string
 	podLists = make(map[*corev1.Pod][]string)
 	for _, namespace := range namespaces {
-		podsPerNs, err := client.CoreV1().Pods(namespace).List(metav1.ListOptions{})
+		podsPerNs, err := client.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -256,7 +257,7 @@ func lookupPodsByName(client kubernetes.Interface, input string) (map[*corev1.Po
 
 			pods := []*corev1.Pod{}
 			for _, namespace := range namespaces {
-				if pod, err := client.CoreV1().Pods(namespace).Get(input, metav1.GetOptions{}); err == nil {
+				if pod, err := client.CoreV1().Pods(namespace).Get(context.TODO(), input, metav1.GetOptions{}); err == nil {
 					pods = append(pods, pod)
 				}
 			}
@@ -273,7 +274,7 @@ func lookupPodsByName(client kubernetes.Interface, input string) (map[*corev1.Po
 
 		case 2: // namespace, and pod name is given
 			namespace, podName := splited[0], splited[1]
-			pod, err := client.CoreV1().Pods(namespace).Get(podName, metav1.GetOptions{})
+			pod, err := client.CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
 			if err != nil {
 				return nil, availablePodsError(client, fmt.Sprintf("pod %s not found", input))
 			}
@@ -282,7 +283,7 @@ func lookupPodsByName(client kubernetes.Interface, input string) (map[*corev1.Po
 
 		case 3: // namespace, pod, and container name is given
 			namespace, podName, container := splited[0], splited[1], splited[2]
-			pod, err := client.CoreV1().Pods(namespace).Get(podName, metav1.GetOptions{})
+			pod, err := client.CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
 			if err != nil {
 				return nil, availablePodsError(client, fmt.Sprintf("pod %s not found", input))
 			}

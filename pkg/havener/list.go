@@ -21,6 +21,7 @@
 package havener
 
 import (
+	"context"
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
@@ -35,7 +36,7 @@ import (
 
 // ListStatefulSetsInNamespace returns all names of stateful sets in the given namespace
 func ListStatefulSetsInNamespace(client kubernetes.Interface, namespace string) ([]string, error) {
-	list, err := client.AppsV1beta1().StatefulSets(namespace).List(metav1.ListOptions{})
+	list, err := client.AppsV1beta1().StatefulSets(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +51,7 @@ func ListStatefulSetsInNamespace(client kubernetes.Interface, namespace string) 
 
 // ListDeploymentsInNamespace returns all names of deployments in the given namespace
 func ListDeploymentsInNamespace(client kubernetes.Interface, namespace string) ([]string, error) {
-	list, err := client.AppsV1beta1().Deployments(namespace).List(metav1.ListOptions{})
+	list, err := client.AppsV1beta1().Deployments(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +66,7 @@ func ListDeploymentsInNamespace(client kubernetes.Interface, namespace string) (
 
 // ListNamespaces lists all namespaces
 func ListNamespaces(client kubernetes.Interface) ([]string, error) {
-	namespaceList, err := client.CoreV1().Namespaces().List(metav1.ListOptions{})
+	namespaceList, err := client.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +81,7 @@ func ListNamespaces(client kubernetes.Interface) ([]string, error) {
 
 // ListSecretsInNamespace lists all secrets in a given namespace
 func ListSecretsInNamespace(client kubernetes.Interface, namespace string) ([]string, error) {
-	secretList, err := client.CoreV1().Secrets(namespace).List(metav1.ListOptions{})
+	secretList, err := client.CoreV1().Secrets(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +96,7 @@ func ListSecretsInNamespace(client kubernetes.Interface, namespace string) ([]st
 
 // SecretsInNamespace lists all secrets in a given namespace
 func SecretsInNamespace(client kubernetes.Interface, namespace string) ([]corev1.Secret, error) {
-	secretList, err := client.CoreV1().Secrets(namespace).List(metav1.ListOptions{})
+	secretList, err := client.CoreV1().Secrets(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +122,7 @@ func (h *Hvnr) ListPods(namespaces ...string) (result []*corev1.Pod, err error) 
 	}
 
 	for _, namespace := range namespaces {
-		listResp, err := h.client.CoreV1().Pods(namespace).List(metav1.ListOptions{})
+		listResp, err := h.client.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -145,7 +146,7 @@ func (h *Hvnr) ListSecrets(namespaces ...string) (result []*corev1.Secret, err e
 	}
 
 	for _, namespace := range namespaces {
-		listResp, err := h.client.CoreV1().Secrets(namespace).List(metav1.ListOptions{})
+		listResp, err := h.client.CoreV1().Secrets(namespace).List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -169,7 +170,7 @@ func (h *Hvnr) ListConfigMaps(namespaces ...string) (result []*corev1.ConfigMap,
 	}
 
 	for _, namespace := range namespaces {
-		listResp, err := h.client.CoreV1().ConfigMaps(namespace).List(metav1.ListOptions{})
+		listResp, err := h.client.CoreV1().ConfigMaps(namespace).List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -196,7 +197,7 @@ func (h *Hvnr) ListCustomResourceDefinition(crdName string) (result []unstructur
 
 	if crdExist {
 		client, _ := dynamic.NewForConfig(h.restconfig)
-		list, _ := client.Resource(runtimeClassGVR).List(metav1.ListOptions{})
+		list, _ := client.Resource(runtimeClassGVR).List(context.TODO(), metav1.ListOptions{})
 
 		for i := range list.Items {
 			result = append(result, list.Items[i])
@@ -210,7 +211,7 @@ func (h *Hvnr) ListCustomResourceDefinition(crdName string) (result []unstructur
 // ListNodes lists all nodes of the cluster
 // Deprecated: Use Havener interface function ListNodeNames instead
 func ListNodes(client kubernetes.Interface) ([]string, error) {
-	nodeList, err := client.CoreV1().Nodes().List(metav1.ListOptions{})
+	nodeList, err := client.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +226,7 @@ func ListNodes(client kubernetes.Interface) ([]string, error) {
 
 // ListNodes returns a list of the nodes in the cluster
 func (h *Hvnr) ListNodes() ([]corev1.Node, error) {
-	nodeList, err := h.client.CoreV1().Nodes().List(metav1.ListOptions{})
+	nodeList, err := h.client.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, wrap.Error(err, "failed to get list of nodes")
 	}
@@ -235,7 +236,7 @@ func (h *Hvnr) ListNodes() ([]corev1.Node, error) {
 
 // ListNodeNames returns a list of the names of the nodes in the cluster
 func (h *Hvnr) ListNodeNames() ([]string, error) {
-	nodeList, err := h.client.CoreV1().Nodes().List(metav1.ListOptions{})
+	nodeList, err := h.client.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, wrap.Error(err, "failed to get list of nodes")
 	}

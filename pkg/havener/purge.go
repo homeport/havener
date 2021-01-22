@@ -21,6 +21,7 @@
 package havener
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
@@ -74,7 +75,7 @@ func PurgeDeploymentsInNamespace(kubeClient kubernetes.Interface, namespace stri
 
 	if deployments, err := ListDeploymentsInNamespace(kubeClient, namespace); err == nil {
 		for _, name := range deployments {
-			err := kubeClient.AppsV1beta1().Deployments(namespace).Delete(name, &metav1.DeleteOptions{
+			err := kubeClient.AppsV1beta1().Deployments(namespace).Delete(context.TODO(), name, metav1.DeleteOptions{
 				PropagationPolicy: &defaultPropagationPolicy,
 			})
 
@@ -96,7 +97,7 @@ func PurgeStatefulSetsInNamespace(kubeClient kubernetes.Interface, namespace str
 
 	if statefulsets, err := ListStatefulSetsInNamespace(kubeClient, namespace); err == nil {
 		for _, name := range statefulsets {
-			err := kubeClient.AppsV1beta1().StatefulSets(namespace).Delete(name, &metav1.DeleteOptions{
+			err := kubeClient.AppsV1beta1().StatefulSets(namespace).Delete(context.TODO(), name, metav1.DeleteOptions{
 				PropagationPolicy: &defaultPropagationPolicy,
 			})
 
@@ -116,7 +117,7 @@ func PurgeNamespace(kubeClient kubernetes.Interface, namespace string) error {
 		return nil
 	}
 
-	ns, err := kubeClient.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
+	ns, err := kubeClient.CoreV1().Namespaces().Get(context.TODO(), namespace, metav1.GetOptions{})
 	if err != nil {
 		// Bail out if namespace is already deleted
 		switch err.(type) {
@@ -135,12 +136,12 @@ func PurgeNamespace(kubeClient kubernetes.Interface, namespace string) error {
 		return nil
 	}
 
-	watcher, err := kubeClient.CoreV1().Namespaces().Watch(metav1.SingleObject(ns.ObjectMeta))
+	watcher, err := kubeClient.CoreV1().Namespaces().Watch(context.TODO(), metav1.SingleObject(ns.ObjectMeta))
 	if err != nil {
 		return err
 	}
 
-	if err := kubeClient.CoreV1().Namespaces().Delete(namespace, &metav1.DeleteOptions{PropagationPolicy: &defaultPropagationPolicy}); err != nil {
+	if err := kubeClient.CoreV1().Namespaces().Delete(context.TODO(), namespace, metav1.DeleteOptions{PropagationPolicy: &defaultPropagationPolicy}); err != nil {
 		return err
 	}
 
@@ -161,8 +162,9 @@ func PurgeNamespace(kubeClient kubernetes.Interface, namespace string) error {
 func PurgePod(kubeClient kubernetes.Interface, namespace string, podName string, gracePeriodSeconds int64, propagationPolicy metav1.DeletionPropagation) error {
 	logf(Verbose, "Deleting pod %s in namespace %s", podName, namespace)
 	return kubeClient.CoreV1().Pods(namespace).Delete(
+		context.TODO(),
 		podName,
-		&metav1.DeleteOptions{
+		metav1.DeleteOptions{
 			GracePeriodSeconds: &gracePeriodSeconds,
 			PropagationPolicy:  &propagationPolicy,
 		})

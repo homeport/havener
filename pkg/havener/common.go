@@ -21,6 +21,7 @@
 package havener
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -127,7 +128,7 @@ func getSecretValue(namespace string, secretName string, secretKey string) (stri
 		return "", wrap.Error(err, "unable to get access to cluster")
 	}
 
-	secret, err := client.CoreV1().Secrets(namespace).Get(secretName, v1.GetOptions{})
+	secret, err := client.CoreV1().Secrets(namespace).Get(context.TODO(), secretName, v1.GetOptions{})
 	if err != nil {
 		return "", fmt.Errorf("failed to get secret: '%s' of namespace: '%s'\nerror message: %s", secretName, namespace, err.Error())
 	}

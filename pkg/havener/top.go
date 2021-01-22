@@ -22,6 +22,7 @@ package havener
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -113,7 +114,7 @@ func (h *Hvnr) TopDetails() (*TopDetails, error) {
 		Containers: map[string]map[string]map[string]ContainerDetails{},
 	}
 
-	nodeList, err := h.client.CoreV1().Nodes().List(metav1.ListOptions{})
+	nodeList, err := h.client.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +165,7 @@ func (h *Hvnr) TopDetails() (*TopDetails, error) {
 	go func() {
 		defer wg.Done()
 
-		nodeMetricsJSON, err := h.client.CoreV1().RESTClient().Get().AbsPath("apis/metrics.k8s.io/v1beta1/nodes").DoRaw()
+		nodeMetricsJSON, err := h.client.CoreV1().RESTClient().Get().AbsPath("apis/metrics.k8s.io/v1beta1/nodes").DoRaw(context.TODO())
 		if err != nil {
 			errChan <- err
 			return
@@ -190,7 +191,7 @@ func (h *Hvnr) TopDetails() (*TopDetails, error) {
 	go func() {
 		defer wg.Done()
 
-		podMetricsJSON, err := h.client.CoreV1().RESTClient().Get().AbsPath("apis/metrics.k8s.io/v1beta1/pods").DoRaw()
+		podMetricsJSON, err := h.client.CoreV1().RESTClient().Get().AbsPath("apis/metrics.k8s.io/v1beta1/pods").DoRaw(context.TODO())
 		if err != nil {
 			errChan <- err
 			return
@@ -219,7 +220,7 @@ func (h *Hvnr) TopDetails() (*TopDetails, error) {
 			defer wg.Done()
 
 			podname := fmt.Sprintf("havener-usage-retriever-%s", node.Name)
-			pod, err := h.client.CoreV1().Pods("kube-system").Get(podname, metav1.GetOptions{})
+			pod, err := h.client.CoreV1().Pods("kube-system").Get(context.TODO(), podname, metav1.GetOptions{})
 			if err != nil {
 				pod, err = h.preparePodOnNode(node, "kube-system", podname, "alpine", 5, true)
 				if err != nil {

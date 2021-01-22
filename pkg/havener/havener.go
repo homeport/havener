@@ -42,7 +42,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/kubectl/pkg/describe"
-	"k8s.io/kubectl/pkg/describe/versioned"
 )
 
 // Helpful imports:
@@ -167,7 +166,7 @@ func (h *Hvnr) RESTConfig() *rest.Config {
 }
 
 func (h *Hvnr) describePod(pod *corev1.Pod) (string, error) {
-	describer, ok := versioned.DescriberFor(schema.GroupKind{Group: corev1.GroupName, Kind: "Pod"}, h.restconfig)
+	describer, ok := describe.DescriberFor(schema.GroupKind{Group: corev1.GroupName, Kind: "Pod"}, h.restconfig)
 	if !ok {
 		return "", fmt.Errorf("failed to setup up describer for pods")
 	}

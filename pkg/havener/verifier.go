@@ -21,6 +21,7 @@
 package havener
 
 import (
+	"context"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
@@ -69,7 +70,7 @@ func VerifyCertExpirations() ([][]string, error) {
 		for _, secret := range secretList {
 			logf(Verbose, "Accessing namespace DarkOrange{%s}/secret DodgerBlue{%s} ...", secret, namespace)
 
-			nodeList, err := client.CoreV1().Secrets(namespace).Get(secret, v1.GetOptions{})
+			nodeList, err := client.CoreV1().Secrets(namespace).Get(context.TODO(), secret, v1.GetOptions{})
 			if err != nil {
 				return nil, wrap.Error(err, "unable to access secrets")
 			}

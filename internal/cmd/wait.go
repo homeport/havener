@@ -22,6 +22,7 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -116,7 +117,7 @@ func WaitCmdFunc(hvnr *havener.Hvnr, settings WaitCmdSettings) error {
 		}
 
 		listUnreadyPods = func() ([]corev1.Pod, int, error) {
-			list, err := hvnr.Client().CoreV1().Pods(settings.Namespace).List(metav1.ListOptions{})
+			list, err := hvnr.Client().CoreV1().Pods(settings.Namespace).List(context.TODO(), metav1.ListOptions{})
 			if err != nil {
 				return nil, 0, wrap.Errorf(err, "failed to get a list of pods in namespace %s", settings.Namespace)
 			}
