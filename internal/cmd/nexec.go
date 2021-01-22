@@ -21,6 +21,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -202,7 +203,7 @@ func lookupNodesByName(client kubernetes.Interface, input string) ([]corev1.Node
 	nodeList := []corev1.Node{}
 
 	if input == "all" {
-		list, err := client.CoreV1().Nodes().List(metav1.ListOptions{})
+		list, err := client.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -211,7 +212,7 @@ func lookupNodesByName(client kubernetes.Interface, input string) ([]corev1.Node
 	}
 
 	for _, nodeName := range strings.Split(input, ",") {
-		node, err := client.CoreV1().Nodes().Get(nodeName, metav1.GetOptions{})
+		node, err := client.CoreV1().Nodes().Get(context.TODO(), nodeName, metav1.GetOptions{})
 		if err != nil {
 			return nil, availableNodesError(client, "node '%s' does not exist", nodeName)
 		}

@@ -21,6 +21,7 @@
 package e2e
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -85,15 +86,15 @@ func setupKindCluster() *testEnvironment {
 	hvnr, err := havener.NewHavener(testEnv.kubeConfigPath)
 	Expect(err).ToNot(HaveOccurred())
 
-	_, err = hvnr.Client().CoreV1().ServiceAccounts("kube-system").Create(&corev1.ServiceAccount{
+	_, err = hvnr.Client().CoreV1().ServiceAccounts("kube-system").Create(context.TODO(), &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "tiller",
 			Namespace: "kube-system",
 		},
-	})
+	}, metav1.CreateOptions{})
 	Expect(err).ToNot(HaveOccurred())
 
-	_, err = hvnr.Client().RbacV1().ClusterRoleBindings().Create(&rbacv1.ClusterRoleBinding{
+	_, err = hvnr.Client().RbacV1().ClusterRoleBindings().Create(context.TODO(), &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "tiller",
 		},
@@ -109,7 +110,7 @@ func setupKindCluster() *testEnvironment {
 				Namespace: "kube-system",
 			},
 		},
-	})
+	}, metav1.CreateOptions{})
 	Expect(err).ToNot(HaveOccurred())
 
 	testEnv.helm("init",

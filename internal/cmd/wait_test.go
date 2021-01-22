@@ -21,6 +21,7 @@
 package cmd_test
 
 import (
+	"context"
 	"time"
 
 	"github.com/homeport/havener/pkg/havener"
@@ -48,7 +49,7 @@ func fakePodStart(hvnr *havener.Hvnr, name string, namespace string, startUpTime
 	var err error
 
 	// Create pod with an unready container
-	_, err = hvnr.Client().CoreV1().Pods(namespace).Create(&corev1.Pod{
+	_, err = hvnr.Client().CoreV1().Pods(namespace).Create(context.TODO(), &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
@@ -59,14 +60,14 @@ func fakePodStart(hvnr *havener.Hvnr, name string, namespace string, startUpTime
 				},
 			},
 		},
-	})
+	}, metav1.CreateOptions{})
 	Expect(err).ToNot(HaveOccurred())
 
 	// Simulate that it takes a bit to start ...
 	time.Sleep(startUpTime)
 
 	// Update pod to indicate it came up
-	_, err = hvnr.Client().CoreV1().Pods(namespace).Update(&corev1.Pod{
+	_, err = hvnr.Client().CoreV1().Pods(namespace).Update(context.TODO(), &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
@@ -77,7 +78,7 @@ func fakePodStart(hvnr *havener.Hvnr, name string, namespace string, startUpTime
 				},
 			},
 		},
-	})
+	}, metav1.UpdateOptions{})
 	Expect(err).ToNot(HaveOccurred())
 }
 

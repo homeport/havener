@@ -21,6 +21,7 @@
 package cmd
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -95,7 +96,7 @@ func retrieveClusterEvents(kubeConfig string) error {
 		}
 
 		go func() error {
-			watcher, err := client.CoreV1().Events(namespace).Watch(metav1.ListOptions{})
+			watcher, err := client.CoreV1().Events(namespace).Watch(context.TODO(), metav1.ListOptions{})
 			if err != nil {
 				return wrap.Error(err, "failed to setup event watcher")
 			}

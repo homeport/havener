@@ -21,6 +21,7 @@
 package havener
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"time"
@@ -146,7 +147,7 @@ func (h *Hvnr) preparePodOnNode(node corev1.Node, namespace string, name string,
 
 	// Create pod in given namespace based on configuration
 	logf(Verbose, "Creating temporary pod *%s* in namespace *%s*", name, namespace)
-	pod, err := h.client.CoreV1().Pods(namespace).Create(pod)
+	pod, err := h.client.CoreV1().Pods(namespace).Create(context.TODO(), pod, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +161,7 @@ func (h *Hvnr) preparePodOnNode(node corev1.Node, namespace string, name string,
 }
 
 func (h *Hvnr) waitForPodReadiness(namespace string, pod *corev1.Pod, timeoutSeconds int) error {
-	watcher, err := h.client.CoreV1().Pods(namespace).Watch(metav1.SingleObject(pod.ObjectMeta))
+	watcher, err := h.client.CoreV1().Pods(namespace).Watch(context.TODO(), metav1.SingleObject(pod.ObjectMeta))
 	if err != nil {
 		return err
 	}
