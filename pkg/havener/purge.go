@@ -1,4 +1,4 @@
-// Copyright © 2018 The Havener
+// Copyright © 2021 The Homeport Team
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,7 +23,6 @@ package havener
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/gonvenience/wrap"
 	corev1 "k8s.io/api/core/v1"
@@ -35,36 +34,6 @@ import (
 )
 
 var defaultPropagationPolicy = metav1.DeletePropagationForeground
-
-// PurgeHelmReleaseByName purges the helm release with the given name
-func (h *Hvnr) PurgeHelmReleaseByName(name string) error {
-	helmRelease, err := h.GetReleaseByName(name)
-	if err != nil {
-		return err
-	}
-
-	return h.PurgeHelmRelease(helmRelease, helmRelease.Name)
-}
-
-// PurgeHelmRelease removes the given helm release including all its resources.
-func (h *Hvnr) PurgeHelmRelease(release HelmRelease, helmRelease string) error {
-	if err := PurgeDeploymentsInNamespace(h.client, release.Namespace); err != nil {
-		return err
-	}
-
-	if err := PurgeStatefulSetsInNamespace(h.client, release.Namespace); err != nil {
-		return err
-	}
-	_, err := h.RunHelmBinary("delete",
-		helmRelease,
-		"--purge",
-		"--timeout", strconv.Itoa(MinutesToSeconds(15)))
-	if err != nil {
-		return err
-	}
-
-	return PurgeNamespace(h.client, release.Namespace)
-}
 
 // PurgeDeploymentsInNamespace removes all deployments in the given namespace.
 func PurgeDeploymentsInNamespace(kubeClient kubernetes.Interface, namespace string) error {

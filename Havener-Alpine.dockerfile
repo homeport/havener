@@ -1,4 +1,4 @@
-# Copyright © 2018 The Havener
+# Copyright © 2021 The Homeport Team
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,7 @@ RUN apk add --update make git bash file curl jq && \
   cp -p binaries/havener-linux-amd64 /usr/local/bin/havener
 
 
-FROM alpine:3.8
+FROM alpine:3
 
 # Update to latest and install required tools
 RUN apk update && \
@@ -51,13 +51,5 @@ RUN curl --silent --location https://clis.ng.bluemix.net/install/linux | sh && \
 # Install latest kubectl
 RUN curl --progress-bar --location "https://storage.googleapis.com/kubernetes-release/release/$(curl --silent --location https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl" > /usr/bin/kubectl && \
   chmod +x /usr/bin/kubectl
-
-# Install latest Helm
-RUN curl --progress-bar --location "https://kubernetes-helm.storage.googleapis.com/helm-dev-v3-linux-amd64.tar.gz" | tar -xzf - -C /tmp linux-amd64/helm && \
-  mv /tmp/linux-amd64/helm /usr/bin/helm && \
-  rmdir /tmp/linux-amd64/
-
-# Install Cloud Foundry command line
-RUN curl --progress-bar --location "https://cli.run.pivotal.io/stable?release=linux64-binary&source=github" | tar -zx -C /usr/local/bin cf
 
 COPY --from=build /usr/local/bin/havener /usr/local/bin/havener

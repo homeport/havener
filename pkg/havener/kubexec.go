@@ -1,4 +1,4 @@
-// Copyright © 2018 The Havener
+// Copyright © 2021 The Homeport Team
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -198,7 +198,7 @@ func (h *Hvnr) waitForPodReadiness(namespace string, pod *corev1.Pod, timeoutSec
 				description = "Unable to provide further details regarding the state of the pod."
 			}
 
-			return wrap.Errorf(fmt.Errorf("Status of pod at the moment of the timeout:\n\n%s", description),
+			return wrap.Errorf(fmt.Errorf("status of pod at the moment of the timeout:\n\n%s", description),
 				"Giving up waiting for pod %s in namespace %s to become ready within %s",
 				pod.Name,
 				pod.Namespace,

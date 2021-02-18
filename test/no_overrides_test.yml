@@ -1,7 +1,0 @@
-name: minikube
-releases:
-- name: thgh
-  namespace: abcd
-  location: abcd
-  version: 1
-  overrides:

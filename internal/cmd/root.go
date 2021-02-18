@@ -1,4 +1,4 @@
-// Copyright © 2018 The Havener
+// Copyright © 2021 The Homeport Team
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -42,13 +42,12 @@ import (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "havener",
-	Short: "Convenience wrapper around both kubectl and helm",
-	Long: `Convenience wrapper around both kubectl and helm.
+	Short: "Convenience wrapper around some kubectl commands",
+	Long: `Convenience wrapper around some kubectl commands.
 
 Think of it as a swiss army knife for Kubernetes tasks. Possible use cases are
-for example executing a command on multiple pods at the same time, retrieving
-usage details, or deploying a sequence of Helm Charts with custom pre- and
-post-install hooks.
+for example executing a command on multiple pods at the same time, or
+retrieving usage details.
 
 See the individual commands to get the complete overview.
 

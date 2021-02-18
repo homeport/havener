@@ -1,4 +1,4 @@
-// Copyright © 2019 The Havener
+// Copyright © 2021 The Homeport Team
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -169,14 +169,4 @@ func renderBoxWithTable(headline string, tablehead []string, table [][]string, s
 		neat.NoFinalEndOfLine(),
 		neat.NoLineWrap(),
 	), nil
-}
-
-func printBoxWithTable(headline string, tablehead []string, table [][]string, styleOptions ...neat.TableOption) error {
-	output, err := renderBoxWithTable(headline, tablehead, table, styleOptions...)
-	if err != nil {
-		return err
-	}
-
-	fmt.Print(output)
-	return nil
 }

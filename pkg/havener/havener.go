@@ -1,4 +1,4 @@
-// Copyright © 2018 The Havener
+// Copyright © 2021 The Homeport Team
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -84,15 +84,6 @@ type Havener interface {
 	Client() kubernetes.Interface
 	RESTConfig() *rest.Config
 	ClusterName() string
-
-	ListHelmReleases() ([]HelmRelease, error)
-	DeployHelmRelease(chartname string, namespace string, chartPath string, timeOut int, valueOverrides []byte) error
-	GetReleaseMessage(release Release, message string) (string, error)
-	RunHelmBinary(args ...string) ([]byte, error)
-	GetReleaseByName(releaseName string) (HelmRelease, error)
-	PurgeHelmRelease(release HelmRelease, helmRelease string) error
-	PurgeHelmReleaseByName(name string) error
-	UpdateHelmRelease(chartname string, chartPath string, valueOverrides []byte, reuseVal bool) error
 
 	ListPods(namespaces ...string) ([]*corev1.Pod, error)
 	ListNodes() ([]corev1.Node, error)

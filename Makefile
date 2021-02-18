@@ -1,4 +1,4 @@
-# Copyright © 2018 The Havener
+# Copyright © 2021 The Homeport Team
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -29,16 +29,19 @@ clean:
 	@go clean -cache $(shell go list ./...)
 
 todo-list:
-	@grep -InHR --exclude-dir=vendor --exclude-dir=.git '[T]ODO' $(shell pwd)
+	@grep -InHR --exclude-dir=vendor --exclude-dir=.git '[T]ODO ' $(shell pwd)
 
 lint:
-	@scripts/lint.sh
+	@echo 'Linting packages'
+	@golint ./...
 
 misspell:
-	@scripts/misspell.sh
+	@echo 'Spellchecking files'
+	@find . -type f \( -name "*.go" -o -name "*.md" \) -print0 | xargs -0 misspell -error
 
 vet:
-	@scripts/vet.sh
+	@echo 'Vetting packages'
+	@go vet ./...
 
 unit-test:
 	GO111MODULE=on ginkgo \
@@ -54,30 +57,16 @@ unit-test:
 	  internal/... \
 	  pkg/...
 
-e2e-test:
-	GO111MODULE=on ginkgo \
-	  -randomizeAllSpecs \
-	  -randomizeSuites \
-	  -failOnPending \
-	  -nodes=1 \
-	  -compilers=1 \
-	  -slowSpecThreshold=240 \
-	  -race \
-	  -cover \
-	  -trace \
-	  -flakeAttempts=4 \
-	  e2e/...
-
 docker-build-test:
 	@docker build -t build-system:dev -f Build-System.dockerfile .
 	@docker build -t havener-alpine:dev -f Havener-Alpine.dockerfile .
 	@docker build -t havener-ubuntu:dev -f Havener-Ubuntu.dockerfile .
 
-test: lint misspell vet unit-test e2e-test
+test: lint misspell vet unit-test
 
 gen-docs:
 	rm -f .docs/commands/*.md
-	go run internal/docs.go
+	go run cmd/gendocs/docs.go
 	perl -pi -e "s:$(HOME):~:g" .docs/commands/*.md # omit username in docs
 	perl -pi -e 's/\e\[[0-9;]*m//g' .docs/commands/*.md # remove ANSI sequences
 

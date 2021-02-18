@@ -1,7 +1,0 @@
-name: mysql deployment
-releases:
-- name: mysql-release
-  namespace: mysql
-  location: stable/mysql
-  overrides:
-    foo: bar

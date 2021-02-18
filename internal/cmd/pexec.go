@@ -1,4 +1,4 @@
-// Copyright © 2019 The Havener
+// Copyright © 2021 The Homeport Team
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -54,7 +54,7 @@ var podExecCmd = &cobra.Command{
 	Long: `Execute a shell command on a pod.
 
 This is similar to the kubectl exec command with just a slightly
-different syntax. In constrast to kubectl, you do not have to specify
+different syntax. In contrast to kubectl, you do not have to specify
 the namespace of the pod.
 
 If no namespace is given, havener will search all namespaces for
@@ -70,7 +70,7 @@ execute the command in the first container found in the pod.
 If you run the 'pod-exec' without any additional arguments, it will print a
 list of available pods.
 
-For convenenience, if the target pod name _all_ is used, havener will look up
+For convenience, if the target pod name _all_ is used, havener will look up
 all pods in all namespaces automatically.
 `,
 	SilenceUsage:  true,
@@ -217,9 +217,7 @@ func lookupPodContainers(client kubernetes.Interface, p *corev1.Pod) (containerL
 }
 
 func lookupAllPods(client kubernetes.Interface, namespaces []string) (map[*corev1.Pod][]string, error) {
-
-	var podLists map[*corev1.Pod][]string
-	podLists = make(map[*corev1.Pod][]string)
+	var podLists = make(map[*corev1.Pod][]string)
 	for _, namespace := range namespaces {
 		podsPerNs, err := client.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
 		if err != nil {

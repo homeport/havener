@@ -1,4 +1,4 @@
-// Copyright © 2018 The Havener
+// Copyright © 2021 The Homeport Team
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -27,7 +27,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var havenerVersion string
+var version string
 
 // versionCmd represents the top command
 var versionCmd = &cobra.Command{
@@ -35,12 +35,12 @@ var versionCmd = &cobra.Command{
 	Short: "Shows the version",
 	Long:  `Shows version details`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(havenerVersion) == 0 {
-			havenerVersion = "development"
+		if len(version) == 0 {
+			version = "development"
 		}
 
 		bunt.Printf("*havener* version MintCream{_%s_}, *Go* version MintCream{_%s %s/%s_}\n",
-			havenerVersion,
+			version,
 			runtime.Version(),
 			runtime.GOOS,
 			runtime.GOARCH,

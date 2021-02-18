@@ -1,4 +1,4 @@
-// Copyright © 2018 The Havener
+// Copyright © 2021 The Homeport Team
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,34 +18,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package cmd
+package main
 
 import (
-	"github.com/gonvenience/neat"
-	"github.com/homeport/havener/pkg/havener"
-	"github.com/spf13/cobra"
+	"log"
+
+	"github.com/homeport/havener/internal/cmd"
+	"github.com/spf13/cobra/doc"
 )
 
-// certCmd represents the cert command
-var certsCmd = &cobra.Command{
-	Use:   "certs",
-	Short: "Checks whether certificates are valid or not",
-	Long:  `Checks whether certificates are valid or not. It automatically searches all secrets in all namespaces, so it does not need any flags to specify where to look`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		details, err := havener.VerifyCertExpirations()
-		if err != nil {
-			return err
-		}
-
-		return printBoxWithTable(
-			"Overview of certificates found in Cluster secrets",
-			[]string{"namespace", "secret", "name/key", "status"},
-			details,
-			neat.VertialBarSeparator(),
-		)
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(certsCmd)
+func main() {
+	if err := doc.GenMarkdownTree(cmd.NewHvnrRootCmd(), ".docs/commands/"); err != nil {
+		log.Fatal(err)
+	}
 }

@@ -1,4 +1,4 @@
-// Copyright © 2018 The Havener
+// Copyright © 2021 The Homeport Team
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -66,14 +66,13 @@ var watchCmd = &cobra.Command{
 		}
 
 		var ticker = time.NewTicker(time.Duration(watchCmdSettings.interval) * time.Second)
-		for {
-			select {
-			case <-ticker.C:
-				if err := printWatchList(hvnr); err != nil {
-					return err
-				}
+		for range ticker.C {
+			if err := printWatchList(hvnr); err != nil {
+				return err
 			}
 		}
+
+		return nil
 	},
 }
 
@@ -165,11 +164,7 @@ func generatePodsTable(hvnr havener.Havener) (string, error) {
 	for _, pod := range pods {
 		status := humanReadablePodStatus(*pod)
 
-		age := humanReadableDuration(
-			time.Now().Sub(
-				pod.CreationTimestamp.Time,
-			),
-		)
+		age := humanReadableDuration(time.Since(pod.CreationTimestamp.Time))
 
 		readyContainer, totalContainer := func() (int, int) {
 			var counter int
@@ -245,7 +240,7 @@ func generateSecretsTable(hvnr havener.Havener) (secResult string, err error) {
 	for _, secret := range secrets {
 		styleOptions := []bunt.StyleOption{}
 
-		age := humanReadableDuration(time.Now().Sub(secret.CreationTimestamp.Time))
+		age := humanReadableDuration(time.Since(secret.CreationTimestamp.Time))
 
 		tableSec = append(tableSec, []string{
 			bunt.Style(secret.Namespace, styleOptions...),
@@ -278,7 +273,7 @@ func generateCMTable(hvnr havener.Havener) (cmResult string, err error) {
 
 	for _, cm := range configMaps {
 		styleOptions := []bunt.StyleOption{}
-		age := humanReadableDuration(time.Now().Sub(cm.CreationTimestamp.Time))
+		age := humanReadableDuration(time.Since(cm.CreationTimestamp.Time))
 		tableSec = append(tableSec, []string{
 			bunt.Style(cm.Namespace, styleOptions...),
 			bunt.Style(cm.Name, styleOptions...),
@@ -312,11 +307,7 @@ func generateCRDTable(hvnr havener.Havener) (string, error) {
 	for _, bdpl := range bdplList {
 		styleOptions := []bunt.StyleOption{}
 
-		age := humanReadableDuration(
-			time.Now().Sub(
-				bdpl.GetCreationTimestamp().Time,
-			),
-		)
+		age := humanReadableDuration(time.Since(bdpl.GetCreationTimestamp().Time))
 		tableSec = append(tableSec, []string{
 			bunt.Style(bdpl.GetNamespace(), styleOptions...),
 			bunt.Style(bdpl.GetName(), styleOptions...),
