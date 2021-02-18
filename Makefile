@@ -18,14 +18,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-.PHONY: all clean todo-list lint misspell vet unit-test docker-build-test test build
+.PHONY: all clean todo-list lint misspell vet unit-test docker-build-test test
 
-default: build
+default: test
 
-all: test build
+all: test
 
 clean:
-	@rm -rf binaries
+	@rm -rf dist
 	@go clean -cache $(shell go list ./...)
 
 todo-list:
@@ -69,9 +69,3 @@ gen-docs:
 	go run cmd/gendocs/docs.go
 	perl -pi -e "s:$(HOME):~:g" .docs/commands/*.md # omit username in docs
 	perl -pi -e 's/\e\[[0-9;]*m//g' .docs/commands/*.md # remove ANSI sequences
-
-build:
-	@scripts/build.sh --local
-
-build-all:
-	@scripts/build.sh --all
