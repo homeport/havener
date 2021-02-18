@@ -1,10 +1,4 @@
-# Havener /ˈheɪvənə/
-
-[![License](https://img.shields.io/github/license/homeport/havener.svg)](https://github.com/homeport/havener/blob/main/LICENSE)
-[![Go Report Card](https://goreportcard.com/badge/github.com/homeport/havener)](https://goreportcard.com/report/github.com/homeport/havener)
-[![Build Status](https://travis-ci.com/homeport/havener.svg?branch=develop)](https://travis-ci.com/homeport/havener)
-[![GoDoc](https://godoc.org/github.com/homeport/havener?status.svg)](https://godoc.org/github.com/homeport/havener)
-[![Release](https://img.shields.io/github/release/homeport/havener.svg)](https://github.com/homeport/havener/releases/latest)
+# Havener /ˈheɪvənə/ [![License](https://img.shields.io/github/license/homeport/havener.svg)](https://github.com/homeport/havener/blob/main/LICENSE) [![Go Report Card](https://goreportcard.com/badge/github.com/homeport/havener)](https://goreportcard.com/report/github.com/homeport/havener) [![Build and Tests](https://github.com/homeport/havener/workflows/Build%20and%20Tests/badge.svg)](https://github.com/homeport/havener/actions?query=workflow%3A%22Build+and+Tests%22) [![Codecov](https://img.shields.io/codecov/c/github/homeport/havener/main.svg)](https://codecov.io/gh/homeport/havener) [![Go Reference](https://pkg.go.dev/badge/github.com/homeport/havener.svg)](https://pkg.go.dev/github.com/homeport/havener) [![Release](https://img.shields.io/github/release/homeport/havener.svg)](https://github.com/homeport/havener/releases/latest)
 
 ![havener](.docs/images/logo.png?raw=true "Havener logo - a pelican with pirate hat")
 
@@ -18,7 +12,7 @@
 
 ## Introducing Havener
 
-If you use a Kubernetes cluster, chances are very high that you use `kubectl` and possibly `helm` a lot. These are fine tools and allow you to do everything you need to do, but there are use cases where you end up with a very long `kubectl` command in your terminal. This is why we created `havener` to introduce a convenience wrapper around both `kubectl` and `helm`. Think of it as a swiss army knife for Kubernetes tasks. Possible use cases are for example executing a command on multiple pods at the same time, retrieving usage details, or deploying a sequence of Helm Charts with custom pre- and post-install hooks.
+If you use a Kubernetes cluster, chances are very high that you use `kubectl` a lot. These are fine tools and allow you to do everything you need to do, but there are use cases where you end up with a very long `kubectl` command in your terminal. This is why we created `havener` to introduce a convenience wrapper around `kubectl`. Think of it as a swiss army knife for Kubernetes tasks. Possible use cases are for example executing a command on multiple pods at the same time, or retrieving usage details.
 
 ## Ok, tell me more
 
