@@ -101,15 +101,8 @@ func clusterName(kubeConfig string) (string, error) {
 		return "", err
 	}
 
-	for _, entry := range cfg["clusters"].([]interface{}) {
-		switch entry.(type) {
-		case map[interface{}]interface{}:
-			for key, value := range entry.(map[interface{}]interface{}) {
-				if key == "name" {
-					return value.(string), nil
-				}
-			}
-		}
+	if name, ok := cfg["current-context"]; ok {
+		return fmt.Sprintf("%v", name), nil
 	}
 
 	return "", fmt.Errorf("unable to determine cluster name based on Kubernetes configuration")
