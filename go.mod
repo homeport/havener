@@ -3,13 +3,13 @@ module github.com/homeport/havener
 go 1.15
 
 require (
-	github.com/gonvenience/bunt v1.2.0
+	github.com/gonvenience/bunt v1.3.1
 	github.com/gonvenience/neat v1.3.5
 	github.com/gonvenience/term v1.0.1
 	github.com/gonvenience/text v1.0.6
 	github.com/gonvenience/wait v1.0.2
 	github.com/gonvenience/wrap v1.1.0
-	github.com/lucasb-eyer/go-colorful v1.0.3
+	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/onsi/ginkgo v1.15.0
 	github.com/onsi/gomega v1.10.5
