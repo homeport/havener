@@ -36,7 +36,6 @@ import (
 	"github.com/gonvenience/neat"
 	"github.com/gonvenience/term"
 	"github.com/gonvenience/wrap"
-	homedir "github.com/mitchellh/go-homedir"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -97,7 +96,7 @@ func Execute() {
 }
 
 func init() {
-	home, err := homedir.Dir()
+	home, err := os.UserHomeDir()
 	if err != nil {
 		panic(wrap.Error(err, "unable to get home directory"))
 	}
