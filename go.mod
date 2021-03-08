@@ -13,7 +13,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/onsi/ginkgo v1.15.0
 	github.com/onsi/gomega v1.11.0
-	github.com/spf13/cobra v1.1.1
+	github.com/spf13/cobra v1.1.3
 	github.com/spf13/viper v1.7.1
 	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
