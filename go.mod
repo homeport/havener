@@ -11,7 +11,7 @@ require (
 	github.com/gonvenience/wrap v1.1.0
 	github.com/lucasb-eyer/go-colorful v1.0.3
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/onsi/ginkgo v1.15.0
+	github.com/onsi/ginkgo v1.15.2
 	github.com/onsi/gomega v1.11.0
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/viper v1.7.1
