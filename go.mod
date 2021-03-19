@@ -19,9 +19,9 @@ require (
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	golang.org/x/sys v0.0.0-20210112080510-489259a85091
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
-	k8s.io/api v0.20.4
-	k8s.io/apimachinery v0.20.4
-	k8s.io/cli-runtime v0.20.4
-	k8s.io/client-go v0.20.4
-	k8s.io/kubectl v0.20.4
+	k8s.io/api v0.20.5
+	k8s.io/apimachinery v0.20.5
+	k8s.io/cli-runtime v0.20.5
+	k8s.io/client-go v0.20.5
+	k8s.io/kubectl v0.20.5
 )
