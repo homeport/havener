@@ -21,9 +21,9 @@
 package cmd_test
 
 import (
-	"github.com/gonvenience/bunt"
 	"github.com/gonvenience/term"
 
+	. "github.com/gonvenience/bunt"
 	. "github.com/homeport/havener/internal/cmd"
 	. "github.com/homeport/havener/pkg/havener"
 	. "github.com/onsi/ginkgo"
@@ -32,15 +32,13 @@ import (
 
 var _ = Describe("usage details string rendering", func() {
 	BeforeEach(func() {
-		bunt.ColorSetting = bunt.OFF
-		bunt.TrueColorSetting = bunt.OFF
+		SetColorSettings(OFF, OFF)
 		term.FixedTerminalWidth = 120
 		term.FixedTerminalHeight = 40
 	})
 
 	AfterEach(func() {
-		bunt.ColorSetting = bunt.AUTO
-		bunt.TrueColorSetting = bunt.AUTO
+		SetColorSettings(AUTO, AUTO)
 		term.FixedTerminalWidth = -1
 		term.FixedTerminalHeight = -1
 	})
