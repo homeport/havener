@@ -191,12 +191,8 @@ func execInClusterNodes(args []string) error {
 	close(errors)
 	close(output)
 
-	if err := combineErrorsFromChannel("node command execution failed", errors); err != nil {
-		return err
-	}
-
 	<-printer
-	return nil
+	return combineErrorsFromChannel("node command execution failed", errors)
 }
 
 func lookupNodesByName(client kubernetes.Interface, input string) ([]corev1.Node, error) {
