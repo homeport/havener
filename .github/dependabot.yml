@@ -1,0 +1,45 @@
+version: 2
+updates:
+- package-ecosystem: gomod
+  directory: "/"
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: github.com/onsi/ginkgo
+    versions:
+    - 1.15.0
+    - 1.15.1
+    - 1.15.2
+    - 1.16.0
+  - dependency-name: github.com/gonvenience/bunt
+    versions:
+    - 1.3.1
+    - 1.3.2
+  - dependency-name: k8s.io/apimachinery
+    versions:
+    - 0.20.5
+  - dependency-name: k8s.io/kubectl
+    versions:
+    - 0.20.5
+  - dependency-name: k8s.io/cli-runtime
+    versions:
+    - 0.20.5
+  - dependency-name: k8s.io/client-go
+    versions:
+    - 0.20.5
+  - dependency-name: github.com/gonvenience/neat
+    versions:
+    - 1.3.6
+  - dependency-name: github.com/spf13/cobra
+    versions:
+    - 1.1.3
+  - dependency-name: github.com/lucasb-eyer/go-colorful
+    versions:
+    - 1.2.0
+  - dependency-name: github.com/onsi/gomega
+    versions:
+    - 1.10.5
+  - dependency-name: k8s.io/api
+    versions:
+    - 0.20.4
