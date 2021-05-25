@@ -134,9 +134,10 @@ func (h *Hvnr) preparePodOnNode(node corev1.Node, namespace string, name string,
 			RestartPolicy: corev1.RestartPolicyNever,
 			Containers: []corev1.Container{
 				{
-					Name:  "node-exec-container",
-					Image: containerImage,
-					Stdin: useStdin,
+					Name:            "node-exec-container",
+					Image:           containerImage,
+					ImagePullPolicy: corev1.PullIfNotPresent,
+					Stdin:           useStdin,
 					SecurityContext: &corev1.SecurityContext{
 						Privileged: &trueThat,
 					},
