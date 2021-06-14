@@ -222,7 +222,7 @@ func (h *Hvnr) TopDetails() (*TopDetails, error) {
 			podname := fmt.Sprintf("havener-usage-retriever-%s", node.Name)
 			pod, err := h.client.CoreV1().Pods("kube-system").Get(context.TODO(), podname, metav1.GetOptions{})
 			if err != nil {
-				pod, err = h.preparePodOnNode(node, "kube-system", podname, "alpine", 5, true)
+				pod, err = h.preparePodOnNode(node, "kube-system", podname, "alpine", "kubernetes.io/hostname", "", "", 5, true)
 				if err != nil {
 					return
 				}

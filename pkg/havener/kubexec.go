@@ -86,7 +86,7 @@ func (h *Hvnr) PodExec(pod *corev1.Pod, container string, command []string, stdi
 }
 
 // NodeExec executes the provided command on the given node.
-func (h *Hvnr) NodeExec(node corev1.Node, containerImage string, timeoutSeconds int, command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
+func (h *Hvnr) NodeExec(node corev1.Node, containerImage string, nodeSelectorKey string, nodeTaintKey string, nodeTaintValue string, timeoutSeconds int, command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
 	logf(Verbose, "Executing command on node: %#v", command)
 
 	var (
@@ -94,7 +94,7 @@ func (h *Hvnr) NodeExec(node corev1.Node, containerImage string, timeoutSeconds 
 		namespace = "kube-system"
 	)
 
-	pod, err := h.preparePodOnNode(node, namespace, podName, containerImage, timeoutSeconds, stdin != nil)
+	pod, err := h.preparePodOnNode(node, namespace, podName, containerImage, nodeSelectorKey, nodeTaintKey, nodeTaintValue, timeoutSeconds, stdin != nil)
 	if err != nil {
 		return err
 	}
@@ -114,7 +114,7 @@ func (h *Hvnr) NodeExec(node corev1.Node, containerImage string, timeoutSeconds 
 	)
 }
 
-func (h *Hvnr) preparePodOnNode(node corev1.Node, namespace string, name string, containerImage string, timeoutSeconds int, useStdin bool) (*corev1.Pod, error) {
+func (h *Hvnr) preparePodOnNode(node corev1.Node, namespace string, name string, containerImage string, nodeSelectorKey string, nodeTaintKey string, nodeTaintValue string, timeoutSeconds int, useStdin bool) (*corev1.Pod, error) {
 	trueThat := true
 
 	// Add pod deletion to shutdown sequence list (in case of Ctrl+C exit)
@@ -129,7 +129,14 @@ func (h *Hvnr) preparePodOnNode(node corev1.Node, namespace string, name string,
 			Namespace: namespace,
 		},
 		Spec: corev1.PodSpec{
-			NodeSelector:  map[string]string{"kubernetes.io/hostname": node.Name}, // Deploy pod on specific node using label selector
+			NodeSelector: map[string]string{nodeSelectorKey: node.Name}, // Deploy pod on specific node using label selector
+			Tolerations: []corev1.Toleration{
+				{
+					Key:      nodeTaintKey,
+					Operator: corev1.TolerationOpEqual,
+					Value:    nodeTaintValue,
+				},
+			},
 			HostPID:       true,
 			RestartPolicy: corev1.RestartPolicyNever,
 			Containers: []corev1.Container{

@@ -42,12 +42,16 @@ import (
 const nodeDefaultCommand = "/bin/sh"
 
 var (
-	nodeExecNoTty   bool
-	nodeExecImage   string
-	nodeExecTimeout int
-	nodeExecBlock   bool
-	defaultImage    = "alpine"
-	defaultTimeout  = 10
+	nodeExecNoTty          bool
+	nodeExecImage          string
+	nodeSelectorKey        string
+	nodeTaintKey           string
+	nodeTaintValue         string
+	nodeExecTimeout        int
+	nodeExecBlock          bool
+	defaultImage           = "alpine"
+	defaultNodeSelectorKey = "kubernetes.io/hostname"
+	defaultTimeout         = 10
 )
 
 // nodeExecCmd represents the node-exec command
@@ -91,6 +95,9 @@ func init() {
 	nodeExecCmd.PersistentFlags().StringVar(&nodeExecImage, "image", defaultImage, "set image for helper pod from which the root-shell is accessed")
 	nodeExecCmd.PersistentFlags().IntVar(&nodeExecTimeout, "timeout", defaultTimeout, "set timout in seconds for the setup of the helper pod")
 	nodeExecCmd.PersistentFlags().BoolVar(&nodeExecBlock, "block", false, "show distributed shell output as block for each node")
+	nodeExecCmd.PersistentFlags().StringVar(&nodeSelectorKey, "node-selector-key", defaultNodeSelectorKey, "defines the key to use for selecting a node to exec")
+	nodeExecCmd.PersistentFlags().StringVar(&nodeTaintKey, "node-taint-key", "", "defines the key to use for selecting a taint")
+	nodeExecCmd.PersistentFlags().StringVar(&nodeTaintValue, "node-taint-value", "", "defines the value to use for selecting a taint key")
 }
 
 func execInClusterNodes(args []string) error {
@@ -135,6 +142,9 @@ func execInClusterNodes(args []string) error {
 		return hvnr.NodeExec(
 			nodes[0],
 			nodeExecImage,
+			nodeSelectorKey,
+			nodeTaintKey,
+			nodeTaintValue,
 			nodeExecTimeout,
 			command,
 			os.Stdin,
@@ -165,6 +175,9 @@ func execInClusterNodes(args []string) error {
 			errors <- hvnr.NodeExec(
 				node,
 				nodeExecImage,
+				nodeSelectorKey,
+				nodeTaintKey,
+				nodeTaintValue,
 				nodeExecTimeout,
 				command,
 				reader,

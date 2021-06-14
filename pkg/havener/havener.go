@@ -95,7 +95,7 @@ type Havener interface {
 	RetrieveLogs(parallelDownloads int, target string, includeConfigFiles bool) error
 
 	PodExec(pod *corev1.Pod, container string, command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error
-	NodeExec(node corev1.Node, containerImage string, timeoutSeconds int, command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error
+	NodeExec(node corev1.Node, containerImage string, nodeSelectorKey string, nodeTaintKey string, nodeTaintValue string, timeoutSeconds int, command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error
 }
 
 // NewHavenerFromFields returns a new Havener handle using the provided
