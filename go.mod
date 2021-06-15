@@ -1,6 +1,6 @@
 module github.com/homeport/havener
 
-go 1.15
+go 1.16
 
 require (
 	github.com/gonvenience/bunt v1.3.2
