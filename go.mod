@@ -19,7 +19,7 @@ require (
 	golang.org/x/sys v0.0.0-20210423082822-04245dca01da
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	k8s.io/api v0.20.5
-	k8s.io/apimachinery v0.20.5
+	k8s.io/apimachinery v0.21.1
 	k8s.io/cli-runtime v0.20.5
 	k8s.io/client-go v0.20.5
 	k8s.io/kubectl v0.20.5
