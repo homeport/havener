@@ -196,8 +196,6 @@ func execInClusterNodes(args []string) error {
 }
 
 func lookupNodesByName(client kubernetes.Interface, input string) ([]corev1.Node, error) {
-	nodeList := []corev1.Node{}
-
 	if input == "all" {
 		list, err := client.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
@@ -207,6 +205,7 @@ func lookupNodesByName(client kubernetes.Interface, input string) ([]corev1.Node
 		return list.Items, nil
 	}
 
+	var nodeList []corev1.Node
 	for _, nodeName := range strings.Split(input, ",") {
 		node, err := client.CoreV1().Nodes().Get(context.TODO(), nodeName, metav1.GetOptions{})
 		if err != nil {

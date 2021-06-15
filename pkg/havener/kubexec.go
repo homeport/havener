@@ -36,6 +36,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/remotecommand"
+	"k8s.io/utils/pointer"
 )
 
 // PodExec executes the provided command in the referenced pod's container.
@@ -87,22 +88,21 @@ func (h *Hvnr) PodExec(pod *corev1.Pod, container string, command []string, stdi
 
 // NodeExec executes the provided command on the given node.
 func (h *Hvnr) NodeExec(node corev1.Node, containerImage string, timeoutSeconds int, command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
-	logf(Verbose, "Executing command on node: %#v", command)
-
 	var (
 		podName   = text.RandomStringWithPrefix("node-exec-", 15) // unique pod name
 		namespace = "kube-system"
 	)
+
+	// Make sure to stop pod after command execution
+	defer PurgePod(h.client, namespace, podName, 10, metav1.DeletePropagationForeground)
 
 	pod, err := h.preparePodOnNode(node, namespace, podName, containerImage, timeoutSeconds, stdin != nil)
 	if err != nil {
 		return err
 	}
 
-	// Make sure to stop pod after command execution
-	defer PurgePod(h.client, pod.Namespace, pod.Name, 10, metav1.DeletePropagationForeground)
-
 	// Execute command on pod and redirect output to users provided stdout and stderr
+	logf(Verbose, "Executing command on node: %#v", command)
 	return h.PodExec(
 		pod,
 		"node-exec-container",
@@ -115,14 +115,12 @@ func (h *Hvnr) NodeExec(node corev1.Node, containerImage string, timeoutSeconds 
 }
 
 func (h *Hvnr) preparePodOnNode(node corev1.Node, namespace string, name string, containerImage string, timeoutSeconds int, useStdin bool) (*corev1.Pod, error) {
-	trueThat := true
-
 	// Add pod deletion to shutdown sequence list (in case of Ctrl+C exit)
 	AddShutdownFunction(func() {
 		PurgePod(h.client, namespace, name, 10, metav1.DeletePropagationBackground)
 	})
 
-	// Pod confoguration
+	// Pod configuration
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -139,11 +137,21 @@ func (h *Hvnr) preparePodOnNode(node corev1.Node, namespace string, name string,
 					ImagePullPolicy: corev1.PullIfNotPresent,
 					Stdin:           useStdin,
 					SecurityContext: &corev1.SecurityContext{
-						Privileged: &trueThat,
+						Privileged: pointer.BoolPtr(true),
 					},
 				},
 			},
 		},
+	}
+
+	// Mirror the node taints as tolerations to make the pod being able to start on the node
+	for _, taint := range node.Spec.Taints {
+		pod.Spec.Tolerations = append(pod.Spec.Tolerations, corev1.Toleration{
+			Key:      taint.Key,
+			Operator: corev1.TolerationOpEqual,
+			Value:    taint.Value,
+			Effect:   taint.Effect,
+		})
 	}
 
 	// Create pod in given namespace based on configuration
