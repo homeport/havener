@@ -32,7 +32,7 @@ import (
 	"github.com/gonvenience/term"
 	"github.com/gonvenience/text"
 	"github.com/gonvenience/wrap"
-	"golang.org/x/crypto/ssh/terminal"
+	terminal "golang.org/x/term"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/remotecommand"
