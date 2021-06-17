@@ -150,49 +150,86 @@ func execInClusterNodes(args []string) error {
 	var (
 		wg      = &sync.WaitGroup{}
 		readers = duplicateReader(os.Stdin, len(nodes))
-		output  = make(chan OutputMsg)
 		errors  = make(chan error, len(nodes))
 		printer = make(chan bool, 1)
 	)
 
-	wg.Add(len(nodes))
-	for i, node := range nodes {
-		go func(node corev1.Node, reader io.Reader) {
-			defer func() {
-				wg.Done()
-			}()
+	parallelBlockValue := 4 // reasonable default for now, can be parameterize via flags
+	parallelBlockList := generateRanges(len(nodes), parallelBlockValue)
 
-			errors <- hvnr.NodeExec(
-				node,
-				nodeExecImage,
-				nodeExecTimeout,
-				command,
-				reader,
-				chanWriter("StdOut", node.Name, output),
-				chanWriter("StdErr", node.Name, output),
-				!nodeExecNoTty,
-			)
-		}(node, readers[i])
-	}
+	for index, block := range parallelBlockList {
+		var output = make(chan OutputMsg)
 
-	// Start the respective output printer in a separate Go routine
-	go func() {
-		if nodeExecBlock {
-			PrintOutputMessageAsBlock(output)
+		// Get the minimum value for a range on the node list
+		min := index * parallelBlockValue
+		// Get a max limit value for till where we should range on the node list
+		max := (min + block)
 
-		} else {
-			PrintOutputMessage(output)
+		wg.Add(block)
+		for i := min; i < max; i++ {
+
+			go func(node corev1.Node, reader io.Reader) {
+				defer func() {
+					wg.Done()
+				}()
+
+				hvnr.NodeExec(
+					node,
+					nodeExecImage,
+					nodeExecTimeout,
+					command,
+					reader,
+					chanWriter("StdOut", node.Name, output),
+					chanWriter("StdErr", node.Name, output),
+					!nodeExecNoTty,
+				)
+			}(nodes[i], readers[i])
 		}
 
-		printer <- true
-	}()
+		go func() {
+			if nodeExecBlock {
+				PrintOutputMessageAsBlock(output)
 
-	wg.Wait()
+			} else {
+				PrintOutputMessage(output)
+			}
+
+			printer <- true
+		}()
+
+		// Start the respective output printer in a separate Go routine
+		wg.Wait()
+		close(output)
+		<-printer
+	}
 	close(errors)
-	close(output)
 
-	<-printer
 	return combineErrorsFromChannel("node command execution failed", errors)
+}
+
+// provides a list of integers, where each value represent the group size to process
+func generateRanges(nodesNumber int, desiredParallelBlockValue int) []int {
+
+	// holds number of times the block fits into the nodes size
+	div := nodesNumber / desiredParallelBlockValue
+	// holds the modulo remainder, will be appended at the end of the array
+	res := nodesNumber % desiredParallelBlockValue
+
+	// single block range
+	if nodesNumber == desiredParallelBlockValue {
+		return []int{nodesNumber}
+	}
+
+	var result []int
+
+	for i := 0; i < div; i++ {
+		result = append(result, desiredParallelBlockValue)
+	}
+
+	result = append(result, res)
+
+	return result
+
 }
 
 func lookupNodesByName(client kubernetes.Interface, input string) ([]corev1.Node, error) {
