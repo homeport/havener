@@ -76,7 +76,12 @@ all pods in all namespaces automatically.
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return execInClusterPods(args)
+		hvnr, err := havener.NewHavener(havener.KubeConfig(kubeConfig))
+		if err != nil {
+			return wrap.Error(err, "unable to get access to cluster")
+		}
+
+		return execInClusterPods(hvnr, args)
 	},
 }
 
@@ -87,17 +92,13 @@ func init() {
 	podExecCmd.PersistentFlags().BoolVar(&podExecBlock, "block", false, "show distributed shell output as block for each pod")
 }
 
-func execInClusterPods(args []string) error {
-	hvnr, err := havener.NewHavener()
-	if err != nil {
-		return wrap.Error(err, "unable to get access to cluster")
-	}
-
+func execInClusterPods(hvnr havener.Havener, args []string) error {
 	var (
 		podMap          map[*corev1.Pod][]string
 		countContainers int
 		input           string
 		command         []string
+		err             error
 	)
 
 	switch {

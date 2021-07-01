@@ -32,6 +32,7 @@ package havener
 import (
 	"fmt"
 	"io"
+	"os"
 	"time"
 
 	"github.com/gonvenience/wrap"
@@ -98,6 +99,16 @@ type Havener interface {
 	NodeExec(node corev1.Node, containerImage string, timeoutSeconds int, command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error
 }
 
+// Option provides a way to set specific settings for creating the Havener setup
+type Option func(*Hvnr)
+
+// KubeConfig is an option to set a specific Kubernetes configuration path
+func KubeConfig(kubeConfig string) Option {
+	return func(h *Hvnr) {
+		h.kubeConfigPath = kubeConfig
+	}
+}
+
 // NewHavenerFromFields returns a new Havener handle using the provided
 // input arguments (use for unit testing only)
 func NewHavenerFromFields(client kubernetes.Interface, restconfig *rest.Config, clusterName string, kubeConfigPath string) *Hvnr {
@@ -110,35 +121,37 @@ func NewHavenerFromFields(client kubernetes.Interface, restconfig *rest.Config, 
 }
 
 // NewHavener returns a new Havener handle to perform cluster actions
-func NewHavener(kubeConfigs ...string) (*Hvnr, error) {
-	var kubeConfigPath string
-	switch len(kubeConfigs) {
-	case 0:
-		kubeConfigPath = getKubeConfig()
-
-	case 1:
-		kubeConfigPath = kubeConfigs[0]
-
-	default:
-		return nil, fmt.Errorf("multiple Kubernetes configurations are currently not supported")
+func NewHavener(opts ...Option) (hvnr *Hvnr, err error) {
+	hvnr = &Hvnr{}
+	for _, opt := range opts {
+		opt(hvnr)
 	}
 
-	client, restconfig, err := OutOfClusterAuthentication(kubeConfigPath)
+	// In case `KUBECONFIG` environment variable is set, this will take
+	// precedence over command line flag or default value
+	if value, ok := os.LookupEnv("KUBECONFIG"); ok {
+		hvnr.kubeConfigPath = value
+	}
+
+	// In case there is no Kubernetes configuration set, use the default
+	if hvnr.kubeConfigPath == "" {
+		hvnr.kubeConfigPath, err = KubeConfigDefault()
+		if err != nil {
+			return nil, wrap.Error(err, "failed to look-up default kube config")
+		}
+	}
+
+	hvnr.client, hvnr.restconfig, err = outOfClusterAuthentication(hvnr.kubeConfigPath)
 	if err != nil {
 		return nil, wrap.Error(err, "unable to get access to cluster")
 	}
 
-	clusterName, err := clusterName(kubeConfigPath)
+	hvnr.clusterName, err = clusterName(hvnr.kubeConfigPath)
 	if err != nil {
 		return nil, wrap.Error(err, "unable to get cluster name")
 	}
 
-	return &Hvnr{
-		client:         client,
-		restconfig:     restconfig,
-		clusterName:    clusterName,
-		kubeConfigPath: kubeConfigPath,
-	}, nil
+	return hvnr, nil
 }
 
 // ClusterName returns the name of the currently configured cluster

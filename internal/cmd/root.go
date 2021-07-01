@@ -25,10 +25,10 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"path/filepath"
 	"runtime/debug"
 	"strings"
 
+	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -37,6 +37,8 @@ import (
 	"github.com/gonvenience/term"
 	"github.com/gonvenience/wrap"
 )
+
+var kubeConfig string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -96,15 +98,16 @@ func Execute() {
 }
 
 func init() {
-	home, err := os.UserHomeDir()
+	kubeConfigDefault, err := havener.KubeConfigDefault()
 	if err != nil {
-		panic(wrap.Error(err, "unable to get home directory"))
+		panic(err)
 	}
 
 	rootCmd.Flags().SortFlags = false
 	rootCmd.PersistentFlags().SortFlags = false
 
-	rootCmd.PersistentFlags().String("kubeconfig", filepath.Join(home, ".kube", "config"), "Kubernetes configuration file")
+	rootCmd.PersistentFlags().StringVar(&kubeConfig, "kubeconfig", kubeConfigDefault, "Kubernetes configuration file")
+
 	rootCmd.PersistentFlags().Int("terminal-width", -1, "disable autodetection and specify an explicit terminal width")
 	rootCmd.PersistentFlags().Int("terminal-height", -1, "disable autodetection and specify an explicit terminal height")
 
@@ -116,7 +119,6 @@ func init() {
 	rootCmd.PersistentFlags().Bool("trace", false, "trace output - level 6")
 
 	// Bind environment variables to CLI flags
-	viper.BindPFlag("kubeconfig", rootCmd.PersistentFlags().Lookup("kubeconfig"))
 	viper.BindPFlag("TERMINAL_WIDTH", rootCmd.PersistentFlags().Lookup("terminal-width"))
 	viper.BindPFlag("TERMINAL_HEIGHT", rootCmd.PersistentFlags().Lookup("terminal-height"))
 

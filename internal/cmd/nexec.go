@@ -81,7 +81,12 @@ all nodes automatically.
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return execInClusterNodes(args)
+		hvnr, err := havener.NewHavener(havener.KubeConfig(kubeConfig))
+		if err != nil {
+			return wrap.Error(err, "unable to get access to cluster")
+		}
+
+		return execInClusterNodes(hvnr, args)
 	},
 }
 
@@ -95,16 +100,12 @@ func init() {
 	nodeExecCmd.PersistentFlags().IntVar(&nodeExecMaxParallel, "max-parallel", 0, "number of parallel executions (defaults to number of nodes)")
 }
 
-func execInClusterNodes(args []string) error {
-	hvnr, err := havener.NewHavener()
-	if err != nil {
-		return wrap.Error(err, "unable to get access to cluster")
-	}
-
+func execInClusterNodes(hvnr havener.Havener, args []string) error {
 	var (
 		nodes   []corev1.Node
 		input   string
 		command []string
+		err     error
 	)
 
 	switch {
