@@ -26,7 +26,6 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	"github.com/gonvenience/bunt"
 	"github.com/gonvenience/wrap"
@@ -56,15 +55,12 @@ var eventsCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		kubeConfig := viper.GetString("kubeconfig")
-		switch {
-		case len(kubeConfig) > 0:
-			return retrieveClusterEvents(kubeConfig)
-
-		default:
-			cmd.Usage()
+		hvnr, err := havener.NewHavener(havener.KubeConfig(kubeConfig))
+		if err != nil {
+			return wrap.Error(err, "unable to get access to cluster")
 		}
-		return nil
+
+		return retrieveClusterEvents(hvnr)
 	},
 }
 
@@ -74,13 +70,8 @@ func init() {
 	eventsCmd.PersistentFlags().StringVarP(&namespaceFilter, "namespace", "n", "", "Filter events for specific namespace")
 }
 
-func retrieveClusterEvents(kubeConfig string) error {
-	client, _, err := havener.OutOfClusterAuthentication(kubeConfig)
-	if err != nil {
-		return wrap.Error(err, "failed to access cluster")
-	}
-
-	namespaces, err := havener.ListNamespaces(client)
+func retrieveClusterEvents(hvnr havener.Havener) error {
+	namespaces, err := havener.ListNamespaces(hvnr.Client())
 	if err != nil {
 		return wrap.Error(err, "failed to get a list of namespaces")
 	}
@@ -96,7 +87,7 @@ func retrieveClusterEvents(kubeConfig string) error {
 		}
 
 		go func() error {
-			watcher, err := client.CoreV1().Events(namespace).Watch(context.TODO(), metav1.ListOptions{})
+			watcher, err := hvnr.Client().CoreV1().Events(namespace).Watch(context.TODO(), metav1.ListOptions{})
 			if err != nil {
 				return wrap.Error(err, "failed to setup event watcher")
 			}

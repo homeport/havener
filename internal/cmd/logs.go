@@ -54,7 +54,12 @@ The download includes all deployment YAMLs of the pods and the describe output.`
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return retrieveClusterLogs()
+		hvnr, err := havener.NewHavener(havener.KubeConfig(kubeConfig))
+		if err != nil {
+			return wrap.Error(err, "unable to get access to cluster")
+		}
+
+		return retrieveClusterLogs(hvnr)
 	},
 }
 
@@ -67,12 +72,7 @@ func init() {
 	logsCmd.PersistentFlags().IntVar(&parallelDownloads, "parallel", 64, "number of parallel download jobs")
 }
 
-func retrieveClusterLogs() error {
-	hvnr, err := havener.NewHavener()
-	if err != nil {
-		return wrap.Error(err, "unable to get access to cluster")
-	}
-
+func retrieveClusterLogs(hvnr havener.Havener) error {
 	var commonText string
 	if excludeConfigFiles {
 		commonText = "log files"

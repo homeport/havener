@@ -21,43 +21,41 @@
 package havener
 
 import (
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc" //from https://github.com/kubernetes/client-go/issues/345
 
-	"github.com/spf13/viper"
+	"github.com/gonvenience/wrap"
 	"gopkg.in/yaml.v3"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-var kubeconfig *string
-
-func getKubeConfig() string {
-	if kubeconfig == nil {
-		if home := HomeDir(); home != "" {
-			kubeconfig = flag.String("kubeconfig", viper.GetString("kubeconfig"), "(optional) absolute path to the kubeconfig file")
-		}
-		flag.Parse()
+// KubeConfigDefault returns assumed default locaation of the Kubernetes
+// configuration, which is expected to be `$HOME/.kube/config`.
+func KubeConfigDefault() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", wrap.Error(err, "unable to get home directory")
 	}
 
-	return *kubeconfig
+	return filepath.Join(home, ".kube", "config"), nil
 }
 
-//OutOfClusterAuthentication for kube authentication from the outside
-func OutOfClusterAuthentication(kubeConfig string) (*kubernetes.Clientset, *rest.Config, error) {
-	logf(Verbose, "Connecting to Kubernetes cluster...")
-
+// outOfClusterAuthentication for kube authentication from the outside
+func outOfClusterAuthentication(kubeConfig string) (*kubernetes.Clientset, *rest.Config, error) {
 	if kubeConfig == "" {
-		kubeConfig = getKubeConfig()
+		return nil, nil, fmt.Errorf("no kube config supplied")
 	}
+
+	logf(Verbose, "Connecting to Kubernetes cluster...")
 
 	// BuildConfigFromFlags is a helper function that builds configs from a master
 	// url or a kubeconfig filepath.
@@ -71,14 +69,6 @@ func OutOfClusterAuthentication(kubeConfig string) (*kubernetes.Clientset, *rest
 
 	logf(Verbose, "Successfully connected to Kubernetes cluster.")
 	return clientset, config, err
-}
-
-// HomeDir returns the HOME env key
-func HomeDir() string {
-	if h := os.Getenv("HOME"); h != "" {
-		return h
-	}
-	return os.Getenv("USERPROFILE") // windows
 }
 
 func isSystemNamespace(namespace string) bool {
