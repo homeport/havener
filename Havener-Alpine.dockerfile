@@ -20,13 +20,14 @@
 
 FROM golang:1.16-alpine AS build
 COPY . /go/src/github.com/homeport/havener
-RUN apk add --update make git bash file curl jq && \
+RUN apk add --update git curl && \
+  curl -sfL https://install.goreleaser.com/github.com/goreleaser/goreleaser.sh | sh && \
   cd /go/src/github.com/homeport/havener && \
-  make build && \
-  cp -p binaries/havener-linux-amd64 /usr/local/bin/havener
+  goreleaser build --rm-dist --skip-validate --single-target && \
+  cp -p dist/havener_linux_amd64/havener /usr/local/bin/havener
 
 
-FROM alpine:3
+FROM alpine
 
 # Update to latest and install required tools
 RUN apk update && \
@@ -40,16 +41,5 @@ RUN apk update && \
   perl \
   vim && \
   rm -rf /var/cache/apk/*
-
-# Install (minimal) IBM Cloud CLI
-RUN curl --silent --location https://clis.ng.bluemix.net/install/linux | sh && \
-  bx plugin install container-service -r Bluemix && \
-  bx plugin install container-registry -r Bluemix && \
-  bx config --usage-stats-collect false && \
-  bx config --check-version false
-
-# Install latest kubectl
-RUN curl --progress-bar --location "https://storage.googleapis.com/kubernetes-release/release/$(curl --silent --location https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl" > /usr/bin/kubectl && \
-  chmod +x /usr/bin/kubectl
 
 COPY --from=build /usr/local/bin/havener /usr/local/bin/havener

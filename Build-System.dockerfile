@@ -18,54 +18,29 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-FROM golang:1.16 AS build
-
-RUN GO111MODULE=on go get mvdan.cc/sh/v3/cmd/shfmt && \
-    git clone https://github.com/direnv/direnv $GOPATH/src/github.com/direnv/direnv && \
-    cd $GOPATH/src/github.com/direnv/direnv && \
-    make install
-
-RUN go get -d github.com/SUSE/stampy && \
-    cd $GOPATH/src/github.com/SUSE/stampy && \
-    find . -type f -print0 | xargs -0 perl -pi -e 's:github.com/golang/lint/golint:golang.org/x/lint/golint:g' && \
-    make tools && \
-    make all && \
-    mv $GOPATH/src/github.com/SUSE/stampy/build/linux-amd64/stampy /usr/local/bin/stampy
-
-
 FROM ubuntu:xenial
-
-# Place shfmt into Docker image
-COPY --from=build /go/bin/shfmt /usr/local/bin/shfmt
-
-# Place stampy into Docker image
-COPY --from=build /usr/local/bin/stampy /usr/local/bin/stampy
-
-# Place direnv into Docker image
-COPY --from=build /usr/local/bin/direnv /usr/local/bin/direnv
-RUN echo 'eval "$(direnv hook bash)"' >> ~/.bashrc
 
 # Update to latest and install required tools
 ENV DEBIAN_FRONTEND noninteractive
-RUN apt-get update > /dev/null && \
+RUN apt-get update >/dev/null && \
     apt-get upgrade -y > /dev/null && \
     apt-get install -y \
-    build-essential \
-    curl \
-    git-core \
-    jq \
-    vim \
-    wget \
+      build-essential \
+      curl \
+      git-core \
+      jq \
+      vim \
+      wget \
     >/dev/null && \
     rm -rf /var/lib/apt/lists/*
 
 # Install docker
-RUN apt-get update > /dev/null && \
+RUN apt-get update >/dev/null && \
     apt-get install -y \
-    apt-transport-https \
-    ca-certificates \
-    curl \
-    software-properties-common \
+      apt-transport-https \
+      ca-certificates \
+      curl \
+      software-properties-common \
     >/dev/null && \
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && \
     add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" && \
@@ -78,5 +53,18 @@ RUN curl --progress-bar --location https://storage.googleapis.com/golang/go1.16.
 ENV GOPATH=/go
 ENV PATH=$PATH:/usr/local/go/bin:$GOPATH/bin
 
-# Install latest Spruce
-RUN curl --silent --location "https://github.com/geofffranks/spruce/releases/download/$(curl --silent --location "https://api.github.com/repos/geofffranks/spruce/releases/latest" | jq -r .tag_name)/spruce-linux-amd64" > /usr/bin/spruce && chmod a+rx /usr/bin/spruce
+# Install Spruce
+RUN SPRUCE_VERSION="$(curl --silent --location "https://api.github.com/repos/geofffranks/spruce/releases/latest" | jq -r .tag_name)" && \
+    curl --silent --location "https://github.com/geofffranks/spruce/releases/download/${SPRUCE_VERSION}/spruce-linux-amd64" --output /usr/bin/spruce && \
+    chmod a+rx /usr/bin/spruce
+
+# Install shfmt
+RUN SHFTM_VERSION="$(curl --silent --location "https://api.github.com/repos/mvdan/sh/releases/latest" | jq -r .tag_name)" && \
+    curl --silent --location "https://github.com/mvdan/sh/releases/download/${SHFTM_VERSION}/shfmt_${SHFTM_VERSION}_linux_amd64" --output /usr/bin/shfmt && \
+    chmod a+rx /usr/bin/shfmt
+
+# Install direnv
+RUN DIRENV_VERSION="$(curl --silent --location "https://api.github.com/repos/direnv/direnv/releases/latest" | jq -r .tag_name)" && \
+    curl --silent --location "https://github.com/direnv/direnv/releases/download/${DIRENV_VERSION}/direnv.linux-amd64" --output /usr/bin/direnv && \
+    chmod a+rx /usr/bin/direnv && \
+    echo 'eval "$(direnv hook bash)"' >>$HOME/.bashrc
