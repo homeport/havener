@@ -27,15 +27,20 @@ import (
 	"path/filepath"
 	"strings"
 
-	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc" //from https://github.com/kubernetes/client-go/issues/345
+	// https://github.com/kubernetes/client-go/issues/345
+	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 
-	"github.com/gonvenience/wrap"
-	"gopkg.in/yaml.v3"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	// https://github.com/homeport/havener/issues/420
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+
+	"github.com/gonvenience/wrap"
+	"gopkg.in/yaml.v3"
 )
 
 // KubeConfigDefault returns assumed default locaation of the Kubernetes
@@ -98,7 +103,7 @@ func clusterName(kubeConfig string) (string, error) {
 	return "", fmt.Errorf("unable to determine cluster name based on Kubernetes configuration")
 }
 
-func apiCRDResourceExist(arl []*v1.APIResourceList, crdName string) (bool, schema.GroupVersionResource) {
+func apiCRDResourceExist(arl []*meta.APIResourceList, crdName string) (bool, schema.GroupVersionResource) {
 	for _, ar := range arl {
 		// Look for a CRD based on it´s singular or
 		// different short names.
