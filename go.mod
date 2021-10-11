@@ -10,7 +10,7 @@ require (
 	github.com/gonvenience/wait v1.0.2
 	github.com/gonvenience/wrap v1.1.0
 	github.com/lucasb-eyer/go-colorful v1.2.0
-	github.com/onsi/ginkgo v1.16.4
+	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.16.0
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/viper v1.8.1
