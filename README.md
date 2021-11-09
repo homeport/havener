@@ -22,8 +22,12 @@ Like `kubectl`, `havener` relies on the Kubernetes configuration that can be set
 
 ### Notable Use Cases
 
+#### Usage overview
+
 > ![havener](.docs/images/havener-top.png?raw=true "Havener terminal screenshot of top command")
 > Quickly get a live overview of the current cluster usage details, for example Load, CPU, and Memory of the cluster nodes.
+
+#### Pods in namespace overview
 
 > ![havener](.docs/images/havener-watch.png?raw=true "Havener terminal screenshot of watch command")
 > Watch pods in multiple namespaces with added colors to help identify the respective state.
@@ -67,7 +71,7 @@ There are different ways to get `havener`. You are free to pick the one that mak
 
 We are happy to have other people contributing to the project. If you decide to do that, here's how to:
 
-- get Go (`havener` requires Go version 1.16 or greater)
+- get Go (`havener` requires Go version 1.17 or greater)
 - fork the project
 - create a new branch
 - make your changes
@@ -103,7 +107,7 @@ docker run \
   --rm \
   --volume $GOPATH/src/github.com/homeport/havener:/go/src/github.com/homeport/havener \
   --workdir /go/src/github.com/homeport/havener \
-  golang:1.16 /bin/bash
+  golang:1.17 /bin/bash
 ```
 
 ### Package dependencies (Go modules)
