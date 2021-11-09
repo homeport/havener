@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-FROM golang:1.16-alpine AS build
+FROM golang:1.17-alpine AS build
 COPY . /go/src/github.com/homeport/havener
 RUN apk add --update git curl && \
   curl -sfL https://install.goreleaser.com/github.com/goreleaser/goreleaser.sh | sh && \
