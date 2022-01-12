@@ -6,12 +6,10 @@ builds:
     - linux
     - darwin
     goarch:
-    - amd64
     - arm64
+    - amd64
     main: ./cmd/havener/main.go
     flags:
-    - -tags
-    - netgo
     - -trimpath
     ldflags:
     - -s -w -extldflags "-static" -X github.com/homeport/havener/internal/cmd.version={{.Version}}
