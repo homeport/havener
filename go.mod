@@ -6,7 +6,7 @@ require (
 	github.com/gonvenience/bunt v1.3.3
 	github.com/gonvenience/neat v1.3.9
 	github.com/gonvenience/term v1.0.2
-	github.com/gonvenience/text v1.0.6
+	github.com/gonvenience/text v1.0.7
 	github.com/gonvenience/wait v1.0.3
 	github.com/gonvenience/wrap v1.1.1
 	github.com/lucasb-eyer/go-colorful v1.2.0
