@@ -4,19 +4,19 @@ go 1.17
 
 require (
 	github.com/gonvenience/bunt v1.3.3
-	github.com/gonvenience/neat v1.3.7
-	github.com/gonvenience/term v1.0.1
+	github.com/gonvenience/neat v1.3.9
+	github.com/gonvenience/term v1.0.2
 	github.com/gonvenience/text v1.0.6
 	github.com/gonvenience/wait v1.0.3
-	github.com/gonvenience/wrap v1.1.0
+	github.com/gonvenience/wrap v1.1.1
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/onsi/ginkgo v1.16.5
-	github.com/onsi/gomega v1.18.0
+	github.com/onsi/gomega v1.18.1
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/viper v1.10.1
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e
-	golang.org/x/term v0.0.0-20210916214954-140adaaadfaf
+	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9
+	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	k8s.io/api v0.22.3
 	k8s.io/apimachinery v0.22.3
@@ -79,7 +79,7 @@ require (
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/xlab/treeprint v0.0.0-20181112141820-a009c3971eca // indirect
 	go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5 // indirect
-	golang.org/x/net v0.0.0-20210917163549-3c21e5b27794 // indirect
+	golang.org/x/net v0.0.0-20220121210141-e204ce36a2ba // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
