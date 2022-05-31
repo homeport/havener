@@ -252,8 +252,9 @@ github.com/gonvenience/text v1.0.7 h1:YmIqmgTwxnACYCG59DykgMbomwteYyNhAmEUEJtPl1
 github.com/gonvenience/text v1.0.7/go.mod h1:OAjH+mohRszffLY6OjgQcUXiSkbrIavooFpfIt1ZwAs=
 github.com/gonvenience/wait v1.0.3 h1:x18JbY59uCwFxPF6Cwfbb/iFuIWULLxbhaKHcvzS128=
 github.com/gonvenience/wait v1.0.3/go.mod h1:Zz0GriLZNZZdYyZsIM2o8nre+EN9kobhKX3cCLQoyPA=
-github.com/gonvenience/wrap v1.1.1 h1:7cMuyMtTdUe2aObp760CzXo/wOmFaY7JXsIksu8NYYc=
 github.com/gonvenience/wrap v1.1.1/go.mod h1:u27bruNdIB6U5nnR0qq+GRRKbAJzEqC0H3DBHxl7YNM=
+github.com/gonvenience/wrap v1.1.2 h1:xPKxNwL1HCguwyM+HlP/1CIuc9LRd7k8RodLwe9YTZA=
+github.com/gonvenience/wrap v1.1.2/go.mod h1:GiryBSXoI3BAAhbWD1cZVj7RZmtiu0ERi/6R6eJfslI=
 github.com/google/btree v0.0.0-20180813153112-4030bb1f1f0c/go.mod h1:lNA+9X1NB3Zf8V7Ke586lFgjr2dZNuvo3lPJSGZ5JPQ=
 github.com/google/btree v1.0.0/go.mod h1:lNA+9X1NB3Zf8V7Ke586lFgjr2dZNuvo3lPJSGZ5JPQ=
 github.com/google/btree v1.0.1 h1:gK4Kx5IaGY9CD5sPJ36FHiBJ6ZXl0kilRiiCj+jdYp4=
