@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/gonvenience/bunt v1.3.3
-	github.com/gonvenience/neat v1.3.10
+	github.com/gonvenience/neat v1.3.11
 	github.com/gonvenience/term v1.0.2
 	github.com/gonvenience/text v1.0.7
 	github.com/gonvenience/wait v1.0.3
@@ -17,7 +17,7 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
-	gopkg.in/yaml.v3 v3.0.0
+	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.22.3
 	k8s.io/apimachinery v0.22.3
 	k8s.io/cli-runtime v0.22.3
