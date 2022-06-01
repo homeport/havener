@@ -3,7 +3,7 @@ module github.com/homeport/havener
 go 1.17
 
 require (
-	github.com/gonvenience/bunt v1.3.3
+	github.com/gonvenience/bunt v1.3.4
 	github.com/gonvenience/neat v1.3.11
 	github.com/gonvenience/term v1.0.2
 	github.com/gonvenience/text v1.0.7
