@@ -1,4 +1,4 @@
-# Copyright © 2021 The Homeport Team
+# Copyright © 2022 The Homeport Team
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -44,18 +44,17 @@ vet:
 	@go vet ./...
 
 unit-test:
-	GO111MODULE=on ginkgo \
-	  -randomizeAllSpecs \
-	  -randomizeSuites \
-	  -failOnPending \
-	  -nodes=4 \
-	  -compilers=2 \
-	  -slowSpecThreshold=240 \
-	  -race \
-	  -cover \
-	  -trace \
-	  internal/... \
-	  pkg/...
+	@go run github.com/onsi/ginkgo/v2/ginkgo \
+	  --coverprofile=unit.coverprofile \
+	  --randomize-all \
+	  --randomize-suites \
+	  --fail-on-pending \
+	  --keep-going \
+	  --slow-spec-threshold=4m \
+	  --compilers=2 \
+	  --race \
+	  --trace \
+	  ./...
 
 docker-build-test:
 	@docker build -t build-system:dev -f Build-System.dockerfile .
