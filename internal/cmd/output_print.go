@@ -60,7 +60,7 @@ func chanWriter(stream string, origin string, c chan OutputMsg) io.Writer {
 
 // PrintOutputMessage reads from the given output message channel and prints the
 // respective messages without any buffering or sorting.
-func PrintOutputMessage(messages chan OutputMsg) error {
+func PrintOutputMessage(messages chan OutputMsg) {
 	var (
 		numberOfColors = 64
 		colors         = bunt.RandomTerminalFriendlyColors(numberOfColors)
@@ -77,8 +77,6 @@ func PrintOutputMessage(messages chan OutputMsg) error {
 
 		printMessage(originColors[msg.Origin], msg)
 	}
-
-	return nil
 }
 
 // PrintOutputMessageAsBlock reads from the given output message channel and

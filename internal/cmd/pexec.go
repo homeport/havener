@@ -75,7 +75,7 @@ all pods in all namespaces automatically.
 `,
 	SilenceUsage:  true,
 	SilenceErrors: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, args []string) error {
 		hvnr, err := havener.NewHavener(havener.KubeConfig(kubeConfig))
 		if err != nil {
 			return wrap.Error(err, "unable to get access to cluster")
@@ -87,9 +87,9 @@ all pods in all namespaces automatically.
 
 func init() {
 	rootCmd.AddCommand(podExecCmd)
-	viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
-	podExecCmd.PersistentFlags().BoolVar(&podExecNoTty, "no-tty", false, "do not allocate pseudo-terminal for command execution")
-	podExecCmd.PersistentFlags().BoolVar(&podExecBlock, "block", false, "show distributed shell output as block for each pod")
+
+	podExecCmd.Flags().BoolVar(&podExecNoTty, "no-tty", false, "do not allocate pseudo-terminal for command execution")
+	podExecCmd.Flags().BoolVar(&podExecBlock, "block", false, "show distributed shell output as block for each pod")
 }
 
 func execInClusterPods(hvnr havener.Havener, args []string) error {

@@ -86,12 +86,12 @@ func retrieveClusterEvents(hvnr havener.Havener) error {
 			continue
 		}
 
-		go func() error {
-			watcher, err := hvnr.Client().CoreV1().Events(namespace).Watch(context.TODO(), metav1.ListOptions{})
-			if err != nil {
-				return wrap.Error(err, "failed to setup event watcher")
-			}
+		watcher, err := hvnr.Client().CoreV1().Events(namespace).Watch(context.TODO(), metav1.ListOptions{})
+		if err != nil {
+			return wrap.Error(err, "failed to setup event watcher")
+		}
 
+		go func() {
 			for event := range watcher.ResultChan() {
 				switch event.Type {
 				case watch.Added, watch.Modified:
@@ -116,7 +116,6 @@ func retrieveClusterEvents(hvnr havener.Havener) error {
 					}
 				}
 			}
-			return nil
 		}()
 	}
 
