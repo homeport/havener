@@ -1,4 +1,4 @@
-// Copyright © 2021 The Homeport Team
+// Copyright © 2022 The Homeport Team
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -26,12 +26,13 @@ import (
 	"os"
 	"time"
 
-	"github.com/gonvenience/term"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	. "github.com/gonvenience/bunt"
 	. "github.com/homeport/havener/internal/cmd"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+
+	"github.com/gonvenience/term"
 )
 
 var exampleOutput = []OutputMsg{
@@ -82,7 +83,8 @@ var _ = Describe("Output message printing", func() {
 		w.Close()
 
 		var buf bytes.Buffer
-		io.Copy(&buf, r)
+		_, err = io.Copy(&buf, r)
+		Expect(err).ToNot(HaveOccurred())
 
 		return buf.String()
 	}
