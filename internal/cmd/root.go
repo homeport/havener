@@ -119,15 +119,15 @@ func init() {
 	rootCmd.PersistentFlags().Bool("trace", false, "trace output - level 6")
 
 	// Bind environment variables to CLI flags
-	viper.BindPFlag("TERMINAL_WIDTH", rootCmd.PersistentFlags().Lookup("terminal-width"))
-	viper.BindPFlag("TERMINAL_HEIGHT", rootCmd.PersistentFlags().Lookup("terminal-height"))
+	_ = viper.BindPFlag("TERMINAL_WIDTH", rootCmd.PersistentFlags().Lookup("terminal-width"))
+	_ = viper.BindPFlag("TERMINAL_HEIGHT", rootCmd.PersistentFlags().Lookup("terminal-height"))
 
-	viper.BindPFlag("fatal", rootCmd.PersistentFlags().Lookup("fatal"))
-	viper.BindPFlag("error", rootCmd.PersistentFlags().Lookup("error"))
-	viper.BindPFlag("warn", rootCmd.PersistentFlags().Lookup("warn"))
-	viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
-	viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
-	viper.BindPFlag("trace", rootCmd.PersistentFlags().Lookup("trace"))
+	_ = viper.BindPFlag("fatal", rootCmd.PersistentFlags().Lookup("fatal"))
+	_ = viper.BindPFlag("error", rootCmd.PersistentFlags().Lookup("error"))
+	_ = viper.BindPFlag("warn", rootCmd.PersistentFlags().Lookup("warn"))
+	_ = viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
+	_ = viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
+	_ = viper.BindPFlag("trace", rootCmd.PersistentFlags().Lookup("trace"))
 
 	term.FixedTerminalWidth, term.FixedTerminalHeight = viper.GetInt("TERMINAL_WIDTH"), viper.GetInt("TERMINAL_HEIGHT")
 
