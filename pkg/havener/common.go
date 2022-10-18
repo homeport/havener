@@ -22,7 +22,6 @@ package havener
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -86,7 +85,7 @@ func isSystemNamespace(namespace string) bool {
 }
 
 func clusterName(kubeConfig string) (string, error) {
-	data, err := ioutil.ReadFile(kubeConfig)
+	data, err := os.ReadFile(kubeConfig)
 	if err != nil {
 		return "", err
 	}
