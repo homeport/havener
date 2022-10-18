@@ -57,11 +57,6 @@ unit-test:
 	  internal/... \
 	  pkg/...
 
-docker-build-test:
-	@docker build -t build-system:dev -f Build-System.dockerfile .
-	@docker build -t havener-alpine:dev -f Havener-Alpine.dockerfile .
-	@docker build -t havener-ubuntu:dev -f Havener-Ubuntu.dockerfile .
-
 test: lint misspell vet unit-test
 
 gen-docs:

@@ -1,4 +1,11 @@
-# Havener /ˈheɪvənə/ [![License](https://img.shields.io/github/license/homeport/havener.svg)](https://github.com/homeport/havener/blob/main/LICENSE) [![Go Report Card](https://goreportcard.com/badge/github.com/homeport/havener)](https://goreportcard.com/report/github.com/homeport/havener) [![Build and Tests](https://github.com/homeport/havener/workflows/Build%20and%20Tests/badge.svg)](https://github.com/homeport/havener/actions?query=workflow%3A%22Build+and+Tests%22) [![Codecov](https://img.shields.io/codecov/c/github/homeport/havener/main.svg)](https://codecov.io/gh/homeport/havener) [![Go Reference](https://pkg.go.dev/badge/github.com/homeport/havener.svg)](https://pkg.go.dev/github.com/homeport/havener) [![Release](https://img.shields.io/github/release/homeport/havener.svg)](https://github.com/homeport/havener/releases/latest)
+# Havener /ˈheɪvənə/
+
+[![License](https://img.shields.io/github/license/homeport/havener.svg)](https://github.com/homeport/havener/blob/main/LICENSE)
+[![Go Report Card](https://goreportcard.com/badge/github.com/homeport/havener)](https://goreportcard.com/report/github.com/homeport/havener)
+[![Build and Tests](https://github.com/homeport/havener/workflows/Build%20and%20Tests/badge.svg)](https://github.com/homeport/havener/actions?query=workflow%3A%22Build+and+Tests%22)
+[![Codecov](https://img.shields.io/codecov/c/github/homeport/havener/main.svg)](https://codecov.io/gh/homeport/havener)
+[![Go Reference](https://pkg.go.dev/badge/github.com/homeport/havener.svg)](https://pkg.go.dev/github.com/homeport/havener)
+[![Release](https://img.shields.io/github/release/homeport/havener.svg)](https://github.com/homeport/havener/releases/latest)
 
 ![havener](.docs/images/logo.png?raw=true "Havener logo - a pelican with pirate hat")
 
@@ -57,14 +64,10 @@ There are different ways to get `havener`. You are free to pick the one that mak
   curl -sL https://raw.githubusercontent.com/homeport/havener/main/scripts/download-latest.sh | bash
   ```
 
-- Docker Hub serves curated Docker images with `havener` as well as `kubectl` and other important CLI tools. There are two flavours available:
-  - [Alpine based images](https://hub.docker.com/r/havener/alpine-havener/): `docker pull havener/alpine-havener`
-  - [Ubuntu based images](https://hub.docker.com/r/havener/ubuntu-havener/): `docker pull havener/ubuntu-havener`
-
-- Of course, you can also build it from source code:
+- Of course, you can also build it from source code (only for development):
 
   ```sh
-  go get github.com/homeport/havener/cmd/havener
+  go install github.com/homeport/havener/cmd/havener
   ```
 
 ## Contributing
