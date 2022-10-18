@@ -27,7 +27,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -239,7 +238,7 @@ func (h *Hvnr) retrieveFilesFromPod(pod *corev1.Pod, baseDir string, findCommand
 
 	for _, container := range pod.Spec.Containers {
 		// Ignore all container that have no shell available
-		if err := h.PodExec(pod, container.Name, []string{"/bin/sh", "-c", "true"}, nil, ioutil.Discard, nil, false); err != nil {
+		if err := h.PodExec(pod, container.Name, []string{"/bin/sh", "-c", "true"}, nil, io.Discard, nil, false); err != nil {
 			continue
 		}
 
@@ -392,7 +391,7 @@ func (h *Hvnr) writeDescribePodToDisk(pod *corev1.Pod, baseDir string) error {
 		return err
 	}
 
-	return ioutil.WriteFile(
+	return os.WriteFile(
 		filepath.Join(baseDir, pod.Name, "pod-describe.output"),
 		[]byte(description),
 		0644,
@@ -419,7 +418,7 @@ func (h *Hvnr) saveDeploymentYAML(pod *corev1.Pod, baseDir string) error {
 		return err
 	}
 
-	return ioutil.WriteFile(
+	return os.WriteFile(
 		filepath.Join(baseDir, pod.Name, "pod.yaml"),
 		buf.Bytes(),
 		0644,
