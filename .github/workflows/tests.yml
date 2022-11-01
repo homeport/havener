@@ -1,5 +1,5 @@
 ---
-name: Build and Tests
+name: Tests
 
 on:
   push:
@@ -13,7 +13,7 @@ on:
 
 jobs:
   build:
-    name: Build and Tests
+    name: Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -28,7 +28,9 @@ jobs:
     - run: go build ./...
 
     - name: Run Unit Tests
-      run: make unit-test
+      run: |
+        go get -t github.com/onsi/ginkgo/v2/ginkgo/...@$(grep github.com/onsi/ginkgo/v2 go.mod | awk '{ print $2 }')
+        make unit-test
 
     - name: Upload Code Coverage Profile
       uses: codecov/codecov-action@v1
