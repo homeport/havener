@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/github/license/homeport/havener.svg)](https://github.com/homeport/havener/blob/main/LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/homeport/havener)](https://goreportcard.com/report/github.com/homeport/havener)
-[![Build and Tests](https://github.com/homeport/havener/workflows/Build%20and%20Tests/badge.svg)](https://github.com/homeport/havener/actions?query=workflow%3A%22Build+and+Tests%22)
+[![Tests](https://github.com/homeport/havener/workflows/Tests/badge.svg)](https://github.com/homeport/havener/actions?query=workflow%3A%22Tests%22)
 [![Codecov](https://img.shields.io/codecov/c/github/homeport/havener/main.svg)](https://codecov.io/gh/homeport/havener)
 [![Go Reference](https://pkg.go.dev/badge/github.com/homeport/havener.svg)](https://pkg.go.dev/github.com/homeport/havener)
 [![Release](https://img.shields.io/github/release/homeport/havener.svg)](https://github.com/homeport/havener/releases/latest)
