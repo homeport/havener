@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 
 .PHONY: default
-default: test
+default: lint misspell test
 
 .PHONY: all
 all: test
@@ -42,21 +42,20 @@ misspell:
 	@find . -type f \( -name "*.go" -o -name "*.md" \) -print0 | xargs -0 misspell -error
 
 .PHONY: unit-test
-unit-test:
-	@go run github.com/onsi/ginkgo/v2/ginkgo \
+unit-test: test
+
+.PHONY: test
+test:
+	@ginkgo run \
 	  --coverprofile=unit.coverprofile \
 	  --randomize-all \
 	  --randomize-suites \
 	  --fail-on-pending \
 	  --keep-going \
-	  --slow-spec-threshold=4m \
 	  --compilers=2 \
 	  --race \
 	  --trace \
 	  ./...
-
-.PHONY: test
-test: lint misspell unit-test
 
 .PHONY: gen-docs
 gen-docs:
