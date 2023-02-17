@@ -11,7 +11,7 @@ require (
 	github.com/gonvenience/wrap v1.1.2
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/onsi/ginkgo/v2 v2.8.1
-	github.com/onsi/gomega v1.27.0
+	github.com/onsi/gomega v1.27.1
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.15.0
 	golang.org/x/sync v0.1.0
@@ -77,7 +77,7 @@ require (
 	github.com/subosito/gotenv v1.4.2 // indirect
 	github.com/xlab/treeprint v1.1.0 // indirect
 	go.starlark.net v0.0.0-20220714194419-4cadf0a12139 // indirect
-	golang.org/x/net v0.6.0 // indirect
+	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20221014153046-6fdb5e3db783 // indirect
 	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/time v0.1.0 // indirect
