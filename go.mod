@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/gonvenience/bunt v1.3.5
-	github.com/gonvenience/neat v1.3.11
+	github.com/gonvenience/neat v1.3.12
 	github.com/gonvenience/term v1.0.2
 	github.com/gonvenience/text v1.0.7
 	github.com/gonvenience/wait v1.0.3
@@ -79,11 +79,11 @@ require (
 	github.com/subosito/gotenv v1.4.2 // indirect
 	github.com/xlab/treeprint v1.1.0 // indirect
 	go.starlark.net v0.0.0-20220714194419-4cadf0a12139 // indirect
-	golang.org/x/net v0.10.0 // indirect
+	golang.org/x/net v0.11.0 // indirect
 	golang.org/x/oauth2 v0.7.0 // indirect
-	golang.org/x/text v0.9.0 // indirect
+	golang.org/x/text v0.10.0 // indirect
 	golang.org/x/time v0.1.0 // indirect
-	golang.org/x/tools v0.9.3 // indirect
+	golang.org/x/tools v0.10.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
