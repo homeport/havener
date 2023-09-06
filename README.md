@@ -74,7 +74,7 @@ There are different ways to get `havener`. You are free to pick the one that mak
 
 We are happy to have other people contributing to the project. If you decide to do that, here's how to:
 
-- get Go (`havener` requires Go version 1.19 or greater)
+- get Go (`havener` requires Go version 1.20 or greater)
 - fork the project
 - create a new branch
 - make your changes
@@ -110,7 +110,7 @@ docker run \
   --rm \
   --volume $GOPATH/src/github.com/homeport/havener:/go/src/github.com/homeport/havener \
   --workdir /go/src/github.com/homeport/havener \
-  golang:1.19 /bin/bash
+  golang:1.20 /bin/bash
 ```
 
 ### Package dependencies (Go modules)
