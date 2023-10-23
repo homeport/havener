@@ -8,7 +8,7 @@ require (
 	github.com/gonvenience/term v1.0.2
 	github.com/gonvenience/text v1.0.7
 	github.com/gonvenience/wait v1.0.3
-	github.com/gonvenience/wrap v1.1.2
+	github.com/gonvenience/wrap v1.2.0
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/onsi/ginkgo/v2 v2.13.0
 	github.com/onsi/gomega v1.28.1
