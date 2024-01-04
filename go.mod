@@ -13,7 +13,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.13.2
 	github.com/onsi/gomega v1.30.0
 	github.com/spf13/cobra v1.8.0
-	github.com/spf13/viper v1.18.1
+	github.com/spf13/viper v1.18.2
 	golang.org/x/sync v0.6.0
 	golang.org/x/sys v0.15.0
 	golang.org/x/term v0.15.0
