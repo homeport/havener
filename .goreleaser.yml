@@ -30,7 +30,7 @@ release:
   name_template: "{{.ProjectName}} release v{{.Version}}"
 
 changelog:
-  skip: false
+  disable: true
   sort: ""
   filters:
     exclude:
@@ -38,7 +38,7 @@ changelog:
     - '^test:'
 
 brews:
-  - tap:
+  - repository:
       owner: homeport
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
