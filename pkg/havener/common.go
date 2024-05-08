@@ -38,7 +38,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/gonvenience/wrap"
 	"gopkg.in/yaml.v3"
 )
 
@@ -47,7 +46,7 @@ import (
 func KubeConfigDefault() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return "", wrap.Error(err, "unable to get home directory")
+		return "", fmt.Errorf("unable to get home directory: %w", err)
 	}
 
 	return filepath.Join(home, ".kube", "config"), nil

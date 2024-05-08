@@ -22,13 +22,13 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/gonvenience/bunt"
-	"github.com/gonvenience/wrap"
 	"github.com/homeport/havener/pkg/havener"
 
 	corev1 "k8s.io/api/core/v1"
@@ -55,9 +55,9 @@ var eventsCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		hvnr, err := havener.NewHavener(havener.KubeConfig(kubeConfig))
+		hvnr, err := havener.NewHavener(havener.WithContext(cmd.Context()), havener.WithKubeConfigPath(kubeConfig))
 		if err != nil {
-			return wrap.Error(err, "unable to get access to cluster")
+			return fmt.Errorf("unable to get access to cluster: %w", err)
 		}
 
 		return retrieveClusterEvents(hvnr)
@@ -73,7 +73,7 @@ func init() {
 func retrieveClusterEvents(hvnr havener.Havener) error {
 	namespaces, err := havener.ListNamespaces(hvnr.Client())
 	if err != nil {
-		return wrap.Error(err, "failed to get a list of namespaces")
+		return fmt.Errorf("failed to get a list of namespaces: %w", err)
 	}
 
 	notes := make(chan note)
@@ -88,7 +88,7 @@ func retrieveClusterEvents(hvnr havener.Havener) error {
 
 		watcher, err := hvnr.Client().CoreV1().Events(namespace).Watch(context.TODO(), metav1.ListOptions{})
 		if err != nil {
-			return wrap.Error(err, "failed to setup event watcher")
+			return fmt.Errorf("failed to setup event watcher: %w", err)
 		}
 
 		go func() {

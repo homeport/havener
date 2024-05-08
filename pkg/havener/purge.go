@@ -24,7 +24,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gonvenience/wrap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -120,7 +119,7 @@ func PurgeNamespace(kubeClient kubernetes.Interface, namespace string) error {
 			watcher.Stop()
 
 		case watch.Error:
-			return wrap.Errorf(err, "failed to watch namespace %s during deletion", namespace)
+			return fmt.Errorf("failed to watch namespace %s during deletion: %w", namespace, err)
 		}
 	}
 

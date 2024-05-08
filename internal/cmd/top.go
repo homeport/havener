@@ -70,7 +70,7 @@ cluster as well as a list per node.
 			topCmdSettings.cycles = 1
 		}
 
-		hvnr, err := havener.NewHavener(havener.KubeConfig(kubeConfig))
+		hvnr, err := havener.NewHavener(havener.WithContext(cmd.Context()), havener.WithKubeConfigPath(kubeConfig))
 		if err != nil {
 			return err
 		}

@@ -31,7 +31,6 @@ import (
 
 	"github.com/gonvenience/term"
 	"github.com/gonvenience/text"
-	"github.com/gonvenience/wrap"
 	terminal "golang.org/x/term"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -59,7 +58,7 @@ func (h *Hvnr) PodExec(pod *corev1.Pod, container string, command []string, stdi
 
 	executor, err := remotecommand.NewSPDYExecutor(h.restconfig, "POST", req.URL())
 	if err != nil {
-		return wrap.Error(err, "failed to initialize remote executor")
+		return fmt.Errorf("failed to initialize remote executor: %w", err)
 	}
 
 	var tsq *terminalSizeQueue
@@ -77,8 +76,8 @@ func (h *Hvnr) PodExec(pod *corev1.Pod, container string, command []string, stdi
 		}
 	}
 
-	if err = executor.Stream(remotecommand.StreamOptions{Stdin: stdin, Stdout: stdout, Stderr: stderr, Tty: tty, TerminalSizeQueue: tsq}); err != nil {
-		return wrap.Errorf(err, "failed to execute command on pod %s, container %s", pod.Name, container)
+	if err = executor.StreamWithContext(h.ctx, remotecommand.StreamOptions{Stdin: stdin, Stdout: stdout, Stderr: stderr, Tty: tty, TerminalSizeQueue: tsq}); err != nil {
+		return fmt.Errorf("failed to execute command on pod %s, container %s: %w", pod.Name, container, err)
 	}
 
 	logf(Verbose, "Successfully executed command.")
@@ -135,7 +134,7 @@ func (h *Hvnr) preparePodOnNode(node corev1.Node, namespace string, name string,
 					ImagePullPolicy: corev1.PullIfNotPresent,
 					Stdin:           useStdin,
 					SecurityContext: &corev1.SecurityContext{
-						Privileged: pointer.BoolPtr(true),
+						Privileged: pointer.Bool(true),
 					},
 				},
 			},
@@ -205,11 +204,11 @@ func (h *Hvnr) waitForPodReadiness(namespace string, pod *corev1.Pod, timeoutSec
 				description = "Unable to provide further details regarding the state of the pod."
 			}
 
-			return wrap.Errorf(fmt.Errorf("status of pod at the moment of the timeout:\n\n%s", description),
-				"Giving up waiting for pod %s in namespace %s to become ready within %s",
+			return fmt.Errorf("Giving up waiting for pod %s in namespace %s to become ready within %s: %w",
 				pod.Name,
 				pod.Namespace,
 				text.Plural(timeoutSeconds, "second"),
+				fmt.Errorf("status of pod at the moment of the timeout:\n\n%s", description),
 			)
 		}
 	}
