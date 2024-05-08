@@ -48,7 +48,7 @@ var watchCmd = &cobra.Command{
 	Short: "Watch status of all pods in all namespaces",
 	Long:  `Continuesly creates a list of all pods in all namespaces.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		hvnr, err := havener.NewHavener(havener.KubeConfig(kubeConfig))
+		hvnr, err := havener.NewHavener(havener.WithContext(cmd.Context()), havener.WithKubeConfigPath(kubeConfig))
 		if err != nil {
 			return err
 		}

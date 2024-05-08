@@ -27,7 +27,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/gonvenience/wrap"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -185,7 +184,6 @@ func (h *Hvnr) ListConfigMaps(namespaces ...string) (result []*corev1.ConfigMap,
 
 // ListCustomResourceDefinition lists all instances of an specific CRD
 func (h *Hvnr) ListCustomResourceDefinition(crdName string) (result []unstructured.Unstructured, err error) {
-
 	var runtimeClassGVR schema.GroupVersionResource
 
 	_, apiResourceList, err := h.client.Discovery().ServerGroupsAndResources()
@@ -198,14 +196,10 @@ func (h *Hvnr) ListCustomResourceDefinition(crdName string) (result []unstructur
 	if crdExist {
 		client, _ := dynamic.NewForConfig(h.restconfig)
 		list, _ := client.Resource(runtimeClassGVR).List(context.TODO(), metav1.ListOptions{})
-
-		for i := range list.Items {
-			result = append(result, list.Items[i])
-		}
-		return result, nil
+		return list.Items, nil
 	}
 
-	return result, fmt.Errorf("desired resource %s, was not found", crdName)
+	return nil, fmt.Errorf("desired resource %s, was not found", crdName)
 }
 
 // ListNodes lists all nodes of the cluster
@@ -228,7 +222,7 @@ func ListNodes(client kubernetes.Interface) ([]string, error) {
 func (h *Hvnr) ListNodes() ([]corev1.Node, error) {
 	nodeList, err := h.client.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return nil, wrap.Error(err, "failed to get list of nodes")
+		return nil, fmt.Errorf("failed to get list of nodes: %w", err)
 	}
 
 	return nodeList.Items, nil
@@ -238,7 +232,7 @@ func (h *Hvnr) ListNodes() ([]corev1.Node, error) {
 func (h *Hvnr) ListNodeNames() ([]string, error) {
 	nodeList, err := h.client.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return nil, wrap.Error(err, "failed to get list of nodes")
+		return nil, fmt.Errorf("failed to get list of nodes: %w", err)
 	}
 
 	result := make([]string, len(nodeList.Items))

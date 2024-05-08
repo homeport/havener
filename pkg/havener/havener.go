@@ -30,12 +30,12 @@ this kind of workload.
 package havener
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
 	"time"
 
-	"github.com/gonvenience/wrap"
 	"golang.org/x/sync/syncmap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -73,6 +73,7 @@ func GracefulShutdown() {
 
 // Hvnr is the internal handle to consolidate required cluster access variables
 type Hvnr struct {
+	ctx            context.Context
 	kubeConfigPath string
 	client         kubernetes.Interface
 	restconfig     *rest.Config
@@ -103,10 +104,21 @@ type Havener interface {
 type Option func(*Hvnr)
 
 // KubeConfig is an option to set a specific Kubernetes configuration path
+//
+// Deprecated: Use WithKubeConfigPath instead
 func KubeConfig(kubeConfig string) Option {
 	return func(h *Hvnr) {
 		h.kubeConfigPath = kubeConfig
 	}
+}
+
+func WithKubeConfigPath(kubeConfig string) Option {
+	return func(h *Hvnr) { h.kubeConfigPath = kubeConfig }
+}
+
+// WithContext is an option to set the context
+func WithContext(ctx context.Context) Option {
+	return func(h *Hvnr) { h.ctx = ctx }
 }
 
 // NewHavenerFromFields returns a new Havener handle using the provided
@@ -127,6 +139,11 @@ func NewHavener(opts ...Option) (hvnr *Hvnr, err error) {
 		opt(hvnr)
 	}
 
+	// Set default backgroud context if nothing is set
+	if hvnr.ctx == nil {
+		hvnr.ctx = context.Background()
+	}
+
 	// In case `KUBECONFIG` environment variable is set, this will take
 	// precedence over command line flag or default value
 	if value, ok := os.LookupEnv("KUBECONFIG"); ok {
@@ -137,18 +154,18 @@ func NewHavener(opts ...Option) (hvnr *Hvnr, err error) {
 	if hvnr.kubeConfigPath == "" {
 		hvnr.kubeConfigPath, err = KubeConfigDefault()
 		if err != nil {
-			return nil, wrap.Error(err, "failed to look-up default kube config")
+			return nil, fmt.Errorf("failed to look-up default kube config: %w", err)
 		}
 	}
 
 	hvnr.client, hvnr.restconfig, err = outOfClusterAuthentication(hvnr.kubeConfigPath)
 	if err != nil {
-		return nil, wrap.Error(err, "unable to get access to cluster")
+		return nil, fmt.Errorf("unable to get access to cluster: %w", err)
 	}
 
 	hvnr.clusterName, err = clusterName(hvnr.kubeConfigPath)
 	if err != nil {
-		return nil, wrap.Error(err, "unable to get cluster name")
+		return nil, fmt.Errorf("unable to get cluster name: %w", err)
 	}
 
 	return hvnr, nil

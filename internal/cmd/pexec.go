@@ -32,7 +32,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/gonvenience/term"
-	"github.com/gonvenience/wrap"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -75,10 +74,10 @@ all pods in all namespaces automatically.
 `,
 	SilenceUsage:  true,
 	SilenceErrors: true,
-	RunE: func(_ *cobra.Command, args []string) error {
-		hvnr, err := havener.NewHavener(havener.KubeConfig(kubeConfig))
+	RunE: func(cmd *cobra.Command, args []string) error {
+		hvnr, err := havener.NewHavener(havener.WithContext(cmd.Context()), havener.WithKubeConfigPath(kubeConfig))
 		if err != nil {
-			return wrap.Error(err, "unable to get access to cluster")
+			return fmt.Errorf("unable to get access to cluster: %w", err)
 		}
 
 		return execInClusterPods(hvnr, args)
@@ -300,7 +299,7 @@ func lookupPodsByName(client kubernetes.Interface, input string) (map[*corev1.Po
 func availablePodsError(client kubernetes.Interface, title string) error {
 	pods, err := havener.ListPods(client)
 	if err != nil {
-		return wrap.Error(err, "failed to list all pods in cluster")
+		return fmt.Errorf("failed to list all pods in cluster: %w", err)
 	}
 	podList := []string{}
 	for _, pod := range pods {
@@ -313,10 +312,8 @@ func availablePodsError(client kubernetes.Interface, title string) error {
 		}
 	}
 
-	return wrap.Error(
-		fmt.Errorf("> Usage:\npod-exec [flags] <pod> <command>\n> List of available pods:\n%s",
-			strings.Join(podList, "\n"),
-		),
+	return fmt.Errorf("%s: %w",
 		title,
+		fmt.Errorf("> Usage:\npod-exec [flags] <pod> <command>\n> List of available pods:\n%s", strings.Join(podList, "\n")),
 	)
 }

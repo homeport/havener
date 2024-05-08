@@ -29,7 +29,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/gonvenience/wait"
-	"github.com/gonvenience/wrap"
 
 	"github.com/homeport/havener/pkg/havener"
 )
@@ -54,9 +53,9 @@ The download includes all deployment YAMLs of the pods and the describe output.`
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		hvnr, err := havener.NewHavener(havener.KubeConfig(kubeConfig))
+		hvnr, err := havener.NewHavener(havener.WithContext(cmd.Context()), havener.WithKubeConfigPath(kubeConfig))
 		if err != nil {
-			return wrap.Error(err, "unable to get access to cluster")
+			return fmt.Errorf("unable to get access to cluster: %w", err)
 		}
 
 		return retrieveClusterLogs(hvnr)
@@ -101,14 +100,13 @@ func retrieveClusterLogs(hvnr havener.Havener) error {
 	case err := <-resultChan:
 		if err != nil {
 			pi.Stop()
-			return wrap.Error(err, "unable to retrieve logs from pods")
+			return fmt.Errorf("unable to retrieve logs from pods: %w", err)
 		}
 
 	case <-time.After(timeout):
 		pi.Stop()
-		return wrap.Error(
+		return fmt.Errorf("unable to retrieve logs from pods: %w",
 			fmt.Errorf("download did not finish within configured timeout"),
-			"unable to retrieve logs from pods",
 		)
 	}
 

@@ -33,7 +33,6 @@ import (
 
 	"github.com/gonvenience/bunt"
 	"github.com/gonvenience/term"
-	"github.com/gonvenience/wrap"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
@@ -81,9 +80,9 @@ all nodes automatically.
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		hvnr, err := havener.NewHavener(havener.KubeConfig(kubeConfig))
+		hvnr, err := havener.NewHavener(havener.WithContext(cmd.Context()), havener.WithKubeConfigPath(kubeConfig))
 		if err != nil {
-			return wrap.Error(err, "unable to get access to cluster")
+			return fmt.Errorf("unable to get access to cluster: %w", err)
 		}
 
 		return execInClusterNodes(hvnr, args)
@@ -241,17 +240,15 @@ func lookupNodesByName(client kubernetes.Interface, input string) ([]corev1.Node
 func availableNodesError(client kubernetes.Interface, title string, fArgs ...interface{}) error {
 	nodes, err := havener.ListNodes(client)
 	if err != nil {
-		return wrap.Error(err, "failed to list all nodes in cluster")
+		return fmt.Errorf("failed to list all nodes in cluster: %w", err)
 	}
 
 	if len(nodes) == 0 {
 		return fmt.Errorf("failed to find any node in cluster")
 	}
 
-	return wrap.Errorf(
-		bunt.Errorf("*list of available nodes:*\n%s\n\nor, use _all_ to target all nodes",
-			strings.Join(nodes, "\n"),
-		),
-		title, fArgs...,
+	return fmt.Errorf("%s: %w",
+		fmt.Sprintf(title, fArgs...),
+		bunt.Errorf("*list of available nodes:*\n%s\n\nor, use _all_ to target all nodes", strings.Join(nodes, "\n")),
 	)
 }
