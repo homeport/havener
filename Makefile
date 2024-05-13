@@ -27,7 +27,7 @@ all: test
 .PHONY: clean
 clean:
 	@rm -rf dist
-	@go clean -cache $(shell go list ./...)
+	@go clean -i -cache
 
 .PHONY: todo-list
 todo-list:
