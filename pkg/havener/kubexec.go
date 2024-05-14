@@ -81,7 +81,6 @@ func (h *Hvnr) PodExec(pod *corev1.Pod, container string, command []string, stdi
 	}
 
 	logf(Verbose, "Successfully executed command.")
-
 	return nil
 }
 

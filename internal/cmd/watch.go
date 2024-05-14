@@ -389,15 +389,15 @@ func humanReadableDuration(duration time.Duration) string {
 
 	if seconds >= 60 {
 		minutes = seconds / 60
-		seconds = seconds % 60
+		seconds %= 60
 
 		if minutes >= 60 {
 			hours = minutes / 60
-			minutes = minutes % 60
+			minutes %= 60
 
 			if hours >= 24 {
 				days = hours / 24
-				hours = hours % 24
+				hours %= 24
 			}
 		}
 	}
