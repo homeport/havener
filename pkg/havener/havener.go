@@ -139,7 +139,7 @@ func NewHavener(opts ...Option) (hvnr *Hvnr, err error) {
 		opt(hvnr)
 	}
 
-	// Set default backgroud context if nothing is set
+	// Set default background context if nothing is set
 	if hvnr.ctx == nil {
 		hvnr.ctx = context.Background()
 	}
