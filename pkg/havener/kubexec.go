@@ -24,6 +24,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -40,7 +41,7 @@ import (
 
 // PodExec executes the provided command in the referenced pod's container.
 func (h *Hvnr) PodExec(pod *corev1.Pod, container string, command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
-	logf(Verbose, "Executing command on pod: %#v", command)
+	logf(Verbose, "Executing command on pod: `%v`", strings.Join(command, " "))
 
 	req := h.client.CoreV1().RESTClient().Post().
 		Resource("pods").
