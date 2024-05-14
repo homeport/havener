@@ -21,24 +21,28 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/gonvenience/term"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"k8s.io/client-go/kubernetes"
 )
 
 const podDefaultCommand = "/bin/sh"
+
+type target struct {
+	namespace     string
+	podName       string
+	containerName string
+}
 
 var (
 	podExecNoTty bool
@@ -103,20 +107,20 @@ func execInClusterPods(hvnr havener.Havener, args []string) error {
 	switch {
 	case len(args) >= 2: // pod and command is given
 		input, command = args[0], args[1:]
-		podMap, err = lookupPodsByName(hvnr.Client(), input)
+		podMap, err = lookupPodsByName(hvnr, input)
 		if err != nil {
 			return err
 		}
 
 	case len(args) == 1: // only pod is given
 		input, command = args[0], []string{podDefaultCommand}
-		podMap, err = lookupPodsByName(hvnr.Client(), input)
+		podMap, err = lookupPodsByName(hvnr, input)
 		if err != nil {
 			return err
 		}
 
 	default:
-		return availablePodsError(hvnr.Client(), "no pod name specified")
+		return availablePodsError(hvnr, "no pod name specified")
 	}
 
 	// Count number of containers from all pods
@@ -209,111 +213,129 @@ func execInClusterPods(hvnr havener.Havener, args []string) error {
 	return nil
 }
 
-func lookupPodContainers(client kubernetes.Interface, p *corev1.Pod) (containerList []string, err error) {
-	for _, c := range p.Spec.Containers {
-		containerList = append(containerList, c.Name)
+func containerNames(pod *corev1.Pod) []string {
+	var result []string
+	for _, container := range pod.Spec.Containers {
+		result = append(result, container.Name)
 	}
-	return containerList, err
+
+	return result
 }
 
-func lookupAllPods(client kubernetes.Interface, namespaces []string) (map[*corev1.Pod][]string, error) {
-	var podLists = make(map[*corev1.Pod][]string)
-	for _, namespace := range namespaces {
-		podsPerNs, err := client.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
+func (t target) String() string {
+	return fmt.Sprintf("%s/%s/%s",
+		t.namespace,
+		t.podName,
+		t.containerName,
+	)
+}
+
+func lookupPodsByName(h havener.Havener, input string) (map[*corev1.Pod][]string, error) {
+	var targets = map[*corev1.Pod][]string{}
+
+	// In case special term `all` is used, immediately return the full list of all pod containers
+	if input == "all" {
+		list, err := h.ListPods()
 		if err != nil {
 			return nil, err
 		}
 
-		for i := range podsPerNs.Items {
-			listOfContainers, err := lookupPodContainers(client, &(podsPerNs.Items[i]))
-			if err != nil {
-				return nil, err
-			}
-			podLists[&(podsPerNs.Items[i])] = listOfContainers
+		for _, pod := range list {
+			targets[pod] = containerNames(pod)
 		}
+
+		return targets, nil
 	}
-	return podLists, nil
-}
 
-func lookupPodsByName(client kubernetes.Interface, input string) (map[*corev1.Pod][]string, error) {
-	inputList := strings.Split(input, ",")
+	var keys, candidates []target
+	var lookUp = map[target]*corev1.Pod{}
 
-	podList := make(map[*corev1.Pod][]string, len(inputList))
-	for _, podName := range inputList {
-		splited := strings.Split(podName, "/")
-
+	for _, str := range strings.Split(input, ",") {
+		var splited = strings.Split(str, "/")
 		switch len(splited) {
 		case 1: // only the pod name is given
-			namespaces, err := havener.ListNamespaces(client)
-			if err != nil {
+			namespace, podName, containerName := "*", splited[0], "*"
+			candidates = append(candidates, target{namespace, podName, containerName})
+			if err := updateLookUps(h, &keys, lookUp, namespace); err != nil {
 				return nil, err
 			}
 
-			if input == "all" {
-				return lookupAllPods(client, namespaces)
-			}
-
-			pods := []*corev1.Pod{}
-			for _, namespace := range namespaces {
-				if pod, err := client.CoreV1().Pods(namespace).Get(context.TODO(), input, metav1.GetOptions{}); err == nil {
-					pods = append(pods, pod)
-				}
-			}
-
-			switch {
-			case len(pods) < 1:
-				return nil, availablePodsError(client, fmt.Sprintf("unable to find a pod named %s", input))
-
-			case len(pods) > 1:
-				return nil, fmt.Errorf("more than one pod named %s found, please specify a namespace", input)
-			}
-
-			podList[pods[0]] = []string{pods[0].Spec.Containers[0].Name}
-
 		case 2: // namespace, and pod name is given
-			namespace, podName := splited[0], splited[1]
-			pod, err := client.CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
-			if err != nil {
-				return nil, availablePodsError(client, fmt.Sprintf("pod %s not found", input))
+			namespace, podName, containerName := splited[0], splited[1], "*"
+			candidates = append(candidates, target{namespace, podName, containerName})
+			if err := updateLookUps(h, &keys, lookUp, namespace); err != nil {
+				return nil, err
 			}
-
-			podList[pod] = []string{pod.Spec.Containers[0].Name}
 
 		case 3: // namespace, pod, and container name is given
-			namespace, podName, container := splited[0], splited[1], splited[2]
-			pod, err := client.CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
-			if err != nil {
-				return nil, availablePodsError(client, fmt.Sprintf("pod %s not found", input))
+			namespace, podName, containerName := splited[0], splited[1], splited[2]
+			candidates = append(candidates, target{namespace, podName, containerName})
+			if err := updateLookUps(h, &keys, lookUp, namespace); err != nil {
+				return nil, err
 			}
-
-			podList[pod] = []string{container}
 
 		default:
 			return nil, fmt.Errorf("unsupported naming schema, it needs to be [namespace/]pod[/container]")
 		}
 	}
 
-	return podList, nil
+	for _, candidate := range candidates {
+		for _, key := range keys {
+			match, err := filepath.Match(candidate.String(), key.String())
+			if err != nil {
+				return nil, err
+			}
+
+			if match {
+				pod := lookUp[key]
+				targets[pod] = append(targets[pod], key.containerName)
+			}
+		}
+	}
+
+	return targets, nil
 }
 
-func availablePodsError(client kubernetes.Interface, title string) error {
-	pods, err := havener.ListPods(client)
+func updateLookUps(h havener.Havener, keys *[]target, lookUp map[target]*corev1.Pod, namespace string) error {
+	var namespaces []string
+	if namespace != "*" {
+		namespaces = append(namespaces, namespace)
+	}
+
+	list, err := h.ListPods(namespaces...)
+	if err != nil {
+		return err
+	}
+
+	for i, pod := range list {
+		for _, containerName := range containerNames(pod) {
+			key := target{pod.Namespace, pod.Name, containerName}
+			*keys = append(*keys, key)
+			lookUp[key] = list[i]
+		}
+	}
+
+	return nil
+}
+
+func availablePodsError(h havener.Havener, format string, a ...any) error {
+	pods, err := h.ListPods()
 	if err != nil {
 		return fmt.Errorf("failed to list all pods in cluster: %w", err)
 	}
-	podList := []string{}
+
+	var targets []string
 	for _, pod := range pods {
-		for i := range pod.Spec.Containers {
-			podList = append(podList, fmt.Sprintf("%s/%s/%s",
-				pod.ObjectMeta.Namespace,
-				pod.Name,
-				pod.Spec.Containers[i].Name,
-			))
+		for _, container := range pod.Spec.Containers {
+			target := target{pod.Namespace, pod.Name, container.Name}
+			targets = append(targets, target.String())
 		}
 	}
 
 	return fmt.Errorf("%s: %w",
-		title,
-		fmt.Errorf("> Usage:\npod-exec [flags] <pod> <command>\n> List of available pods:\n%s", strings.Join(podList, "\n")),
+		fmt.Sprintf(format, a...),
+		fmt.Errorf("List of available pods:\n%s",
+			strings.Join(targets, "\n"),
+		),
 	)
 }

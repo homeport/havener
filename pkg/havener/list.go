@@ -23,6 +23,8 @@ package havener
 import (
 	"context"
 	"fmt"
+	"strings"
+	"sync"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,6 +33,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/gonvenience/text"
 )
 
 // ListStatefulSetsInNamespace returns all names of stateful sets in the given namespace
@@ -64,8 +68,10 @@ func ListDeploymentsInNamespace(client kubernetes.Interface, namespace string) (
 }
 
 // ListNamespaces lists all namespaces
-func ListNamespaces(client kubernetes.Interface) ([]string, error) {
-	namespaceList, err := client.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
+func (h *Hvnr) ListNamespaces() ([]string, error) {
+	logf(Verbose, "Listing all namespaces")
+
+	namespaceList, err := h.client.CoreV1().Namespaces().List(h.ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -75,6 +81,7 @@ func ListNamespaces(client kubernetes.Interface) ([]string, error) {
 		result[i] = namespace.Name
 	}
 
+	logf(Verbose, "Found %s", text.Plural(len(result), "namespace"))
 	return result, nil
 }
 
@@ -103,42 +110,83 @@ func SecretsInNamespace(client kubernetes.Interface, namespace string) ([]corev1
 	return secretList.Items, nil
 }
 
-// ListPods lists all pods in all namespaces
-// Deprecated: Use Havener interface function ListPods instead
-func ListPods(client kubernetes.Interface) ([]*corev1.Pod, error) {
-	hvnr := Hvnr{client: client}
-	return hvnr.ListPods()
-}
-
 // ListPods lists all pods in the given namespaces, if no namespace is given,
 // then all namespaces currently available in the cluster will be used
-func (h *Hvnr) ListPods(namespaces ...string) (result []*corev1.Pod, err error) {
+func (h *Hvnr) ListPods(namespaces ...string) ([]*corev1.Pod, error) {
+	logf(Verbose, "Listing all pods in %s", func() string {
+		if len(namespaces) == 0 {
+			return "all namespaces"
+		}
+
+		return strings.Join(namespaces, ", ")
+	}())
+
 	if len(namespaces) == 0 {
-		namespaces, err = ListNamespaces(h.client)
+		var err error
+		namespaces, err = h.ListNamespaces()
 		if err != nil {
 			return nil, err
 		}
 	}
+
+	type list struct {
+		sync.Mutex
+		pods []*corev1.Pod
+	}
+
+	var min = func(a, b int) int {
+		if a < b {
+			return a
+		}
+		return b
+	}
+
+	var result list
+
+	var work = make(chan string, len(namespaces))
+	var errs = make(chan error)
 
 	for _, namespace := range namespaces {
-		listResp, err := h.client.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
-		if err != nil {
-			return nil, err
-		}
+		work <- namespace
+	}
+	close(work)
 
-		for i := range listResp.Items {
-			result = append(result, &listResp.Items[i])
-		}
+	var wg sync.WaitGroup
+	for i := 0; i < min(concurrency, len(namespaces)); i++ {
+		wg.Add(1)
+		go func(n int) {
+			defer wg.Done()
+			for namespace := range work {
+				listResp, err := h.client.CoreV1().Pods(namespace).List(h.ctx, metav1.ListOptions{})
+				if err != nil {
+					errs <- err
+					continue
+				}
+
+				for i := range listResp.Items {
+					result.Lock()
+					result.pods = append(result.pods, &listResp.Items[i])
+					result.Unlock()
+				}
+			}
+		}(i)
 	}
 
-	return result, nil
+	wg.Wait()
+	close(errs)
+
+	for err := range errs {
+		return nil, err
+	}
+
+	return result.pods, nil
 }
 
 // ListSecrets lists all secrets in the given namespaces, if no namespace is given,
 // then all namespaces currently available in the cluster will be used
 func (h *Hvnr) ListSecrets(namespaces ...string) (result []*corev1.Secret, err error) {
 	if len(namespaces) == 0 {
-		namespaces, err = ListNamespaces(h.client)
+		namespaces, err = h.ListNamespaces()
 		if err != nil {
 			return nil, err
 		}
@@ -162,7 +210,7 @@ func (h *Hvnr) ListSecrets(namespaces ...string) (result []*corev1.Secret, err e
 // then all namespaces currently available in the cluster will be used
 func (h *Hvnr) ListConfigMaps(namespaces ...string) (result []*corev1.ConfigMap, err error) {
 	if len(namespaces) == 0 {
-		namespaces, err = ListNamespaces(h.client)
+		namespaces, err = h.ListNamespaces()
 		if err != nil {
 			return nil, err
 		}

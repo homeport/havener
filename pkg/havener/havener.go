@@ -34,6 +34,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"time"
 
 	"golang.org/x/sync/syncmap"
@@ -51,6 +52,16 @@ import (
 // metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 var m = new(syncmap.Map)
+
+var concurrency = func() int {
+	if input, ok := os.LookupEnv("HAVENER_CONCURRENCY"); ok {
+		if val, err := strconv.Atoi(input); err == nil && val > 0 {
+			return val
+		}
+	}
+
+	return 5 // default
+}()
 
 // AddShutdownFunction adds a function to be called in case GracefulShutdown is
 // called, for example to clean up resources.
@@ -83,10 +94,12 @@ type Hvnr struct {
 // Havener is an interface to work with a cluster through the havener
 // abstraction layer
 type Havener interface {
+	Context() context.Context
 	Client() kubernetes.Interface
 	RESTConfig() *rest.Config
 	ClusterName() string
 
+	ListNamespaces() ([]string, error)
 	ListPods(namespaces ...string) ([]*corev1.Pod, error)
 	ListNodes() ([]corev1.Node, error)
 	ListSecrets(namespaces ...string) ([]*corev1.Secret, error)
@@ -170,6 +183,9 @@ func NewHavener(opts ...Option) (hvnr *Hvnr, err error) {
 
 	return hvnr, nil
 }
+
+// Context returns the context of the Havener handle
+func (h *Hvnr) Context() context.Context { return h.ctx }
 
 // ClusterName returns the name of the currently configured cluster
 func (h *Hvnr) ClusterName() string {

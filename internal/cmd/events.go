@@ -71,7 +71,7 @@ func init() {
 }
 
 func retrieveClusterEvents(hvnr havener.Havener) error {
-	namespaces, err := havener.ListNamespaces(hvnr.Client())
+	namespaces, err := hvnr.ListNamespaces()
 	if err != nil {
 		return fmt.Errorf("failed to get a list of namespaces: %w", err)
 	}
