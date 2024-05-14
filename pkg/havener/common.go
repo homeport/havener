@@ -74,15 +74,6 @@ func outOfClusterAuthentication(kubeConfig string) (*kubernetes.Clientset, *rest
 	return clientset, config, err
 }
 
-func isSystemNamespace(namespace string) bool {
-	switch namespace {
-	case "default", "kube-system", "ibm-system":
-		return true
-	}
-
-	return false
-}
-
 func clusterName(kubeConfig string) (string, error) {
 	data, err := os.ReadFile(kubeConfig)
 	if err != nil {

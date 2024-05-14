@@ -116,15 +116,6 @@ type Havener interface {
 // Option provides a way to set specific settings for creating the Havener setup
 type Option func(*Hvnr)
 
-// KubeConfig is an option to set a specific Kubernetes configuration path
-//
-// Deprecated: Use WithKubeConfigPath instead
-func KubeConfig(kubeConfig string) Option {
-	return func(h *Hvnr) {
-		h.kubeConfigPath = kubeConfig
-	}
-}
-
 func WithKubeConfigPath(kubeConfig string) Option {
 	return func(h *Hvnr) { h.kubeConfigPath = kubeConfig }
 }
@@ -132,17 +123,6 @@ func WithKubeConfigPath(kubeConfig string) Option {
 // WithContext is an option to set the context
 func WithContext(ctx context.Context) Option {
 	return func(h *Hvnr) { h.ctx = ctx }
-}
-
-// NewHavenerFromFields returns a new Havener handle using the provided
-// input arguments (use for unit testing only)
-func NewHavenerFromFields(client kubernetes.Interface, restconfig *rest.Config, clusterName string, kubeConfigPath string) *Hvnr {
-	return &Hvnr{
-		client:         client,
-		restconfig:     restconfig,
-		clusterName:    clusterName,
-		kubeConfigPath: kubeConfigPath,
-	}
 }
 
 // NewHavener returns a new Havener handle to perform cluster actions

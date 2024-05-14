@@ -22,109 +22,11 @@ package havener
 
 import (
 	"context"
-	"fmt"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 )
-
-var defaultPropagationPolicy = metav1.DeletePropagationForeground
-
-// PurgeDeploymentsInNamespace removes all deployments in the given namespace.
-func PurgeDeploymentsInNamespace(kubeClient kubernetes.Interface, namespace string) error {
-	// Skip known system namespaces
-	if isSystemNamespace(namespace) {
-		return nil
-	}
-
-	if deployments, err := ListDeploymentsInNamespace(kubeClient, namespace); err == nil {
-		for _, name := range deployments {
-			err := kubeClient.AppsV1beta1().Deployments(namespace).Delete(context.TODO(), name, metav1.DeleteOptions{
-				PropagationPolicy: &defaultPropagationPolicy,
-			})
-
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
-// PurgeStatefulSetsInNamespace removes all stateful sets in the given namespace.
-func PurgeStatefulSetsInNamespace(kubeClient kubernetes.Interface, namespace string) error {
-	// Skip known system namespaces
-	if isSystemNamespace(namespace) {
-		return nil
-	}
-
-	if statefulsets, err := ListStatefulSetsInNamespace(kubeClient, namespace); err == nil {
-		for _, name := range statefulsets {
-			err := kubeClient.AppsV1beta1().StatefulSets(namespace).Delete(context.TODO(), name, metav1.DeleteOptions{
-				PropagationPolicy: &defaultPropagationPolicy,
-			})
-
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
-// PurgeNamespace removes the namespace from the cluster.
-func PurgeNamespace(kubeClient kubernetes.Interface, namespace string) error {
-	// Skip known system namespaces
-	if isSystemNamespace(namespace) {
-		return nil
-	}
-
-	ns, err := kubeClient.CoreV1().Namespaces().Get(context.TODO(), namespace, metav1.GetOptions{})
-	if err != nil {
-		// Bail out if namespace is already deleted
-		switch err.(type) {
-		case *errors.StatusError:
-			if err.Error() == fmt.Sprintf(`namespaces "%s" not found`, namespace) {
-				return nil
-			}
-		}
-
-		return err
-	}
-
-	// Bail out if namespace is already in Phase Terminating
-	switch ns.Status.Phase {
-	case corev1.NamespaceTerminating:
-		return nil
-	}
-
-	watcher, err := kubeClient.CoreV1().Namespaces().Watch(context.TODO(), metav1.SingleObject(ns.ObjectMeta))
-	if err != nil {
-		return err
-	}
-
-	if err := kubeClient.CoreV1().Namespaces().Delete(context.TODO(), namespace, metav1.DeleteOptions{PropagationPolicy: &defaultPropagationPolicy}); err != nil {
-		return err
-	}
-
-	for event := range watcher.ResultChan() {
-		switch event.Type {
-		case watch.Deleted:
-			watcher.Stop()
-
-		case watch.Error:
-			return fmt.Errorf("failed to watch namespace %s during deletion: %w", namespace, err)
-		}
-	}
-
-	return nil
-}
 
 // PurgePod removes the pod in the given namespace.
 func PurgePod(kubeClient kubernetes.Interface, namespace string, podName string, gracePeriodSeconds int64, propagationPolicy metav1.DeletionPropagation) error {
