@@ -71,7 +71,7 @@ func init() {
 }
 
 func retrieveClusterEvents(hvnr havener.Havener) error {
-	namespaces, err := havener.ListNamespaces(hvnr.Client())
+	namespaces, err := hvnr.ListNamespaces()
 	if err != nil {
 		return fmt.Errorf("failed to get a list of namespaces: %w", err)
 	}
@@ -95,10 +95,8 @@ func retrieveClusterEvents(hvnr havener.Havener) error {
 			for event := range watcher.ResultChan() {
 				switch event.Type {
 				case watch.Added, watch.Modified:
-					switch event.Object.(type) {
+					switch data := event.Object.(type) {
 					case *corev1.Event:
-						data := *(event.Object.(*corev1.Event))
-
 						resourceName := data.Name
 						if strings.Contains(resourceName, ".") {
 							parts := strings.Split(resourceName, ".")

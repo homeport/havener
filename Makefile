@@ -27,7 +27,7 @@ all: test
 .PHONY: clean
 clean:
 	@rm -rf dist
-	@go clean -cache $(shell go list ./...)
+	@go clean -i -cache
 
 .PHONY: todo-list
 todo-list:
@@ -39,14 +39,14 @@ lint:
 
 .PHONY: misspell
 misspell:
-	@find . -type f \( -name "*.go" -o -name "*.md" \) -print0 | xargs -0 misspell -error
+	@find . -type f -not -path "./vendor/*" \( -name "*.go" -o -name "*.md" \) -print0 | xargs -0 misspell -error
 
 .PHONY: unit-test
 unit-test: test
 
 .PHONY: test
 test:
-	@ginkgo run \
+	@go run -mod=mod github.com/onsi/ginkgo/v2/ginkgo run \
 	  --coverprofile=unit.coverprofile \
 	  --randomize-all \
 	  --randomize-suites \

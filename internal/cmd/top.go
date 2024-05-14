@@ -486,7 +486,7 @@ func renderProgressBar(value int64, max int64, caption string, text string, leng
 	const symbol = "■"
 
 	if !strings.HasSuffix(caption, " ") {
-		caption = caption + " "
+		caption += " "
 	}
 
 	if !strings.HasPrefix(text, " ") {
