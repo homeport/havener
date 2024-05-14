@@ -162,7 +162,7 @@ func execInClusterPods(hvnr havener.Havener, args []string) error {
 		printer = make(chan bool, 1)
 		counter = 0
 	)
-	// wg.Add(countContainers)
+
 	for pod, containers := range podMap {
 		for i := range containers {
 			wg.Add(1)
