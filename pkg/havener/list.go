@@ -37,36 +37,6 @@ import (
 	"github.com/gonvenience/text"
 )
 
-// ListStatefulSetsInNamespace returns all names of stateful sets in the given namespace
-func ListStatefulSetsInNamespace(client kubernetes.Interface, namespace string) ([]string, error) {
-	list, err := client.AppsV1beta1().StatefulSets(namespace).List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	result := make([]string, len(list.Items))
-	for idx, item := range list.Items {
-		result[idx] = item.Name
-	}
-
-	return result, nil
-}
-
-// ListDeploymentsInNamespace returns all names of deployments in the given namespace
-func ListDeploymentsInNamespace(client kubernetes.Interface, namespace string) ([]string, error) {
-	list, err := client.AppsV1beta1().Deployments(namespace).List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	result := make([]string, len(list.Items))
-	for idx, item := range list.Items {
-		result[idx] = item.Name
-	}
-
-	return result, nil
-}
-
 // ListNamespaces lists all namespaces
 func (h *Hvnr) ListNamespaces() ([]string, error) {
 	logf(Verbose, "Listing all namespaces")
@@ -83,31 +53,6 @@ func (h *Hvnr) ListNamespaces() ([]string, error) {
 
 	logf(Verbose, "Found %s", text.Plural(len(result), "namespace"))
 	return result, nil
-}
-
-// ListSecretsInNamespace lists all secrets in a given namespace
-func ListSecretsInNamespace(client kubernetes.Interface, namespace string) ([]string, error) {
-	secretList, err := client.CoreV1().Secrets(namespace).List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	result := make([]string, len(secretList.Items))
-	for i, secret := range secretList.Items {
-		result[i] = secret.Name
-	}
-
-	return result, nil
-}
-
-// SecretsInNamespace lists all secrets in a given namespace
-func SecretsInNamespace(client kubernetes.Interface, namespace string) ([]corev1.Secret, error) {
-	secretList, err := client.CoreV1().Secrets(namespace).List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	return secretList.Items, nil
 }
 
 // ListPods lists all pods in the given namespaces, if no namespace is given,
