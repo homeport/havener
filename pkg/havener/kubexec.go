@@ -93,7 +93,7 @@ func (h *Hvnr) NodeExec(node corev1.Node, containerImage string, timeoutSeconds 
 	)
 
 	// Make sure to stop pod after command execution
-	defer func() { _ = PurgePod(h.client, namespace, podName, 10, metav1.DeletePropagationForeground) }()
+	defer func() { _ = h.PurgePod(namespace, podName, 10, metav1.DeletePropagationForeground) }()
 
 	pod, err := h.preparePodOnNode(node, namespace, podName, containerImage, timeoutSeconds, stdin != nil)
 	if err != nil {
@@ -101,7 +101,7 @@ func (h *Hvnr) NodeExec(node corev1.Node, containerImage string, timeoutSeconds 
 	}
 
 	// Execute command on pod and redirect output to users provided stdout and stderr
-	logf(Verbose, "Executing command on node: %#v", command)
+	logf(Verbose, "Executing command on node: `%v`", strings.Join(command, " "))
 	return h.PodExec(
 		pod,
 		"node-exec-container",
@@ -115,7 +115,7 @@ func (h *Hvnr) NodeExec(node corev1.Node, containerImage string, timeoutSeconds 
 
 func (h *Hvnr) preparePodOnNode(node corev1.Node, namespace string, name string, containerImage string, timeoutSeconds int, useStdin bool) (*corev1.Pod, error) {
 	// Add pod deletion to shutdown sequence list (in case of Ctrl+C exit)
-	AddShutdownFunction(func() { _ = PurgePod(h.client, namespace, name, 10, metav1.DeletePropagationBackground) })
+	AddShutdownFunction(func() { _ = h.PurgePod(namespace, name, 10, metav1.DeletePropagationBackground) })
 
 	// Pod configuration
 	pod := &corev1.Pod{
@@ -124,9 +124,14 @@ func (h *Hvnr) preparePodOnNode(node corev1.Node, namespace string, name string,
 			Namespace: namespace,
 		},
 		Spec: corev1.PodSpec{
-			NodeSelector:  map[string]string{"kubernetes.io/hostname": node.Name}, // Deploy pod on specific node using label selector
-			HostPID:       true,
-			RestartPolicy: corev1.RestartPolicyNever,
+			NodeSelector: map[string]string{
+				// Deploy pod on specific node using label selector
+				corev1.LabelHostname: node.Name,
+			},
+			HostPID:                       true,
+			HostNetwork:                   true,
+			RestartPolicy:                 corev1.RestartPolicyNever,
+			TerminationGracePeriodSeconds: pointer.Int64(0),
 			Containers: []corev1.Container{
 				{
 					Name:            "node-exec-container",

@@ -21,7 +21,6 @@
 package havener
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -32,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes"
 
 	"github.com/gonvenience/text"
 )
@@ -138,7 +136,7 @@ func (h *Hvnr) ListSecrets(namespaces ...string) (result []*corev1.Secret, err e
 	}
 
 	for _, namespace := range namespaces {
-		listResp, err := h.client.CoreV1().Secrets(namespace).List(context.TODO(), metav1.ListOptions{})
+		listResp, err := h.client.CoreV1().Secrets(namespace).List(h.ctx, metav1.ListOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -162,7 +160,7 @@ func (h *Hvnr) ListConfigMaps(namespaces ...string) (result []*corev1.ConfigMap,
 	}
 
 	for _, namespace := range namespaces {
-		listResp, err := h.client.CoreV1().ConfigMaps(namespace).List(context.TODO(), metav1.ListOptions{})
+		listResp, err := h.client.CoreV1().ConfigMaps(namespace).List(h.ctx, metav1.ListOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -188,32 +186,16 @@ func (h *Hvnr) ListCustomResourceDefinition(crdName string) (result []unstructur
 
 	if crdExist {
 		client, _ := dynamic.NewForConfig(h.restconfig)
-		list, _ := client.Resource(runtimeClassGVR).List(context.TODO(), metav1.ListOptions{})
+		list, _ := client.Resource(runtimeClassGVR).List(h.ctx, metav1.ListOptions{})
 		return list.Items, nil
 	}
 
 	return nil, fmt.Errorf("desired resource %s, was not found", crdName)
 }
 
-// ListNodes lists all nodes of the cluster
-// Deprecated: Use Havener interface function ListNodeNames instead
-func ListNodes(client kubernetes.Interface) ([]string, error) {
-	nodeList, err := client.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	result := make([]string, len(nodeList.Items))
-	for i, node := range nodeList.Items {
-		result[i] = node.Name
-	}
-
-	return result, nil
-}
-
 // ListNodes returns a list of the nodes in the cluster
 func (h *Hvnr) ListNodes() ([]corev1.Node, error) {
-	nodeList, err := h.client.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
+	nodeList, err := h.client.CoreV1().Nodes().List(h.ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get list of nodes: %w", err)
 	}
@@ -223,7 +205,7 @@ func (h *Hvnr) ListNodes() ([]corev1.Node, error) {
 
 // ListNodeNames returns a list of the names of the nodes in the cluster
 func (h *Hvnr) ListNodeNames() ([]string, error) {
-	nodeList, err := h.client.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
+	nodeList, err := h.client.CoreV1().Nodes().List(h.ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get list of nodes: %w", err)
 	}

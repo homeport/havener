@@ -21,18 +21,13 @@
 package havener
 
 import (
-	"context"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"k8s.io/client-go/kubernetes"
 )
 
 // PurgePod removes the pod in the given namespace.
-func PurgePod(kubeClient kubernetes.Interface, namespace string, podName string, gracePeriodSeconds int64, propagationPolicy metav1.DeletionPropagation) error {
+func (h *Hvnr) PurgePod(namespace string, podName string, gracePeriodSeconds int64, propagationPolicy metav1.DeletionPropagation) error {
 	logf(Verbose, "Deleting pod %s in namespace %s", podName, namespace)
-	return kubeClient.CoreV1().Pods(namespace).Delete(
-		context.TODO(),
+	return h.client.CoreV1().Pods(namespace).Delete(h.ctx,
 		podName,
 		metav1.DeleteOptions{
 			GracePeriodSeconds: &gracePeriodSeconds,

@@ -58,7 +58,12 @@ func outOfClusterAuthentication(kubeConfig string) (*kubernetes.Clientset, *rest
 		return nil, nil, fmt.Errorf("no kube config supplied")
 	}
 
-	logf(Verbose, "Connecting to Kubernetes cluster...")
+	clusterName, err := clusterName(kubeConfig)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to look-up cluster name: %w", err)
+	}
+
+	logf(Verbose, "Connecting to Kubernetes cluster _%s_ ...", clusterName)
 
 	// BuildConfigFromFlags is a helper function that builds configs from a master
 	// url or a kubeconfig filepath.

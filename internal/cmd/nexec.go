@@ -21,7 +21,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"os"
@@ -35,7 +34,6 @@ import (
 	"github.com/gonvenience/term"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
-	"k8s.io/client-go/kubernetes"
 )
 
 const nodeDefaultCommand = "/bin/sh"
@@ -110,20 +108,20 @@ func execInClusterNodes(hvnr havener.Havener, args []string) error {
 	switch {
 	case len(args) >= 2: // node name and command is given
 		input, command = args[0], args[1:]
-		nodes, err = lookupNodesByName(hvnr.Client(), input)
+		nodes, err = lookupNodesByName(hvnr, input)
 		if err != nil {
 			return err
 		}
 
 	case len(args) == 1: // only node name is given
 		input, command = args[0], []string{nodeDefaultCommand}
-		nodes, err = lookupNodesByName(hvnr.Client(), input)
+		nodes, err = lookupNodesByName(hvnr, input)
 		if err != nil {
 			return err
 		}
 
 	default: // no arguments
-		return availableNodesError(hvnr.Client(), "no node name and command specified")
+		return availableNodesError(hvnr, "no node name and command specified")
 	}
 
 	// In case the current process does not run in a terminal, disable the
@@ -214,21 +212,16 @@ func execInClusterNodes(hvnr havener.Havener, args []string) error {
 	return combineErrorsFromChannel("node command execution failed", errors)
 }
 
-func lookupNodesByName(client kubernetes.Interface, input string) ([]corev1.Node, error) {
+func lookupNodesByName(h havener.Havener, input string) ([]corev1.Node, error) {
 	if input == "all" {
-		list, err := client.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
-		if err != nil {
-			return nil, err
-		}
-
-		return list.Items, nil
+		return h.ListNodes()
 	}
 
 	var nodeList []corev1.Node
 	for _, nodeName := range strings.Split(input, ",") {
-		node, err := client.CoreV1().Nodes().Get(context.TODO(), nodeName, metav1.GetOptions{})
+		node, err := h.Client().CoreV1().Nodes().Get(h.Context(), nodeName, metav1.GetOptions{})
 		if err != nil {
-			return nil, availableNodesError(client, "node '%s' does not exist", nodeName)
+			return nil, availableNodesError(h, "node '%s' does not exist", nodeName)
 		}
 
 		nodeList = append(nodeList, *node)
@@ -237,8 +230,8 @@ func lookupNodesByName(client kubernetes.Interface, input string) ([]corev1.Node
 	return nodeList, nil
 }
 
-func availableNodesError(client kubernetes.Interface, title string, fArgs ...interface{}) error {
-	nodes, err := havener.ListNodes(client)
+func availableNodesError(h havener.Havener, title string, fArgs ...interface{}) error {
+	nodes, err := h.ListNodes()
 	if err != nil {
 		return fmt.Errorf("failed to list all nodes in cluster: %w", err)
 	}
@@ -247,8 +240,13 @@ func availableNodesError(client kubernetes.Interface, title string, fArgs ...int
 		return fmt.Errorf("failed to find any node in cluster")
 	}
 
+	names := make([]string, len(nodes))
+	for i, node := range nodes {
+		names[i] = node.Name
+	}
+
 	return fmt.Errorf("%s: %w",
 		fmt.Sprintf(title, fArgs...),
-		bunt.Errorf("*list of available nodes:*\n%s\n\nor, use _all_ to target all nodes", strings.Join(nodes, "\n")),
+		bunt.Errorf("*list of available nodes:*\n%s\n\nor, use _all_ to target all nodes", strings.Join(names, "\n")),
 	)
 }
