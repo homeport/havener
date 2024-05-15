@@ -42,7 +42,7 @@ brews:
     commit_author:
       name: GoReleaser Bot
       email: goreleaser@carlosbecker.com
-    folder: HomebrewFormula
+    directory: HomebrewFormula
     homepage: "https://github.com/homeport/havener"
     description: "/ˈheɪvənə/ - Think of it as a swiss army knife for Kubernetes tasks "
     license: "MIT"
