@@ -138,7 +138,7 @@ func (h *Hvnr) ListSecrets(namespaces ...string) (result []*corev1.Secret, err e
 	}
 
 	for _, namespace := range namespaces {
-		listResp, err := h.client.CoreV1().Secrets(namespace).List(context.TODO(), metav1.ListOptions{})
+		listResp, err := h.client.CoreV1().Secrets(namespace).List(h.ctx, metav1.ListOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -162,7 +162,7 @@ func (h *Hvnr) ListConfigMaps(namespaces ...string) (result []*corev1.ConfigMap,
 	}
 
 	for _, namespace := range namespaces {
-		listResp, err := h.client.CoreV1().ConfigMaps(namespace).List(context.TODO(), metav1.ListOptions{})
+		listResp, err := h.client.CoreV1().ConfigMaps(namespace).List(h.ctx, metav1.ListOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -188,7 +188,7 @@ func (h *Hvnr) ListCustomResourceDefinition(crdName string) (result []unstructur
 
 	if crdExist {
 		client, _ := dynamic.NewForConfig(h.restconfig)
-		list, _ := client.Resource(runtimeClassGVR).List(context.TODO(), metav1.ListOptions{})
+		list, _ := client.Resource(runtimeClassGVR).List(h.ctx, metav1.ListOptions{})
 		return list.Items, nil
 	}
 
@@ -213,7 +213,7 @@ func ListNodes(client kubernetes.Interface) ([]string, error) {
 
 // ListNodes returns a list of the nodes in the cluster
 func (h *Hvnr) ListNodes() ([]corev1.Node, error) {
-	nodeList, err := h.client.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
+	nodeList, err := h.client.CoreV1().Nodes().List(h.ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get list of nodes: %w", err)
 	}
@@ -223,7 +223,7 @@ func (h *Hvnr) ListNodes() ([]corev1.Node, error) {
 
 // ListNodeNames returns a list of the names of the nodes in the cluster
 func (h *Hvnr) ListNodeNames() ([]string, error) {
-	nodeList, err := h.client.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
+	nodeList, err := h.client.CoreV1().Nodes().List(h.ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get list of nodes: %w", err)
 	}
