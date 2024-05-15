@@ -93,7 +93,7 @@ func (h *Hvnr) NodeExec(node corev1.Node, containerImage string, timeoutSeconds 
 	)
 
 	// Make sure to stop pod after command execution
-	defer func() { _ = PurgePod(h.client, namespace, podName, 10, metav1.DeletePropagationForeground) }()
+	defer func() { _ = h.PurgePod(namespace, podName, 10, metav1.DeletePropagationForeground) }()
 
 	pod, err := h.preparePodOnNode(node, namespace, podName, containerImage, timeoutSeconds, stdin != nil)
 	if err != nil {
@@ -115,7 +115,7 @@ func (h *Hvnr) NodeExec(node corev1.Node, containerImage string, timeoutSeconds 
 
 func (h *Hvnr) preparePodOnNode(node corev1.Node, namespace string, name string, containerImage string, timeoutSeconds int, useStdin bool) (*corev1.Pod, error) {
 	// Add pod deletion to shutdown sequence list (in case of Ctrl+C exit)
-	AddShutdownFunction(func() { _ = PurgePod(h.client, namespace, name, 10, metav1.DeletePropagationBackground) })
+	AddShutdownFunction(func() { _ = h.PurgePod(namespace, name, 10, metav1.DeletePropagationBackground) })
 
 	// Pod configuration
 	pod := &corev1.Pod{
