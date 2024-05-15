@@ -21,7 +21,6 @@
 package havener
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -32,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes"
 
 	"github.com/gonvenience/text"
 )
@@ -193,22 +191,6 @@ func (h *Hvnr) ListCustomResourceDefinition(crdName string) (result []unstructur
 	}
 
 	return nil, fmt.Errorf("desired resource %s, was not found", crdName)
-}
-
-// ListNodes lists all nodes of the cluster
-// Deprecated: Use Havener interface function ListNodeNames instead
-func ListNodes(client kubernetes.Interface) ([]string, error) {
-	nodeList, err := client.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	result := make([]string, len(nodeList.Items))
-	for i, node := range nodeList.Items {
-		result[i] = node.Name
-	}
-
-	return result, nil
 }
 
 // ListNodes returns a list of the nodes in the cluster
