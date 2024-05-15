@@ -101,7 +101,7 @@ func (h *Hvnr) NodeExec(node corev1.Node, containerImage string, timeoutSeconds 
 	}
 
 	// Execute command on pod and redirect output to users provided stdout and stderr
-	logf(Verbose, "Executing command on node: %#v", command)
+	logf(Verbose, "Executing command on node: `%v`", strings.Join(command, " "))
 	return h.PodExec(
 		pod,
 		"node-exec-container",
@@ -124,9 +124,14 @@ func (h *Hvnr) preparePodOnNode(node corev1.Node, namespace string, name string,
 			Namespace: namespace,
 		},
 		Spec: corev1.PodSpec{
-			NodeSelector:  map[string]string{"kubernetes.io/hostname": node.Name}, // Deploy pod on specific node using label selector
-			HostPID:       true,
-			RestartPolicy: corev1.RestartPolicyNever,
+			NodeSelector: map[string]string{
+				// Deploy pod on specific node using label selector
+				corev1.LabelHostname: node.Name,
+			},
+			HostPID:                       true,
+			HostNetwork:                   true,
+			RestartPolicy:                 corev1.RestartPolicyNever,
+			TerminationGracePeriodSeconds: pointer.Int64(0),
 			Containers: []corev1.Container{
 				{
 					Name:            "node-exec-container",
