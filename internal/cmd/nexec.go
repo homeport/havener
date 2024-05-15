@@ -214,12 +214,7 @@ func execInClusterNodes(hvnr havener.Havener, args []string) error {
 
 func lookupNodesByName(h havener.Havener, input string) ([]corev1.Node, error) {
 	if input == "all" {
-		list, err := h.Client().CoreV1().Nodes().List(h.Context(), metav1.ListOptions{})
-		if err != nil {
-			return nil, err
-		}
-
-		return list.Items, nil
+		return h.ListNodes()
 	}
 
 	var nodeList []corev1.Node
