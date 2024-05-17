@@ -24,7 +24,6 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
-	"context"
 	"fmt"
 	"io"
 	"os"
@@ -238,7 +237,7 @@ func (h *Hvnr) retrieveFilesFromPod(pod *corev1.Pod, baseDir string, findCommand
 
 	for _, container := range pod.Spec.Containers {
 		// Ignore all container that have no shell available
-		if err := h.PodExec(pod, container.Name, []string{"/bin/sh", "-c", "true"}, nil, io.Discard, nil, false); err != nil {
+		if err := h.PodExec(pod, container.Name, ExecConfig{Command: []string{"/bin/sh", "-c", "true"}, Stdout: io.Discard, Stderr: io.Discard}); err != nil {
 			continue
 		}
 
@@ -253,15 +252,14 @@ func (h *Hvnr) retrieveFilesFromPod(pod *corev1.Pod, baseDir string, findCommand
 			err := h.PodExec(
 				pod,
 				container.Name,
-				[]string{"/bin/sh", "-c",
-					fmt.Sprintf(
-						retrieveScript,
-						strings.Join(findCommands, "; "),
-					)},
-				nil,
-				write,
-				nil,
-				false,
+				ExecConfig{
+					Command: []string{"/bin/sh", "-c",
+						fmt.Sprintf(
+							retrieveScript,
+							strings.Join(findCommands, "; "),
+						)},
+					Stdout: write,
+				},
 			)
 
 			if err != nil {
@@ -333,7 +331,7 @@ func (h *Hvnr) retrieveContainerLogs(pod *corev1.Pod, baseDir string) []error {
 	errors := []error{}
 
 	streamToFile := func(req *rest.Request, filename string) error {
-		readCloser, err := req.Stream(context.TODO())
+		readCloser, err := req.Stream(h.ctx)
 		if err != nil {
 			return err
 		}

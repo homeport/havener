@@ -30,13 +30,15 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/gonvenience/term"
+	"github.com/gonvenience/bunt"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-const podDefaultCommand = "/bin/sh"
+const (
+	podExecDefaultCommand = "/bin/sh"
+)
 
 type target struct {
 	namespace     string
@@ -44,41 +46,54 @@ type target struct {
 	containerName string
 }
 
-var (
-	podExecNoTty bool
-	podExecBlock bool
-)
+var podExecCmdSettings struct {
+	stdin        bool
+	tty          bool
+	notty        bool
+	printAsBlock bool
+}
 
 // podExecCmd represents the pod-exec command
 var podExecCmd = &cobra.Command{
 	Use:     "pod-exec [flags] [[<namespace>/]<pod>[/container]] [<command>]",
 	Aliases: []string{"pe"},
 	Short:   "Execute command on Kubernetes pod",
-	Long: `Execute a shell command on a pod.
+	Long: bunt.Sprintf(`*Execute a command on a pod*
 
-This is similar to the kubectl exec command with just a slightly
-different syntax. In contrast to kubectl, you do not have to specify
-the namespace of the pod.
+This is similar to the kubectl exec command with just a slightly different
+syntax. In contrast to kubectl, you do not have to specify the namespace
+of the pod.
 
-If no namespace is given, havener will search all namespaces for
-a pod that matches the name.
+If no namespace is given, *havener* will search all namespaces for a pod that
+matches the name.
 
-Also, you can omit the command which will result in the default
-command: ` + podDefaultCommand + `. For example 'havener pod-exec api-0' will search
-for a pod named 'api-0' in all namespaces and open a shell if found.
+Also, you can omit the command which will result in the default command: %s.
+For example _havener pod-exec api-0_ will search for a pod named _api-0_ in all
+namespaces and open a shell if found.
 
-In case no container name is given, havener will assume you want to
-execute the command in the first container found in the pod.
+In case no container name is given, *havener* will assume you want to execute the
+command in the first container found in the pod.
 
 If you run the 'pod-exec' without any additional arguments, it will print a
 list of available pods.
 
-For convenience, if the target pod name _all_ is used, havener will look up
+For convenience, if the target pod name _all_ is used, *havener* will look up
 all pods in all namespaces automatically.
-`,
+`, podExecDefaultCommand),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// Check edge case for deprecated command-line flag
+		if cmd.Flags().Changed("no-tty") {
+			// Bail out if both the new and the old flag are used at the same time
+			if cmd.Flags().Changed("tty") {
+				return fmt.Errorf("cannot use --no-tty and --tty at the same time")
+			}
+
+			// If only --no-tty is used, continue to accept its input
+			podExecCmdSettings.tty = !podExecCmdSettings.notty
+		}
+
 		hvnr, err := havener.NewHavener(havener.WithContext(cmd.Context()), havener.WithKubeConfigPath(kubeConfig))
 		if err != nil {
 			return fmt.Errorf("unable to get access to cluster: %w", err)
@@ -91,8 +106,14 @@ all pods in all namespaces automatically.
 func init() {
 	rootCmd.AddCommand(podExecCmd)
 
-	podExecCmd.Flags().BoolVar(&podExecNoTty, "no-tty", false, "do not allocate pseudo-terminal for command execution")
-	podExecCmd.Flags().BoolVar(&podExecBlock, "block", false, "show distributed shell output as block for each pod")
+	podExecCmd.Flags().SortFlags = false
+	podExecCmd.Flags().BoolVarP(&podExecCmdSettings.stdin, "stdin", "i", false, "Pass stdin to the container")
+	podExecCmd.Flags().BoolVarP(&podExecCmdSettings.tty, "tty", "t", false, "Stdin is a TTY")
+	podExecCmd.Flags().BoolVar(&podExecCmdSettings.printAsBlock, "block", false, "show distributed shell output as block for each pod")
+
+	// Deprecated/old flags
+	podExecCmd.Flags().BoolVar(&podExecCmdSettings.notty, "no-tty", false, "do not allocate pseudo-terminal for command execution")
+	_ = podExecCmd.Flags().MarkDeprecated("no-tty", "use --tty flag instead")
 }
 
 func execInClusterPods(hvnr havener.Havener, args []string) error {
@@ -113,7 +134,7 @@ func execInClusterPods(hvnr havener.Havener, args []string) error {
 		}
 
 	case len(args) == 1: // only pod is given
-		input, command = args[0], []string{podDefaultCommand}
+		input, command = args[0], []string{podExecDefaultCommand}
 		podMap, err = lookupPodsByName(hvnr, input)
 		if err != nil {
 			return err
@@ -131,10 +152,13 @@ func execInClusterPods(hvnr havener.Havener, args []string) error {
 		}
 	}
 
-	// In case the current process does not run in a terminal, disable the
-	// default TTY behavior.
-	if !term.IsTerminal() {
-		podExecNoTty = true
+	if !isStdinTerminal() {
+		podExecCmdSettings.tty = false
+	}
+
+	var in io.Reader
+	if podExecCmdSettings.stdin {
+		in = os.Stdin
 	}
 
 	// Single pod mode, use default streams and run pod execute function
@@ -142,25 +166,25 @@ func execInClusterPods(hvnr havener.Havener, args []string) error {
 		for pod, containers := range podMap {
 			for i := range containers {
 				return hvnr.PodExec(
-					pod,
-					containers[i],
-					command,
-					os.Stdin,
-					os.Stdout,
-					os.Stderr,
-					!podExecNoTty,
+					pod, containers[i],
+					havener.ExecConfig{
+						Command: command,
+						Stdin:   in,
+						Stdout:  os.Stdout,
+						Stderr:  os.Stderr,
+						TTY:     podExecCmdSettings.tty,
+					},
 				)
 			}
-
 		}
 	}
 
 	// In distributed shell mode, TTY is forced to be disabled
-	podExecNoTty = true
+	podExecCmdSettings.stdin = false
+	podExecCmdSettings.tty = false
 
 	var (
 		wg      = &sync.WaitGroup{}
-		readers = duplicateReader(os.Stdin, countContainers)
 		output  = make(chan OutputMsg)
 		errors  = make(chan error, countContainers)
 		printer = make(chan bool, 1)
@@ -170,26 +194,27 @@ func execInClusterPods(hvnr havener.Havener, args []string) error {
 	for pod, containers := range podMap {
 		for i := range containers {
 			wg.Add(1)
-			go func(pod *corev1.Pod, container string, reader io.Reader) {
+			go func(pod *corev1.Pod, container string) {
 				defer wg.Done()
 				origin := fmt.Sprintf("%s/%s", pod.Name, container)
 				errors <- hvnr.PodExec(
-					pod,
-					container,
-					command,
-					reader,
-					chanWriter("StdOut", origin, output),
-					chanWriter("StdErr", origin, output),
-					!podExecNoTty,
+					pod, container,
+					havener.ExecConfig{
+						Command: command,
+						Stdin:   nil, // Disabled for now until reliable input duplication works
+						Stdout:  chanWriter("StdOut", origin, output),
+						Stderr:  chanWriter("StdErr", origin, output),
+						TTY:     podExecCmdSettings.tty,
+					},
 				)
-			}(pod, containers[i], readers[counter])
+			}(pod, containers[i])
 			counter++
 		}
 	}
 
 	// Start the respective output printer in a separate Go routine
 	go func() {
-		if podExecBlock {
+		if podExecCmdSettings.printAsBlock {
 			PrintOutputMessageAsBlock(output)
 
 		} else {

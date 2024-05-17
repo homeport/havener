@@ -22,7 +22,7 @@ havener version [flags]
       --debug                 debug output - level 5
       --error                 error output - level 2
       --fatal                 fatal output - level 1
-      --kubeconfig string     Kubernetes configuration file (default "~/.kube/config")
+      --kubeconfig string     Kubernetes configuration (default "~/.kube/config")
       --terminal-height int   disable autodetection and specify an explicit terminal height (default -1)
       --terminal-width int    disable autodetection and specify an explicit terminal width (default -1)
       --trace                 trace output - level 6

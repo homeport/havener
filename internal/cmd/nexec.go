@@ -24,60 +24,79 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/user"
+	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/gonvenience/bunt"
-	"github.com/gonvenience/term"
 	"github.com/homeport/havener/pkg/havener"
 	"github.com/spf13/cobra"
 )
 
-const nodeDefaultCommand = "/bin/sh"
-
-var (
-	nodeExecNoTty       bool
-	nodeExecImage       string
-	nodeExecTimeout     int
-	nodeExecBlock       bool
-	defaultImage        = "alpine"
-	defaultTimeout      = 10
-	nodeExecMaxParallel = 10
+const (
+	nodeExecDefaultImage       = "docker.io/library/alpine"
+	nodeExecDefaultTimeout     = 30 * time.Second
+	nodeExecDefaultMaxParallel = 5
+	nodeExecDefaultCommand     = "/bin/sh"
 )
+
+var nodeExecCmdSettings struct {
+	stdin        bool
+	tty          bool
+	notty        bool
+	image        string
+	maxParallel  int
+	timeout      time.Duration
+	printAsBlock bool
+}
 
 // nodeExecCmd represents the node-exec command
 var nodeExecCmd = &cobra.Command{
 	Use:     "node-exec [flags] [<node>[,<node>,...]] [<command>]",
 	Aliases: []string{"ne"},
 	Short:   "Execute command on Kubernetes node",
-	Long: bunt.Sprintf(`Execute a command on a node.
+	Long: bunt.Sprintf(`*Execute a command on a node*
 
-This executes a command directly on the node itself. Therefore, havener creates
-a temporary pod which enables the user to access the shell of the node. The pod
+Execute a command directly on the node itself. For this, *havener* creates a
+temporary pod, which enables the user to access the shell of the node. The pod
 is deleted automatically afterwards.
 
 The command can be omitted which will result in the default command: _%s_. For
-example 'havener node-exec foo' will search for a node named 'foo' and open a
-shell if found.
+example _havener node-exec foo_ will search for a node named 'foo' and open a
+shell if the node can be found.
 
-Typically, the TTY flag does have to be specified. By definition, if one one
-target node is provided, it is assumed that TTY is desired and STDIN is attached
-to the remote process. Analog, for the distributed mode with multiple nodes,
-no TTY is set, and the STDIN is multiplexed into each remote process.
+When more than one node is specified, it will execute the command on all nodes.
+In this distributed mode, both passing the StdIn as well as TTY mode are not
+available. By default, the number of parallel node executions is limited to %d
+in parallel in order to not create to many requests at the same time. This
+value can be overwritten. Handle with care.
 
-If you run the 'node-exec' without any additional arguments, it will print a
-list of available nodes.
+If you run the _node-exec_ without any additional arguments, it will print a
+list of available nodes in the cluster.
 
-For convenience, if the target node name _all_ is used, havener will look up
+For convenience, if the target node name _all_ is used, *havener* will look up
 all nodes automatically.
 
-`, nodeDefaultCommand),
+`, nodeExecDefaultCommand, nodeExecDefaultMaxParallel),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// Check edge case for deprecated command-line flag
+		if cmd.Flags().Changed("no-tty") {
+			// Bail out if both the new and the old flag are used at the same time
+			if cmd.Flags().Changed("tty") {
+				return fmt.Errorf("cannot use --no-tty and --tty at the same time")
+			}
+
+			// If only --no-tty is used, continue to accept its input
+			nodeExecCmdSettings.tty = !nodeExecCmdSettings.notty
+		}
+
 		hvnr, err := havener.NewHavener(havener.WithContext(cmd.Context()), havener.WithKubeConfigPath(kubeConfig))
 		if err != nil {
 			return fmt.Errorf("unable to get access to cluster: %w", err)
@@ -90,11 +109,17 @@ all nodes automatically.
 func init() {
 	rootCmd.AddCommand(nodeExecCmd)
 
-	nodeExecCmd.PersistentFlags().BoolVar(&nodeExecNoTty, "no-tty", false, "do not allocate pseudo-terminal for command execution")
-	nodeExecCmd.PersistentFlags().StringVar(&nodeExecImage, "image", defaultImage, "set image for helper pod from which the root-shell is accessed")
-	nodeExecCmd.PersistentFlags().IntVar(&nodeExecTimeout, "timeout", defaultTimeout, "set timout in seconds for the setup of the helper pod")
-	nodeExecCmd.PersistentFlags().BoolVar(&nodeExecBlock, "block", false, "show distributed shell output as block for each node")
-	nodeExecCmd.PersistentFlags().IntVar(&nodeExecMaxParallel, "max-parallel", 0, "number of parallel executions (defaults to number of nodes)")
+	nodeExecCmd.Flags().SortFlags = false
+	nodeExecCmd.Flags().BoolVarP(&nodeExecCmdSettings.stdin, "stdin", "i", false, "Pass stdin to the container")
+	nodeExecCmd.Flags().BoolVarP(&nodeExecCmdSettings.tty, "tty", "t", false, "Stdin is a TTY")
+	nodeExecCmd.Flags().StringVar(&nodeExecCmdSettings.image, "image", nodeExecDefaultImage, "Container image used for helper pod (from which the root-shell is accessed)")
+	nodeExecCmd.Flags().DurationVar(&nodeExecCmdSettings.timeout, "timeout", nodeExecDefaultTimeout, "Timeout for the setup of the helper pod")
+	nodeExecCmd.Flags().IntVar(&nodeExecCmdSettings.maxParallel, "max-parallel", nodeExecDefaultMaxParallel, "Number of parallel executions (value less or equal than zero means unlimited)")
+	nodeExecCmd.Flags().BoolVar(&nodeExecCmdSettings.printAsBlock, "block", false, "Show distributed shell output as block for each node")
+
+	// Deprecated/old flags
+	nodeExecCmd.Flags().BoolVar(&nodeExecCmdSettings.notty, "no-tty", false, "do not allocate pseudo-terminal for command execution")
+	_ = nodeExecCmd.Flags().MarkDeprecated("no-tty", "use --tty flag instead")
 }
 
 func execInClusterNodes(hvnr havener.Havener, args []string) error {
@@ -114,7 +139,7 @@ func execInClusterNodes(hvnr havener.Havener, args []string) error {
 		}
 
 	case len(args) == 1: // only node name is given
-		input, command = args[0], []string{nodeDefaultCommand}
+		input, command = args[0], []string{nodeExecDefaultCommand}
 		nodes, err = lookupNodesByName(hvnr, input)
 		if err != nil {
 			return err
@@ -124,43 +149,55 @@ func execInClusterNodes(hvnr havener.Havener, args []string) error {
 		return availableNodesError(hvnr, "no node name and command specified")
 	}
 
-	// In case the current process does not run in a terminal, disable the
-	// default TTY behavior.
-	if !term.IsTerminal() {
-		nodeExecNoTty = true
+	if !isStdinTerminal() {
+		nodeExecCmdSettings.tty = false
 	}
+
+	var in io.Reader
+	if nodeExecCmdSettings.stdin {
+		in = os.Stdin
+	}
+
+	var nodeExecHelperPodConfig = havener.NodeExecHelperPodConfig{
+		Annotations:    map[string]string{},
+		ContainerImage: nodeExecCmdSettings.image,
+		ContainerCmd:   []string{"/bin/sleep", "8h"},
+		WaitTimeout:    nodeExecCmdSettings.timeout,
+	}
+
+	nodeExecHelperPodConfig.Annotations["originator"] = originator()
 
 	// Single node mode, use default streams and run node execute function
 	if len(nodes) == 1 {
 		return hvnr.NodeExec(
 			nodes[0],
-			nodeExecImage,
-			nodeExecTimeout,
-			command,
-			os.Stdin,
-			os.Stdout,
-			os.Stderr,
-			!nodeExecNoTty,
+			nodeExecHelperPodConfig,
+			havener.ExecConfig{
+				Command: command,
+				Stdin:   in,
+				Stdout:  os.Stdout,
+				Stderr:  os.Stderr,
+				TTY:     nodeExecCmdSettings.tty,
+			},
 		)
 	}
 
-	// In distributed shell mode, TTY is forced to be disabled
-	nodeExecNoTty = true
+	// In distributed shell mode, stdin is not piped through and TTY is forced to be disabled
+	nodeExecCmdSettings.stdin = false
+	nodeExecCmdSettings.tty = false
 
-	// In case nothing is configured, all nodes will be executed concurrently
-	if nodeExecMaxParallel <= 0 || nodeExecMaxParallel > len(nodes) {
-		nodeExecMaxParallel = len(nodes)
+	// In case the user wants everything done in parallel, increase the max value
+	if nodeExecCmdSettings.maxParallel <= 0 {
+		nodeExecCmdSettings.maxParallel = len(nodes)
 	}
 
 	type task struct {
-		node   corev1.Node
-		reader io.Reader
+		node corev1.Node
 	}
 
 	var (
 		wg      = &sync.WaitGroup{}
 		tasks   = make(chan task, len(nodes))
-		readers = duplicateReader(os.Stdin, len(nodes))
 		output  = make(chan OutputMsg)
 		errors  = make(chan error, len(nodes))
 		printer = make(chan bool, 1)
@@ -168,25 +205,26 @@ func execInClusterNodes(hvnr havener.Havener, args []string) error {
 
 	// Fill task queue with the list of nodes to be processed
 	for i := range nodes {
-		tasks <- task{reader: readers[i], node: nodes[i]}
+		tasks <- task{node: nodes[i]}
 	}
 	close(tasks)
 
 	// Start n task workers to work on task queue
-	wg.Add(nodeExecMaxParallel)
-	for i := 0; i < nodeExecMaxParallel; i++ {
+	wg.Add(nodeExecCmdSettings.maxParallel)
+	for i := 0; i < nodeExecCmdSettings.maxParallel; i++ {
 		go func() {
 			defer wg.Done()
 			for task := range tasks {
 				errors <- hvnr.NodeExec(
 					task.node,
-					nodeExecImage,
-					nodeExecTimeout,
-					command,
-					task.reader,
-					chanWriter("StdOut", task.node.Name, output),
-					chanWriter("StdErr", task.node.Name, output),
-					!nodeExecNoTty,
+					nodeExecHelperPodConfig,
+					havener.ExecConfig{
+						Command: command,
+						Stdin:   nil, // Disabled for now until reliable input duplication works
+						Stdout:  chanWriter("StdOut", task.node.Name, output),
+						Stderr:  chanWriter("StdErr", task.node.Name, output),
+						TTY:     nodeExecCmdSettings.tty,
+					},
 				)
 			}
 		}()
@@ -194,7 +232,7 @@ func execInClusterNodes(hvnr havener.Havener, args []string) error {
 
 	// Start the respective output printer in a separate Go routine
 	go func() {
-		if nodeExecBlock {
+		if nodeExecCmdSettings.printAsBlock {
 			PrintOutputMessageAsBlock(output)
 
 		} else {
@@ -210,6 +248,28 @@ func execInClusterNodes(hvnr havener.Havener, args []string) error {
 
 	<-printer
 	return combineErrorsFromChannel("node command execution failed", errors)
+}
+
+func originator() string {
+	if version == "" {
+		version = "development version"
+	}
+
+	var username = "unknown"
+	if user, err := user.Current(); err == nil {
+		username = user.Name
+	}
+
+	var hostname = "unknown"
+	if name, err := os.Hostname(); err == nil {
+		hostname = name
+	}
+
+	return fmt.Sprintf("havener %s (%s/%s), %s@%s",
+		version,
+		runtime.GOOS, runtime.GOARCH,
+		username, hostname,
+	)
 }
 
 func lookupNodesByName(h havener.Havener, input string) ([]corev1.Node, error) {

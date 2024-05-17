@@ -98,7 +98,7 @@ func Execute() {
 }
 
 func init() {
-	kubeConfigDefault, err := havener.KubeConfigDefault()
+	kubeConfigDefault, err := havener.KubeConfig()
 	if err != nil {
 		panic(err)
 	}
@@ -106,7 +106,7 @@ func init() {
 	rootCmd.Flags().SortFlags = false
 	rootCmd.PersistentFlags().SortFlags = false
 
-	rootCmd.PersistentFlags().StringVar(&kubeConfig, "kubeconfig", kubeConfigDefault, "Kubernetes configuration file")
+	rootCmd.PersistentFlags().StringVar(&kubeConfig, "kubeconfig", kubeConfigDefault, "Kubernetes configuration")
 
 	rootCmd.PersistentFlags().Int("terminal-width", -1, "disable autodetection and specify an explicit terminal width")
 	rootCmd.PersistentFlags().Int("terminal-height", -1, "disable autodetection and specify an explicit terminal height")

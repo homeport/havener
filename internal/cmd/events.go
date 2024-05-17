@@ -21,7 +21,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -86,7 +85,7 @@ func retrieveClusterEvents(hvnr havener.Havener) error {
 			continue
 		}
 
-		watcher, err := hvnr.Client().CoreV1().Events(namespace).Watch(context.TODO(), metav1.ListOptions{})
+		watcher, err := hvnr.Client().CoreV1().Events(namespace).Watch(hvnr.Context(), metav1.ListOptions{})
 		if err != nil {
 			return fmt.Errorf("failed to setup event watcher: %w", err)
 		}
