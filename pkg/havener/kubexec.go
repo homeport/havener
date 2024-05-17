@@ -23,19 +23,20 @@ package havener
 import (
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/gonvenience/term"
-	"github.com/gonvenience/text"
-	terminal "golang.org/x/term"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/remotecommand"
 	"k8s.io/utils/pointer"
+
+	"github.com/gonvenience/text"
+	"github.com/mattn/go-isatty"
+	"golang.org/x/term"
 )
 
 type NodeExecHelperPodConfig struct {
@@ -81,7 +82,7 @@ func (h *Hvnr) PodExec(pod *corev1.Pod, container string, execConfig ExecConfig)
 	}
 
 	var tsq *terminalSizeQueue
-	if execConfig.TTY && term.IsTerminal() {
+	if execConfig.TTY && isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd()) {
 		tsq = setupTerminalResizeWatcher()
 		defer tsq.stop()
 	}
@@ -90,9 +91,11 @@ func (h *Hvnr) PodExec(pod *corev1.Pod, container string, execConfig ExecConfig)
 	// The raw mode is the one where characters are not printed twice in the terminal. See
 	// https://en.wikipedia.org/wiki/POSIX_terminal_interface#History for a bit more details.
 	if execConfig.TTY {
-		if stateToBeRestored, err := terminal.MakeRaw(0); err == nil {
-			defer func() { _ = terminal.Restore(0, stateToBeRestored) }()
+		oldState, err := term.MakeRaw(0)
+		if err != nil {
+			return fmt.Errorf("failed to use raw terminal: %w", err)
 		}
+		defer func() { _ = term.Restore(0, oldState) }()
 	}
 
 	var streamOption = remotecommand.StreamOptions{
@@ -124,6 +127,12 @@ func (h *Hvnr) NodeExec(node corev1.Node, hlpPodConfig NodeExecHelperPodConfig, 
 	pod, err := h.preparePodOnNode(node, hlpPodConfig)
 	if err != nil {
 		return err
+	}
+
+	// Unset the stderr in case TTY is set
+	// https://github.com/kubernetes/kubectl/blob/5b7c8b24b4361a97ab19de1d1e301a6c1bbaed1a/pkg/cmd/exec/exec.go#L370-L372
+	if execConfig.TTY {
+		execConfig.Stderr = nil
 	}
 
 	// Execute command on pod and redirect output to users provided stdout and stderr
