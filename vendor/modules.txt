@@ -140,7 +140,7 @@ github.com/mailru/easyjson/jwriter
 # github.com/mattn/go-ciede2000 v0.0.0-20170301095244-782e8c62fec3
 ## explicit
 github.com/mattn/go-ciede2000
-# github.com/mattn/go-isatty v0.0.18
+# github.com/mattn/go-isatty v0.0.20
 ## explicit; go 1.15
 github.com/mattn/go-isatty
 # github.com/mitchellh/go-ps v1.0.0
