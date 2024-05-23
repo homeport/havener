@@ -17,7 +17,7 @@ See the individual commands to get the complete overview.
 ### Options
 
 ```
-      --kubeconfig string     Kubernetes configuration file (default "~/.kube/config")
+      --kubeconfig string     Kubernetes configuration (default "~/.kube/config")
       --terminal-width int    disable autodetection and specify an explicit terminal width (default -1)
       --terminal-height int   disable autodetection and specify an explicit terminal height (default -1)
       --fatal                 fatal output - level 1

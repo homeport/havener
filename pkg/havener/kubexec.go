@@ -21,27 +21,46 @@
 package havener
 
 import (
-	"context"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/gonvenience/term"
-	"github.com/gonvenience/text"
-	terminal "golang.org/x/term"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/remotecommand"
 	"k8s.io/utils/pointer"
+
+	"github.com/gonvenience/text"
+	"github.com/mattn/go-isatty"
+	"golang.org/x/term"
 )
 
+type NodeExecHelperPodConfig struct {
+	namespace string
+	podName   string
+
+	Annotations    map[string]string
+	ContainerImage string
+	ContainerCmd   []string
+	ContainerArgs  []string
+	WaitTimeout    time.Duration
+}
+
+type ExecConfig struct {
+	Command []string
+	Stdin   io.Reader
+	Stdout  io.Writer
+	Stderr  io.Writer
+	TTY     bool
+}
+
 // PodExec executes the provided command in the referenced pod's container.
-func (h *Hvnr) PodExec(pod *corev1.Pod, container string, command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
-	logf(Verbose, "Executing command on pod: `%v`", strings.Join(command, " "))
+func (h *Hvnr) PodExec(pod *corev1.Pod, container string, execConfig ExecConfig) error {
+	logf(Verbose, "Executing command on pod: `%v`", strings.Join(execConfig.Command, " "))
 
 	req := h.client.CoreV1().RESTClient().Post().
 		Resource("pods").
@@ -50,11 +69,11 @@ func (h *Hvnr) PodExec(pod *corev1.Pod, container string, command []string, stdi
 		SubResource("exec").
 		VersionedParams(&corev1.PodExecOptions{
 			Container: container,
-			Command:   command,
-			Stdin:     stdin != nil,
-			Stdout:    stdout != nil,
-			Stderr:    stderr != nil,
-			TTY:       tty,
+			Command:   execConfig.Command,
+			Stdin:     execConfig.Stdin != nil,
+			Stdout:    execConfig.Stdout != nil,
+			Stderr:    execConfig.Stderr != nil,
+			TTY:       execConfig.TTY,
 		}, scheme.ParameterCodec)
 
 	executor, err := remotecommand.NewSPDYExecutor(h.restconfig, "POST", req.URL())
@@ -63,7 +82,7 @@ func (h *Hvnr) PodExec(pod *corev1.Pod, container string, command []string, stdi
 	}
 
 	var tsq *terminalSizeQueue
-	if tty && term.IsTerminal() {
+	if execConfig.TTY && isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd()) {
 		tsq = setupTerminalResizeWatcher()
 		defer tsq.stop()
 	}
@@ -71,13 +90,23 @@ func (h *Hvnr) PodExec(pod *corev1.Pod, container string, command []string, stdi
 	// Terminal needs to run in raw mode for the actual command execution when TTY is enabled.
 	// The raw mode is the one where characters are not printed twice in the terminal. See
 	// https://en.wikipedia.org/wiki/POSIX_terminal_interface#History for a bit more details.
-	if tty {
-		if stateToBeRestored, err := terminal.MakeRaw(0); err == nil {
-			defer func() { _ = terminal.Restore(0, stateToBeRestored) }()
+	if execConfig.TTY {
+		oldState, err := term.MakeRaw(0)
+		if err != nil {
+			return fmt.Errorf("failed to use raw terminal: %w", err)
 		}
+		defer func() { _ = term.Restore(0, oldState) }()
 	}
 
-	if err = executor.StreamWithContext(h.ctx, remotecommand.StreamOptions{Stdin: stdin, Stdout: stdout, Stderr: stderr, Tty: tty, TerminalSizeQueue: tsq}); err != nil {
+	var streamOption = remotecommand.StreamOptions{
+		Stdin:             execConfig.Stdin,
+		Stdout:            execConfig.Stdout,
+		Stderr:            execConfig.Stderr,
+		Tty:               execConfig.TTY,
+		TerminalSizeQueue: tsq,
+	}
+
+	if err = executor.StreamWithContext(h.ctx, streamOption); err != nil {
 		return fmt.Errorf("failed to execute command on pod %s, container %s: %w", pod.Name, container, err)
 	}
 
@@ -86,42 +115,53 @@ func (h *Hvnr) PodExec(pod *corev1.Pod, container string, command []string, stdi
 }
 
 // NodeExec executes the provided command on the given node.
-func (h *Hvnr) NodeExec(node corev1.Node, containerImage string, timeoutSeconds int, command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error {
-	var (
-		podName   = text.RandomStringWithPrefix("node-exec-", 15) // unique pod name
-		namespace = "kube-system"
-	)
+func (h *Hvnr) NodeExec(node corev1.Node, hlpPodConfig NodeExecHelperPodConfig, execConfig ExecConfig) error {
+	hlpPodConfig.podName = text.RandomStringWithPrefix("node-exec-", 15) // unique pod name
+	hlpPodConfig.namespace = "kube-system"
 
 	// Make sure to stop pod after command execution
-	defer func() { _ = h.PurgePod(namespace, podName, 10, metav1.DeletePropagationForeground) }()
+	defer func() {
+		_ = h.PurgePod(hlpPodConfig.namespace, hlpPodConfig.podName, 0, metav1.DeletePropagationBackground)
+	}()
 
-	pod, err := h.preparePodOnNode(node, namespace, podName, containerImage, timeoutSeconds, stdin != nil)
+	pod, err := h.preparePodOnNode(node, hlpPodConfig)
 	if err != nil {
 		return err
 	}
 
+	// Unset the stderr in case TTY is set
+	// https://github.com/kubernetes/kubectl/blob/5b7c8b24b4361a97ab19de1d1e301a6c1bbaed1a/pkg/cmd/exec/exec.go#L370-L372
+	if execConfig.TTY {
+		execConfig.Stderr = nil
+	}
+
 	// Execute command on pod and redirect output to users provided stdout and stderr
-	logf(Verbose, "Executing command on node: `%v`", strings.Join(command, " "))
+	logf(Verbose, "Executing command on node: `%v`", strings.Join(execConfig.Command, " "))
+
 	return h.PodExec(
-		pod,
-		"node-exec-container",
-		append([]string{"nsenter", "--target", "1", "--mount", "--uts", "--ipc", "--net", "--pid", "--"}, command...),
-		stdin,
-		stdout,
-		stderr,
-		tty,
+		pod, "node-exec-container",
+		ExecConfig{
+			Command: append([]string{"nsenter", "--target", "1", "--mount", "--uts", "--ipc", "--net", "--pid", "--"}, execConfig.Command...),
+			Stdin:   execConfig.Stdin,
+			Stdout:  execConfig.Stdout,
+			Stderr:  execConfig.Stderr,
+			TTY:     execConfig.TTY,
+		},
 	)
 }
 
-func (h *Hvnr) preparePodOnNode(node corev1.Node, namespace string, name string, containerImage string, timeoutSeconds int, useStdin bool) (*corev1.Pod, error) {
+func (h *Hvnr) preparePodOnNode(node corev1.Node, hlpPodConfig NodeExecHelperPodConfig) (*corev1.Pod, error) {
 	// Add pod deletion to shutdown sequence list (in case of Ctrl+C exit)
-	AddShutdownFunction(func() { _ = h.PurgePod(namespace, name, 10, metav1.DeletePropagationBackground) })
+	AddShutdownFunction(func() {
+		_ = h.PurgePod(hlpPodConfig.namespace, hlpPodConfig.podName, 10, metav1.DeletePropagationBackground)
+	})
 
 	// Pod configuration
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
+			Name:        hlpPodConfig.podName,
+			Namespace:   hlpPodConfig.namespace,
+			Annotations: hlpPodConfig.Annotations,
 		},
 		Spec: corev1.PodSpec{
 			NodeSelector: map[string]string{
@@ -135,9 +175,10 @@ func (h *Hvnr) preparePodOnNode(node corev1.Node, namespace string, name string,
 			Containers: []corev1.Container{
 				{
 					Name:            "node-exec-container",
-					Image:           containerImage,
+					Image:           hlpPodConfig.ContainerImage,
+					Command:         hlpPodConfig.ContainerCmd,
+					Args:            hlpPodConfig.ContainerArgs,
 					ImagePullPolicy: corev1.PullIfNotPresent,
-					Stdin:           useStdin,
 					SecurityContext: &corev1.SecurityContext{
 						Privileged: pointer.Bool(true),
 					},
@@ -157,22 +198,22 @@ func (h *Hvnr) preparePodOnNode(node corev1.Node, namespace string, name string,
 	}
 
 	// Create pod in given namespace based on configuration
-	logf(Verbose, "Creating temporary pod *%s* in namespace *%s*", name, namespace)
-	pod, err := h.client.CoreV1().Pods(namespace).Create(context.TODO(), pod, metav1.CreateOptions{})
+	logf(Verbose, "Creating temporary pod _%s_/*%s*", hlpPodConfig.namespace, hlpPodConfig.podName)
+	pod, err := h.client.CoreV1().Pods(hlpPodConfig.namespace).Create(h.ctx, pod, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
 	}
 
 	logf(Verbose, "Waiting for temporary pod to be started...")
-	if err := h.waitForPodReadiness(namespace, pod, timeoutSeconds); err != nil {
+	if err := h.waitForPodReadiness(pod, hlpPodConfig.WaitTimeout); err != nil {
 		return nil, err
 	}
 
 	return pod, nil
 }
 
-func (h *Hvnr) waitForPodReadiness(namespace string, pod *corev1.Pod, timeoutSeconds int) error {
-	watcher, err := h.client.CoreV1().Pods(namespace).Watch(context.TODO(), metav1.SingleObject(pod.ObjectMeta))
+func (h *Hvnr) waitForPodReadiness(pod *corev1.Pod, waitTimeout time.Duration) error {
+	watcher, err := h.client.CoreV1().Pods(pod.Namespace).Watch(h.ctx, metav1.SingleObject(pod.ObjectMeta))
 	if err != nil {
 		return err
 	}
@@ -196,7 +237,7 @@ func (h *Hvnr) waitForPodReadiness(namespace string, pod *corev1.Pod, timeoutSec
 		}
 	}(watcher)
 
-	timeout := time.After(time.Duration(timeoutSeconds) * time.Second)
+	timeout := time.After(waitTimeout)
 
 	for {
 		select {
@@ -209,10 +250,10 @@ func (h *Hvnr) waitForPodReadiness(namespace string, pod *corev1.Pod, timeoutSec
 				description = "Unable to provide further details regarding the state of the pod."
 			}
 
-			return fmt.Errorf("Giving up waiting for pod %s in namespace %s to become ready within %s: %w",
+			return fmt.Errorf("Giving up waiting for pod %s in namespace %s to become ready within %v: %w",
 				pod.Name,
 				pod.Namespace,
-				text.Plural(timeoutSeconds, "second"),
+				waitTimeout,
 				fmt.Errorf("status of pod at the moment of the timeout:\n\n%s", description),
 			)
 		}

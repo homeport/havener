@@ -32,7 +32,6 @@ package havener
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"strconv"
 	"time"
@@ -109,8 +108,8 @@ type Havener interface {
 	TopDetails() (*TopDetails, error)
 	RetrieveLogs(parallelDownloads int, target string, includeConfigFiles bool) error
 
-	PodExec(pod *corev1.Pod, container string, command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error
-	NodeExec(node corev1.Node, containerImage string, timeoutSeconds int, command []string, stdin io.Reader, stdout io.Writer, stderr io.Writer, tty bool) error
+	PodExec(pod *corev1.Pod, container string, execConfig ExecConfig) error
+	NodeExec(node corev1.Node, hlpPodConfig NodeExecHelperPodConfig, execConfig ExecConfig) error
 }
 
 // Option provides a way to set specific settings for creating the Havener setup
@@ -137,15 +136,9 @@ func NewHavener(opts ...Option) (hvnr *Hvnr, err error) {
 		hvnr.ctx = context.Background()
 	}
 
-	// In case `KUBECONFIG` environment variable is set, this will take
-	// precedence over command line flag or default value
-	if value, ok := os.LookupEnv("KUBECONFIG"); ok {
-		hvnr.kubeConfigPath = value
-	}
-
 	// In case there is no Kubernetes configuration set, use the default
 	if hvnr.kubeConfigPath == "" {
-		hvnr.kubeConfigPath, err = KubeConfigDefault()
+		hvnr.kubeConfigPath, err = KubeConfig()
 		if err != nil {
 			return nil, fmt.Errorf("failed to look-up default kube config: %w", err)
 		}

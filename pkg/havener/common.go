@@ -41,9 +41,16 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// KubeConfigDefault returns assumed default locaation of the Kubernetes
-// configuration, which is expected to be `$HOME/.kube/config`.
-func KubeConfigDefault() (string, error) {
+// KubeConfig returns the path to the Kubernetes configuration,
+// this is either whatever is set in KUBECONFIG,
+// or the well known default location `$HOME/.kube/config`
+func KubeConfig() (string, error) {
+	// In case `KUBECONFIG` environment variable is set, this will take precedence
+	if value, ok := os.LookupEnv("KUBECONFIG"); ok {
+		return value, nil
+	}
+
+	// Otherwise, default to the well known location
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("unable to get home directory: %w", err)

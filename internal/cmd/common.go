@@ -21,41 +21,14 @@
 package cmd
 
 import (
-	"io"
+	"os"
 
 	"github.com/gonvenience/wrap"
+	"github.com/mattn/go-isatty"
 )
 
-// duplicateReader creates a given number of io.Reader duplicates based on the
-// provided input reader. This way it is possible to use one input reader for
-// more than one consumer.
-func duplicateReader(reader io.Reader, count int) []io.Reader {
-	writers := []io.Writer{}
-	readers := []io.Reader{}
-	for i := 0; i < count; i++ {
-		r, w := io.Pipe()
-		writers = append(writers, w)
-		readers = append(readers, r)
-	}
-
-	writer := io.MultiWriter(writers...)
-	go func() {
-		if _, err := io.Copy(writer, reader); err != nil {
-			panic(err)
-		}
-
-		for i := range writers {
-			if w, ok := writers[i].(io.Closer); ok {
-				w.Close()
-			}
-		}
-	}()
-
-	return readers
-}
-
 func combineErrorsFromChannel(context string, c chan error) error {
-	errors := []error{}
+	var errors []error
 	for err := range c {
 		if err != nil {
 			errors = append(errors, err)
@@ -70,3 +43,7 @@ func combineErrorsFromChannel(context string, c chan error) error {
 		return wrap.Errors(errors, context)
 	}
 }
+
+func isTerminal(fd uintptr) bool { return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd) }
+
+func isStdinTerminal() bool { return isTerminal(os.Stdin.Fd()) }
