@@ -21,6 +21,7 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -35,6 +36,7 @@ import (
 
 	"github.com/gonvenience/bunt"
 	"github.com/homeport/havener/pkg/havener"
+	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
@@ -300,13 +302,33 @@ func availableNodesError(h havener.Havener, title string, fArgs ...interface{}) 
 		return fmt.Errorf("failed to find any node in cluster")
 	}
 
-	names := make([]string, len(nodes))
-	for i, node := range nodes {
-		names[i] = node.Name
+	var buf bytes.Buffer
+	t := tablewriter.NewWriter(&buf)
+	t.SetBorder(false)
+	t.SetColumnSeparator("")
+	// t.SetAutoWrapText(false)
+	t.SetAlignment(tablewriter.ALIGN_LEFT)
+
+	for _, node := range nodes {
+		var tmp []string
+		for _, condition := range node.Status.Conditions {
+			if condition.Status == corev1.ConditionTrue {
+				tmp = append(tmp, string(condition.Type))
+			}
+		}
+
+		t.Append([]string{
+			node.Name,
+			strings.Join(tmp, ", "),
+			fmt.Sprintf("%s/%s", node.Status.NodeInfo.OperatingSystem, node.Status.NodeInfo.Architecture),
+			node.Status.NodeInfo.KubeletVersion,
+		})
 	}
+
+	t.Render()
 
 	return fmt.Errorf("%s: %w",
 		fmt.Sprintf(title, fArgs...),
-		bunt.Errorf("*list of available nodes:*\n%s\n\nor, use _all_ to target all nodes", strings.Join(names, "\n")),
+		bunt.Errorf("List of available nodes:\n%s\nAlternatively, use _all_ to target all nodes.", buf.String()),
 	)
 }

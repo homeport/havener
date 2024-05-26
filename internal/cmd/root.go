@@ -38,6 +38,20 @@ import (
 	"github.com/gonvenience/wrap"
 )
 
+type wrappedError interface {
+	Error() string
+	Unwrap() error
+}
+
+func title(w wrappedError) string {
+	var parts = strings.SplitN(w.Error(), ":", 2)
+	return parts[0]
+}
+
+func cause(w wrappedError) string {
+	return w.Unwrap().Error()
+}
+
 var kubeConfig string
 
 // rootCmd represents the base command when called without any subcommands
@@ -72,25 +86,27 @@ func Execute() {
 	}()
 
 	if err := rootCmd.Execute(); err != nil {
-		var (
-			headline string
-			content  string
-		)
+		var headline, content string
 
 		switch err := err.(type) {
 		case wrap.ContextError:
 			headline = bunt.Sprintf("*Error:* _%s_", err.Context())
 			content = err.Cause().Error()
 
+		case wrappedError:
+			headline = title(err)
+			content = cause(err)
+
 		default:
 			headline = "Error occurred"
-			content = fmt.Sprint(err)
+			content = err.Error()
 		}
 
 		neat.Box(os.Stderr,
 			headline, strings.NewReader(content),
 			neat.HeadlineColor(bunt.Coral),
 			neat.ContentColor(bunt.DimGray),
+			neat.NoLineWrap(),
 		)
 
 		os.Exit(1)
