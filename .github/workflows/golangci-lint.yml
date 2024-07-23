@@ -28,3 +28,4 @@ jobs:
       uses: golangci/golangci-lint-action@v6
       with:
         only-new-issues: true
+        args: --timeout=5m --verbose
