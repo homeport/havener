@@ -110,7 +110,7 @@ docker run \
   --rm \
   --volume $GOPATH/src/github.com/homeport/havener:/go/src/github.com/homeport/havener \
   --workdir /go/src/github.com/homeport/havener \
-  golang:1.20 /bin/bash
+  golang:latest /bin/bash
 ```
 
 ### Package dependencies (Go modules)
