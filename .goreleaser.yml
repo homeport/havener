@@ -1,19 +1,21 @@
 ---
+version: 2
+
 builds:
-  - env:
-    - CGO_ENABLED=0
-    goos:
-    - linux
-    - darwin
-    goarch:
-    - arm64
-    - amd64
-    main: ./cmd/havener/main.go
-    flags:
-    - -trimpath
-    ldflags:
-    - -s -w -extldflags "-static" -X github.com/homeport/havener/internal/cmd.version={{.Version}}
-    mod_timestamp: '{{ .CommitTimestamp }}'
+- env:
+  - CGO_ENABLED=0
+  goos:
+  - linux
+  - darwin
+  goarch:
+  - amd64
+  - arm64
+  main: ./cmd/havener/main.go
+  flags:
+  - -trimpath
+  ldflags:
+  - -s -w -extldflags "-static" -X github.com/homeport/havener/internal/cmd.version={{.Version}}
+  mod_timestamp: '{{ .CommitTimestamp }}'
 
 checksum:
   name_template: 'checksums.txt'
@@ -25,27 +27,27 @@ release:
   name_template: "{{.ProjectName}} release v{{.Version}}"
 
 changelog:
-  disable: true
-  sort: ""
+  disable: false
+  use: github
   filters:
     exclude:
-    - '^docs:'
-    - '^test:'
+    - "Merge pull request"
+    - "dependabot"
 
 brews:
-  - repository:
-      owner: homeport
-      name: homebrew-tap
-      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    url_template: "https://github.com/homeport/havener/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
-    download_strategy: CurlDownloadStrategy
-    commit_author:
-      name: GoReleaser Bot
-      email: goreleaser@carlosbecker.com
-    directory: HomebrewFormula
-    homepage: "https://github.com/homeport/havener"
-    description: "/ˈheɪvənə/ - Think of it as a swiss army knife for Kubernetes tasks "
-    license: "MIT"
-    skip_upload: false
-    test: |
-      system "#{bin}/havener version"
+- repository:
+    owner: homeport
+    name: homebrew-tap
+    token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+  url_template: "https://github.com/homeport/havener/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+  download_strategy: CurlDownloadStrategy
+  commit_author:
+    name: GoReleaser Bot
+    email: goreleaser@carlosbecker.com
+  directory: HomebrewFormula
+  homepage: "https://github.com/homeport/havener"
+  description: "/ˈheɪvənə/ - Think of it as a swiss army knife for Kubernetes tasks "
+  license: "MIT"
+  skip_upload: false
+  test: |
+    system "#{bin}/havener version"
