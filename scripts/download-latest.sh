@@ -22,8 +22,8 @@
 
 set -euo pipefail
 
-ORG=homeport
-REPO=havener
+ORG="${ORG:-homeport}"
+REPO="${REPO:-havener}"
 
 if ! hash curl 2>/dev/null; then
   echo "Required tool curl is not installed."
