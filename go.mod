@@ -16,7 +16,7 @@ require (
 	github.com/onsi/gomega v1.34.1
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
-	golang.org/x/sync v0.7.0
+	golang.org/x/sync v0.8.0
 	golang.org/x/sys v0.23.0
 	golang.org/x/term v0.22.0
 	gopkg.in/yaml.v3 v3.0.1
