@@ -54,8 +54,8 @@ github.com/golang/protobuf/ptypes/timestamp
 # github.com/gonvenience/bunt v1.3.5
 ## explicit; go 1.19
 github.com/gonvenience/bunt
-# github.com/gonvenience/neat v1.3.13
-## explicit; go 1.20
+# github.com/gonvenience/neat v1.3.14
+## explicit; go 1.22
 github.com/gonvenience/neat
 # github.com/gonvenience/term v1.0.2
 ## explicit; go 1.17
