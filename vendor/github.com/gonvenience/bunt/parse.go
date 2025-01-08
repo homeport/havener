@@ -31,6 +31,11 @@ import (
 	"strings"
 )
 
+const (
+	bel = '\a' // bel (Bell)
+	st  = '\\' // st (String Terminator)
+)
+
 var (
 	escapeSeqRegExp = regexp.MustCompile(`\x1b\[(\d+(;\d+)*)m`)
 	boldMarker      = regexp.MustCompile(`\*([^*]+?)\*`)
@@ -93,15 +98,17 @@ func ParseStream(in io.Reader, opts ...ParseOption) (*String, error) {
 		panic("failed to parse ANSI sequence")
 	}
 
-	var skipUntil = func(end rune) {
+	var skipUntil = func(ends ...rune) {
 		for {
 			r, _, err := input.ReadRune()
 			if err == io.EOF {
 				panic("reached end of file before reaching end identifier")
 			}
 
-			if r == end {
-				return
+			for _, end := range ends {
+				if r == end {
+					return
+				}
 			}
 		}
 	}
@@ -169,7 +176,7 @@ func ParseStream(in io.Reader, opts ...ParseOption) (*String, error) {
 			}
 
 		case ']':
-			skipUntil('\a')
+			skipUntil(bel, st)
 		}
 	}
 

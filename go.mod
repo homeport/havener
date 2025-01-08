@@ -3,7 +3,7 @@ module github.com/homeport/havener
 go 1.20
 
 require (
-	github.com/gonvenience/bunt v1.3.5
+	github.com/gonvenience/bunt v1.4.0
 	github.com/gonvenience/neat v1.3.14
 	github.com/gonvenience/term v1.0.2
 	github.com/gonvenience/text v1.0.8
@@ -35,7 +35,7 @@ require (
 	github.com/emicklei/go-restful/v3 v3.12.1 // indirect
 	github.com/evanphx/json-patch v5.9.0+incompatible // indirect
 	github.com/fatih/camelcase v1.0.0 // indirect
-	github.com/fsnotify/fsnotify v1.7.0 // indirect
+	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/go-errors/errors v1.5.1 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
