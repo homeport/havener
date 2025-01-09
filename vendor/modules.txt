@@ -54,8 +54,8 @@ github.com/gonvenience/bunt
 # github.com/gonvenience/neat v1.3.14
 ## explicit; go 1.22.0
 github.com/gonvenience/neat
-# github.com/gonvenience/term v1.0.2
-## explicit; go 1.17
+# github.com/gonvenience/term v1.0.3
+## explicit; go 1.22.0
 github.com/gonvenience/term
 # github.com/gonvenience/text v1.0.8
 ## explicit; go 1.22.0
