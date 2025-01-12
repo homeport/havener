@@ -23,6 +23,7 @@ package havener
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -32,7 +33,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/gonvenience/wrap"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
@@ -261,13 +261,13 @@ func (h *Hvnr) TopDetails() (*TopDetails, error) {
 	wg.Wait()
 	close(errChan)
 
-	errors := []error{}
+	var errs []error
 	for err := range errChan {
-		errors = append(errors, err)
+		errs = append(errs, err)
 	}
 
-	if len(errors) > 0 {
-		return nil, wrap.Errors(errors, "failed to retrieve usage details from cluster")
+	if len(errs) > 0 {
+		return nil, fmt.Errorf("failed to retrieve usage details from cluster: %w", errors.Join(errs...))
 	}
 
 	return &result, nil

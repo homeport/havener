@@ -24,6 +24,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -33,7 +34,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/gonvenience/wrap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/printers"
@@ -104,7 +104,7 @@ func (h *Hvnr) RetrieveLogs(parallelDownloads int, target string, includeConfigF
 	}
 
 	tasks := make(chan *task)
-	errors := []error{}
+	errs := []error{}
 
 	var wg sync.WaitGroup
 	wg.Add(parallelDownloads)
@@ -121,7 +121,7 @@ func (h *Hvnr) RetrieveLogs(parallelDownloads int, target string, includeConfigF
 						}
 
 						if err != nil {
-							errors = append(errors, err)
+							errs = append(errs, err)
 						}
 					}
 
@@ -133,24 +133,24 @@ func (h *Hvnr) RetrieveLogs(parallelDownloads int, target string, includeConfigF
 						}
 
 						if err != nil {
-							errors = append(errors, err)
+							errs = append(errs, err)
 						}
 					}
 
 				case "container-logs":
-					errors = append(
-						errors,
+					errs = append(
+						errs,
 						h.retrieveContainerLogs(task.pod, task.baseDir)...,
 					)
 
 				case "describe-pods":
 					if err := h.writeDescribePodToDisk(task.pod, task.baseDir); err != nil {
-						errors = append(errors, err)
+						errs = append(errs, err)
 					}
 
 				case "store-yaml":
 					if err := h.saveDeploymentYAML(task.pod, task.baseDir); err != nil {
-						errors = append(errors, err)
+						errs = append(errs, err)
 					}
 				}
 			}
@@ -225,8 +225,8 @@ func (h *Hvnr) RetrieveLogs(parallelDownloads int, target string, includeConfigF
 	close(tasks)
 	wg.Wait()
 
-	if len(errors) > 0 {
-		return wrap.Errors(errors, "failed to retrieve logs from cluster")
+	if len(errs) > 0 {
+		return fmt.Errorf("failed to retrieve logs from cluster: %w", errors.Join(errs...))
 	}
 
 	return nil

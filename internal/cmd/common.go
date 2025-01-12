@@ -21,26 +21,27 @@
 package cmd
 
 import (
+	"errors"
+	"fmt"
 	"os"
 
-	"github.com/gonvenience/wrap"
 	"github.com/mattn/go-isatty"
 )
 
 func combineErrorsFromChannel(context string, c chan error) error {
-	var errors []error
+	var errs []error
 	for err := range c {
 		if err != nil {
-			errors = append(errors, err)
+			errs = append(errs, err)
 		}
 	}
 
-	switch len(errors) {
+	switch len(errs) {
 	case 0:
 		return nil
 
 	default:
-		return wrap.Errors(errors, context)
+		return fmt.Errorf("%s: %w", context, errors.Join(errs...))
 	}
 }
 

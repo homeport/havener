@@ -35,7 +35,6 @@ import (
 	"github.com/gonvenience/bunt"
 	"github.com/gonvenience/neat"
 	"github.com/gonvenience/term"
-	"github.com/gonvenience/wrap"
 )
 
 type wrappedError interface {
@@ -89,10 +88,6 @@ func Execute() {
 		var headline, content string
 
 		switch err := err.(type) {
-		case wrap.ContextError:
-			headline = bunt.Sprintf("*Error:* _%s_", err.Context())
-			content = err.Cause().Error()
-
 		case wrappedError:
 			headline = title(err)
 			content = cause(err)
