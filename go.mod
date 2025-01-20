@@ -4,7 +4,7 @@ go 1.22.10
 
 require (
 	github.com/gonvenience/bunt v1.4.0
-	github.com/gonvenience/neat v1.3.14
+	github.com/gonvenience/neat v1.3.15
 	github.com/gonvenience/term v1.0.3
 	github.com/gonvenience/text v1.0.8
 	github.com/gonvenience/wait v1.0.4
@@ -43,7 +43,6 @@ require (
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
-	github.com/gonvenience/wrap v1.2.1 // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/gnostic-models v0.6.9 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
