@@ -246,7 +246,7 @@ func (h *Hvnr) TopDetails() (*TopDetails, error) {
 			if err != nil {
 				errChan <- fmt.Errorf("%s: %w",
 					err.Error(),
-					fmt.Errorf(stderr.String()),
+					errors.New(stderr.String()),
 				)
 			}
 

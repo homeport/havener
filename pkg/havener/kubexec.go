@@ -32,7 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/remotecommand"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/gonvenience/text"
 	"github.com/mattn/go-isatty"
@@ -171,7 +171,7 @@ func (h *Hvnr) preparePodOnNode(node corev1.Node, hlpPodConfig NodeExecHelperPod
 			HostPID:                       true,
 			HostNetwork:                   true,
 			RestartPolicy:                 corev1.RestartPolicyNever,
-			TerminationGracePeriodSeconds: pointer.Int64(0),
+			TerminationGracePeriodSeconds: ptr.To(int64(0)),
 			Containers: []corev1.Container{
 				{
 					Name:            "node-exec-container",
@@ -180,7 +180,7 @@ func (h *Hvnr) preparePodOnNode(node corev1.Node, hlpPodConfig NodeExecHelperPod
 					Args:            hlpPodConfig.ContainerArgs,
 					ImagePullPolicy: corev1.PullIfNotPresent,
 					SecurityContext: &corev1.SecurityContext{
-						Privileged: pointer.Bool(true),
+						Privileged: ptr.To(true),
 					},
 				},
 			},
