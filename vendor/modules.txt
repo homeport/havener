@@ -65,8 +65,8 @@ github.com/gonvenience/neat
 # github.com/gonvenience/term v1.0.3
 ## explicit; go 1.22.0
 github.com/gonvenience/term
-# github.com/gonvenience/text v1.0.8
-## explicit; go 1.22.0
+# github.com/gonvenience/text v1.0.9
+## explicit; go 1.23.0
 github.com/gonvenience/text
 # github.com/gonvenience/wait v1.0.4
 ## explicit; go 1.22.0
