@@ -2,6 +2,8 @@ module github.com/homeport/havener
 
 go 1.23.0
 
+toolchain go1.24.1
+
 require (
 	github.com/gonvenience/bunt v1.4.1
 	github.com/gonvenience/neat v1.3.16
@@ -83,7 +85,7 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/net v0.37.0 // indirect
+	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/oauth2 v0.28.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
