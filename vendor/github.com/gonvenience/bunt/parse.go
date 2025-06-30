@@ -140,9 +140,29 @@ func ParseStream(in io.Reader, opts ...ParseOption) (*String, error) {
 			var seq = readSGR()
 			switch seq.suffix {
 			case 'm': // colors
-				settings, err = parseSelectGraphicRenditionEscapeSequence(seq.values)
+				parsed, err := parseSelectGraphicRenditionEscapeSequence(seq.values)
 				if err != nil {
 					panic(err)
+				}
+
+				// to avoid overlapping, clear the foreground color from current
+				// settings if the new SGR sequence also defines foreground color
+				if fgMask&parsed != 0 {
+					settings &= fgClearMask
+				}
+
+				// to avoid overlapping, clear the background color from current
+				// settings if the new SGR sequence also defines background color
+				if bgMask&parsed != 0 {
+					settings &= bgClearMask
+				}
+
+				switch parsed {
+				case 0: // reset, clear current settings
+					settings = 0
+
+				default: // anything else, add it to current settings
+					settings |= parsed
 				}
 
 			case 'D': // move cursor left n lines
