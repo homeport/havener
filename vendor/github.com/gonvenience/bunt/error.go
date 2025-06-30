@@ -20,7 +20,9 @@
 
 package bunt
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // Errorf wraps fmt.Errorf(err error, format string, a ...interface{}) and evaluates any text markers into its respective format
 func Errorf(format string, a ...interface{}) error {

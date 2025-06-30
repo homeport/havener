@@ -59,7 +59,7 @@ github.com/gogo/protobuf/sortkeys
 # github.com/golang/protobuf v1.5.4
 ## explicit; go 1.17
 github.com/golang/protobuf/proto
-# github.com/gonvenience/bunt v1.4.1
+# github.com/gonvenience/bunt v1.4.2
 ## explicit; go 1.23.0
 github.com/gonvenience/bunt
 # github.com/gonvenience/neat v1.3.16
