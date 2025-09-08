@@ -10,7 +10,7 @@ require (
 	github.com/gonvenience/term v1.0.4
 	github.com/gonvenience/text v1.0.9
 	github.com/gonvenience/wait v1.0.5
-	github.com/lucasb-eyer/go-colorful v1.2.0
+	github.com/lucasb-eyer/go-colorful v1.3.0
 	github.com/mattn/go-isatty v0.0.20
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/onsi/ginkgo/v2 v2.25.3
