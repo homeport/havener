@@ -62,19 +62,18 @@ func (p *lexersPool) Borrow(data []byte) *jlexer {
 	ptr := p.Get()
 
 	l := ptr.(*jlexer)
-	l.Reset()
-
 	l.buf = poolOfReaders.Borrow(data)
 	l.dec = json.NewDecoder(l.buf) // cannot pool, not exposed by the encoding/json API
+	l.Reset()
 
 	return l
 }
 
 func (p *lexersPool) Redeem(l *jlexer) {
 	l.dec = nil
-	if l.buf != nil {
-		poolOfReaders.Redeem(l.buf)
-	}
+	discard := l.buf
+	l.buf = nil
+	poolOfReaders.Redeem(discard)
 	p.Put(l)
 }
 
