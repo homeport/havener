@@ -143,23 +143,18 @@ func newLexer(data []byte) *jlexer {
 		// current: undefToken,
 		next: undefToken,
 	}
-	if data != nil {
-		l.buf = &bytesReader{
-			buf: data,
-		}
-		l.dec = stdjson.NewDecoder(l.buf) // unfortunately, cannot pool this
+	l.buf = &bytesReader{
+		buf: data,
 	}
+	l.dec = stdjson.NewDecoder(l.buf) // unfortunately, cannot pool this
 
 	return l
 }
 
 func (l *jlexer) Reset() {
-	l.dec = nil
 	l.err = nil
 	l.next = undefToken
-	if l.buf != nil {
-		l.buf.Reset()
-	}
+	// leave l.dec and l.buf alone, since they are replaced at every Borrow
 }
 
 func (l *jlexer) Error() error {
