@@ -29,8 +29,8 @@ github.com/go-errors/errors v1.5.1 h1:ZwEMSLRCapFLflTpT7NKaAc7ukJ8ZPEjzlxt8rPN8b
 github.com/go-errors/errors v1.5.1/go.mod h1:sIVyrIiJhuEF+Pj9Ebtd6P/rEYROXFi3BopGUQ5a5Og=
 github.com/go-logr/logr v1.4.3 h1:CjnDlHq8ikf6E492q6eKboGOC0T8CDaOvkHCIg8idEI=
 github.com/go-logr/logr v1.4.3/go.mod h1:9T104GzyrTigFIr8wt5mBrctHMim0Nb2HLGrmQ40KvY=
-github.com/go-openapi/jsonpointer v0.22.0 h1:TmMhghgNef9YXxTu1tOopo+0BGEytxA+okbry0HjZsM=
-github.com/go-openapi/jsonpointer v0.22.0/go.mod h1:xt3jV88UtExdIkkL7NloURjRQjbeUgcxFblMjq2iaiU=
+github.com/go-openapi/jsonpointer v0.22.1 h1:sHYI1He3b9NqJ4wXLoJDKmUmHkWy/L7rtEo92JUxBNk=
+github.com/go-openapi/jsonpointer v0.22.1/go.mod h1:pQT9OsLkfz1yWoMgYFy4x3U5GY5nUlsOn1qSBH5MkCM=
 github.com/go-openapi/jsonreference v0.21.1 h1:bSKrcl8819zKiOgxkbVNRUBIr6Wwj9KYrDbMjRs0cDA=
 github.com/go-openapi/jsonreference v0.21.1/go.mod h1:PWs8rO4xxTUqKGu+lEvvCxD5k2X7QYkKAepJyCmSTT8=
 github.com/go-openapi/swag v0.25.1 h1:6uwVsx+/OuvFVPqfQmOOPsqTcm5/GkBhNwLqIR916n8=
