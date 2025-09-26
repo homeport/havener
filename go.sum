@@ -39,8 +39,8 @@ github.com/go-openapi/swag/cmdutils v0.24.0 h1:KlRCffHwXFI6E5MV9n8o8zBRElpY4uK4y
 github.com/go-openapi/swag/cmdutils v0.24.0/go.mod h1:uxib2FAeQMByyHomTlsP8h1TtPd54Msu2ZDU/H5Vuf8=
 github.com/go-openapi/swag/conv v0.25.0 h1:5K+e44HkOgCVE0IJTbivurzHahT62DPr2DEJqR/+4pA=
 github.com/go-openapi/swag/conv v0.25.0/go.mod h1:oa1ZZnb1jubNdZlD1iAhGXt6Ic4hHtuO23MwTgAXR88=
-github.com/go-openapi/swag/fileutils v0.25.0 h1:t7aQRuRfsP29dY4vfrNvDZv7RurwRHuyjUedtYVDmYY=
-github.com/go-openapi/swag/fileutils v0.25.0/go.mod h1:+NXtt5xNZZqmpIpjqcujqojGFek9/w55b3ecmOdtg8M=
+github.com/go-openapi/swag/fileutils v0.25.1 h1:rSRXapjQequt7kqalKXdcpIegIShhTPXx7yw0kek2uU=
+github.com/go-openapi/swag/fileutils v0.25.1/go.mod h1:+NXtt5xNZZqmpIpjqcujqojGFek9/w55b3ecmOdtg8M=
 github.com/go-openapi/swag/jsonname v0.25.0 h1:+fuNs9gdkb2w10hgsgOBx9jtx0pvtUaDRYxD91BEpEQ=
 github.com/go-openapi/swag/jsonname v0.25.0/go.mod h1:71Tekow6UOLBD3wS7XhdT98g5J5GR13NOTQ9/6Q11Zo=
 github.com/go-openapi/swag/jsonutils v0.25.0 h1:ELKpJT29T4N/AvmDqMeDFLx2QRZQOYFthzctbIX30+A=
