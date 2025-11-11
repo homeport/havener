@@ -19,7 +19,7 @@ require (
 	github.com/spf13/viper v1.21.0
 	golang.org/x/sync v0.18.0
 	golang.org/x/sys v0.38.0
-	golang.org/x/term v0.36.0
+	golang.org/x/term v0.37.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.30.10
 	k8s.io/apimachinery v0.30.10
