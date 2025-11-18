@@ -76,7 +76,7 @@ github.com/go-openapi/swag/loading
 # github.com/go-openapi/swag/mangling v0.25.1
 ## explicit; go 1.24.0
 github.com/go-openapi/swag/mangling
-# github.com/go-openapi/swag/netutils v0.25.1
+# github.com/go-openapi/swag/netutils v0.25.3
 ## explicit; go 1.24.0
 github.com/go-openapi/swag/netutils
 # github.com/go-openapi/swag/stringutils v0.25.1
