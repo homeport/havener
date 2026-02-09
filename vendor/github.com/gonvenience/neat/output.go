@@ -26,8 +26,8 @@ import (
 	"fmt"
 	"strings"
 
-	yamlv2 "gopkg.in/yaml.v2"
-	yamlv3 "gopkg.in/yaml.v3"
+	yamlv2 "go.yaml.in/yaml/v2"
+	yamlv3 "go.yaml.in/yaml/v3"
 
 	"github.com/lucasb-eyer/go-colorful"
 
