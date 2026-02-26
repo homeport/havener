@@ -1,6 +1,6 @@
 module github.com/homeport/havener
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/gonvenience/bunt v1.4.3
@@ -91,7 +91,7 @@ require (
 	github.com/xlab/treeprint v1.2.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	golang.org/x/mod v0.33.0 // indirect
-	golang.org/x/net v0.50.0 // indirect
+	golang.org/x/net v0.51.0 // indirect
 	golang.org/x/oauth2 v0.35.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
