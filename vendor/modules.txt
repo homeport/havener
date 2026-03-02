@@ -51,7 +51,7 @@ github.com/go-openapi/swag
 # github.com/go-openapi/swag/cmdutils v0.25.5
 ## explicit; go 1.24.0
 github.com/go-openapi/swag/cmdutils
-# github.com/go-openapi/swag/conv v0.25.4
+# github.com/go-openapi/swag/conv v0.25.5
 ## explicit; go 1.24.0
 github.com/go-openapi/swag/conv
 # github.com/go-openapi/swag/fileutils v0.25.4
@@ -60,7 +60,7 @@ github.com/go-openapi/swag/fileutils
 # github.com/go-openapi/swag/jsonname v0.25.5
 ## explicit; go 1.24.0
 github.com/go-openapi/swag/jsonname
-# github.com/go-openapi/swag/jsonutils v0.25.4
+# github.com/go-openapi/swag/jsonutils v0.25.5
 ## explicit; go 1.24.0
 github.com/go-openapi/swag/jsonutils
 github.com/go-openapi/swag/jsonutils/adapters
@@ -81,7 +81,7 @@ github.com/go-openapi/swag/stringutils
 # github.com/go-openapi/swag/typeutils v0.25.5
 ## explicit; go 1.24.0
 github.com/go-openapi/swag/typeutils
-# github.com/go-openapi/swag/yamlutils v0.25.4
+# github.com/go-openapi/swag/yamlutils v0.25.5
 ## explicit; go 1.24.0
 github.com/go-openapi/swag/yamlutils
 # github.com/go-task/slim-sprig/v3 v3.0.0
