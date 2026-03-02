@@ -23,6 +23,7 @@ package neat
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"strings"
 	"time"
 
@@ -33,7 +34,7 @@ import (
 )
 
 var (
-	yamlReservedKeywords = []string{"true", "false", "null"}
+	numberRegEx = regexp.MustCompile(`^(-|\+)?[0-9.e+]+$`)
 
 	// YAML Spec regarding timestamp: https://yaml.org/type/timestamp.html
 	yamlTimeLayouts = [...]string{
@@ -371,7 +372,7 @@ func needsQuotes(node *yamlv3.Node) bool {
 	}
 
 	// check if string matches one of the known reserved keywords
-	for _, chk := range yamlReservedKeywords {
+	for _, chk := range []string{"true", "false", "null", ".nan", ".inf", "-.inf", "+.inf"} {
 		if node.Value == chk {
 			return true
 		}
@@ -379,6 +380,11 @@ func needsQuotes(node *yamlv3.Node) bool {
 
 	// check if strings starts with a dash
 	if strings.HasPrefix(node.Value, "-") {
+		return true
+	}
+
+	// check if string looks like a number
+	if numberRegEx.MatchString(node.Value) {
 		return true
 	}
 
