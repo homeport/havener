@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/gonvenience/bunt v1.4.3
-	github.com/gonvenience/neat v1.3.18
+	github.com/gonvenience/neat v1.3.20
 	github.com/gonvenience/term v1.0.5
 	github.com/gonvenience/text v1.0.10
 	github.com/gonvenience/wait v1.0.6
