@@ -96,5 +96,34 @@ var _ = Describe("usage details string rendering", func() {
 ╵
 `))
 		})
+
+		It("should fill progress bar completely when percentage rounds to 100.0%", func() {
+			Expect(term.GetTerminalWidth()).To(BeEquivalentTo(120))
+
+			// Test case: 3199/3200 = 99.96875% rounds to "100.0%" in display
+			// Without rounding, this would show 31/32 blocks (bug)
+			// With rounding, this shows 32/32 blocks (fixed)
+			output := RenderNodeDetails(&TopDetails{
+				Nodes: map[string]NodeDetails{
+					"test-node": {
+						TotalCPU:    3200,
+						TotalMemory: 3200000,
+						UsedCPU:     3199, // 99.96875% - rounds to 100.0% in %.1f format
+						UsedMemory:  3199000, // Same ratio for memory
+						LoadAvg:     []float64{3.2, 3.2, 3.2},
+					},
+				},
+			})
+
+			// When the percentage displays as "100.0%", the bar should look complete
+			// The fix ensures we use math.Round instead of truncation
+			Expect(output).To(ContainSubstring("100.0%"))
+
+			// Verify the bars are completely filled (32 blocks for the calculated width)
+			// With the old code (truncation): 99.96875% * 32 = 31.99 → 31 blocks (bug!)
+			// With the fix (rounding): 99.96875% * 32 = 31.99 → 32 blocks (correct!)
+			Expect(output).To(MatchRegexp(`CPU ■{32}\s+100\.0%`))
+			Expect(output).To(MatchRegexp(`Memory ■{20}\s+3\.1 MiB/3\.1 MiB`))
+		})
 	})
 })
