@@ -54,7 +54,7 @@ github.com/go-openapi/swag/cmdutils
 # github.com/go-openapi/swag/conv v0.26.1
 ## explicit; go 1.25.0
 github.com/go-openapi/swag/conv
-# github.com/go-openapi/swag/fileutils v0.26.0
+# github.com/go-openapi/swag/fileutils v0.26.1
 ## explicit; go 1.25.0
 github.com/go-openapi/swag/fileutils
 # github.com/go-openapi/swag/jsonname v0.26.1
