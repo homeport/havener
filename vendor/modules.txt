@@ -38,9 +38,10 @@ github.com/go-errors/errors
 ## explicit; go 1.18
 github.com/go-logr/logr
 github.com/go-logr/logr/funcr
-# github.com/go-openapi/jsonpointer v0.23.1
+# github.com/go-openapi/jsonpointer v0.24.0
 ## explicit; go 1.25.0
 github.com/go-openapi/jsonpointer
+github.com/go-openapi/jsonpointer/jsonname
 # github.com/go-openapi/jsonreference v0.21.6
 ## explicit; go 1.25.0
 github.com/go-openapi/jsonreference
@@ -57,7 +58,7 @@ github.com/go-openapi/swag/conv
 # github.com/go-openapi/swag/fileutils v0.26.1
 ## explicit; go 1.25.0
 github.com/go-openapi/swag/fileutils
-# github.com/go-openapi/swag/jsonname v0.26.1
+# github.com/go-openapi/swag/jsonname v0.27.0
 ## explicit; go 1.25.0
 github.com/go-openapi/swag/jsonname
 # github.com/go-openapi/swag/jsonutils v0.26.1
