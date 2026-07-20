@@ -61,8 +61,8 @@ github.com/go-openapi/swag/netutils v0.27.0 h1:lEUG+hHvPvLggB3A8snFk0IRKNf9uC0YK
 github.com/go-openapi/swag/netutils v0.27.0/go.mod h1:J+WYyFMLtvtCGqa6jLv+YNUmIKI3ZRQRrvfNDMoQoEQ=
 github.com/go-openapi/swag/stringutils v0.27.0 h1:Of7w/HljWsNZvuxsUAnw3n+hCOyI6HLJOxW2kQRAxio=
 github.com/go-openapi/swag/stringutils v0.27.0/go.mod h1:lzRN95CxXmA03XcDWHLOb6nOMcxCqR5rGY0lOgsfRoM=
-github.com/go-openapi/swag/typeutils v0.27.0 h1:aCf4MSGo8NLwZP8Q6t32DWLJSvl/WwNqgmEG+xJ6v2o=
-github.com/go-openapi/swag/typeutils v0.27.0/go.mod h1:Srm0xFNRZ1Y+vCxJclo5qzx8aj+1pAKda/YfFPrG0dQ=
+github.com/go-openapi/swag/typeutils v0.27.3 h1:l6SSrx5eR5/WVwrGNzN6bQ9WqL04mrxNBl9YgQ3rcJ4=
+github.com/go-openapi/swag/typeutils v0.27.3/go.mod h1:Srm0xFNRZ1Y+vCxJclo5qzx8aj+1pAKda/YfFPrG0dQ=
 github.com/go-openapi/swag/yamlutils v0.27.0 h1:bQ6eAMil5X9tdcf7dMn4t15alzG6jddnrKPuKa/zxKM=
 github.com/go-openapi/swag/yamlutils v0.27.0/go.mod h1:yRfIo7qqVkmJRQjX8exjA3AfcI8rH1KDNPsTparoCv4=
 github.com/go-openapi/testify/enable/yaml/v2 v2.6.0 h1:gGHwAJ0R/5jU8BEGDbfRNR3hL68dAVi84WuOApp29B0=
