@@ -52,7 +52,7 @@ github.com/go-openapi/swag
 # github.com/go-openapi/swag/cmdutils v0.27.0
 ## explicit; go 1.25.0
 github.com/go-openapi/swag/cmdutils
-# github.com/go-openapi/swag/conv v0.27.0
+# github.com/go-openapi/swag/conv v0.27.3
 ## explicit; go 1.25.0
 github.com/go-openapi/swag/conv
 # github.com/go-openapi/swag/fileutils v0.27.0
@@ -76,7 +76,7 @@ github.com/go-openapi/swag/netutils
 # github.com/go-openapi/swag/stringutils v0.27.0
 ## explicit; go 1.25.0
 github.com/go-openapi/swag/stringutils
-# github.com/go-openapi/swag/typeutils v0.27.0
+# github.com/go-openapi/swag/typeutils v0.27.3
 ## explicit; go 1.25.0
 github.com/go-openapi/swag/typeutils
 # github.com/go-openapi/swag/yamlutils v0.27.0
