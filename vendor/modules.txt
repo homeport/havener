@@ -46,7 +46,7 @@ github.com/go-openapi/jsonpointer/jsonname
 ## explicit; go 1.25.0
 github.com/go-openapi/jsonreference
 github.com/go-openapi/jsonreference/internal
-# github.com/go-openapi/swag v0.27.0
+# github.com/go-openapi/swag v0.27.3
 ## explicit; go 1.25.0
 github.com/go-openapi/swag
 # github.com/go-openapi/swag/cmdutils v0.27.3
@@ -67,7 +67,7 @@ github.com/go-openapi/swag/jsonutils/adapters/stdlib/json
 # github.com/go-openapi/swag/loading v0.27.3
 ## explicit; go 1.25.0
 github.com/go-openapi/swag/loading
-# github.com/go-openapi/swag/mangling v0.27.0
+# github.com/go-openapi/swag/mangling v0.27.3
 ## explicit; go 1.25.0
 github.com/go-openapi/swag/mangling
 # github.com/go-openapi/swag/netutils v0.27.3
