@@ -41,8 +41,8 @@ github.com/go-openapi/jsonpointer v1.0.0 h1:kR9tHqY0CtZaOPVFm622dPVNhrvYpwr4uCxg
 github.com/go-openapi/jsonpointer v1.0.0/go.mod h1:Z3rw7dWu1p9IgitXCFamSlA5lmDiklEB6vkaxcNZW5Y=
 github.com/go-openapi/jsonreference v1.0.0 h1:jlmTr6torcd1YgDQvSfNmRtKzYDO4FGBkrAdlAVWnpY=
 github.com/go-openapi/jsonreference v1.0.0/go.mod h1:jtwdyGbJk0Xhe5Y+rwtglQP6Sb1WZST4rT32LWB+sv0=
-github.com/go-openapi/swag v0.27.0 h1:8ecSuZlh4NXc3GsmAOqECIYqDTApCWaMe3gO4gjJNEE=
-github.com/go-openapi/swag v0.27.0/go.mod h1:Kkgz9Ht0+ul9/aVdFmc9xSyPzUwf/aFF5KiFPBXfSY0=
+github.com/go-openapi/swag v0.27.3 h1:i6oVKkGZeFgETHMiBHGtj9gIQ1aLtWDdJnT/SRZeets=
+github.com/go-openapi/swag v0.27.3/go.mod h1:qEXs3GcyyQTDCFQ4ykqnLPDh8qT+zBcjbVWdxCAW0Us=
 github.com/go-openapi/swag/cmdutils v0.27.3 h1:sjuL0TvW81i9R9GRMO/fy+c3mOW+7zxRYwy/7fobZt4=
 github.com/go-openapi/swag/cmdutils v0.27.3/go.mod h1:Sm1MVFMkF6guJJ+pQqHnQA3N0j9qALV3NxzDSv6bETM=
 github.com/go-openapi/swag/conv v0.27.3 h1:iqJFmGEjmX3AY0lSszABFqRVqOSt99XS0LzNIMJYuhU=
@@ -55,8 +55,8 @@ github.com/go-openapi/swag/jsonutils/fixtures_test v0.27.3 h1:h/eT9kmGCDdFLJF29l
 github.com/go-openapi/swag/jsonutils/fixtures_test v0.27.3/go.mod h1:mofwUWx70wvskwESqRJ//k/9kURmCgyJl5m5Ppoh5kY=
 github.com/go-openapi/swag/loading v0.27.3 h1:L9nQkEgzU7QgFQL+pLEMfGUKxeM4pWwGwbET9Z3weW0=
 github.com/go-openapi/swag/loading v0.27.3/go.mod h1:rJ0NeaKsF4CVPnMGjPQl7JlSHzvD0bc2DKXLss1hiuE=
-github.com/go-openapi/swag/mangling v0.27.0 h1:rpPJuqQHa6z2pDiP3iIpXOyNXlSs9cQCxnJSAxzdfOc=
-github.com/go-openapi/swag/mangling v0.27.0/go.mod h1:jtBE2+V+3pILxOR7Vgce+Cwp6A2PgZbvVqfNntbVs0w=
+github.com/go-openapi/swag/mangling v0.27.3 h1:gRzzD1PAUoLTtGMgI3KpBmCSOlTuLTFWnviLxLcTnyg=
+github.com/go-openapi/swag/mangling v0.27.3/go.mod h1:jtBE2+V+3pILxOR7Vgce+Cwp6A2PgZbvVqfNntbVs0w=
 github.com/go-openapi/swag/netutils v0.27.3 h1:IoBvfCoprsE6E87kAIm9basnISqDDqB79mJ8MN+f5PU=
 github.com/go-openapi/swag/netutils v0.27.3/go.mod h1:J+WYyFMLtvtCGqa6jLv+YNUmIKI3ZRQRrvfNDMoQoEQ=
 github.com/go-openapi/swag/pools v0.27.3 h1:gXjImP3F6/56wRRcFgEPld084Y6u2gs21ikPBt8NKBk=
