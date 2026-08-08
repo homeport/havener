@@ -495,7 +495,7 @@ func renderProgressBar(value int64, max int64, caption string, text string, leng
 
 	width := length - len(text) - len(caption)
 	usage := float64(value) / float64(max)
-	marks := int(usage * float64(width))
+	marks := int(math.Round(usage * float64(width)))
 
 	var buf bytes.Buffer
 
