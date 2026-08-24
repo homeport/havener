@@ -47,8 +47,8 @@ github.com/go-openapi/swag/cmdutils v0.28.0 h1:7TOeNtkYru1SG8Y34tDh9WBbLsMqGnptu
 github.com/go-openapi/swag/cmdutils v0.28.0/go.mod h1:Sm1MVFMkF6guJJ+pQqHnQA3N0j9qALV3NxzDSv6bETM=
 github.com/go-openapi/swag/conv v0.28.0 h1:GtqqbyFe7vR5Y7ehxG9W6/OvrSFdf1OLeTGp40TqxH8=
 github.com/go-openapi/swag/conv v0.28.0/go.mod h1:mbUE+mzctnhxi864m0Q07SpN8OowD9JhxmxuYvZZD/k=
-github.com/go-openapi/swag/fileutils v0.28.0 h1:Z04XWQD7R8Eq+7GnOrjovBxPPmZzsS4gt2H2GPGIViU=
-github.com/go-openapi/swag/fileutils v0.28.0/go.mod h1:VvJFZLTZS0AI854gEQz5tk7dBESdLjiNUMSZ/th2ry8=
+github.com/go-openapi/swag/fileutils v0.29.1 h1:ZcPzMceVhU1WPbK6N1G6sNQKdd1CWJlf3cA08UHuoM0=
+github.com/go-openapi/swag/fileutils v0.29.1/go.mod h1:/wofKYckbtRl2p3+EwQsosie5CT1B38+dQ+PS579BzI=
 github.com/go-openapi/swag/jsonutils v0.28.0 h1:YIch6FwO7RXzeAnbO8Tu7dWBZeUEH+4nA0HXltVTnv4=
 github.com/go-openapi/swag/jsonutils v0.28.0/go.mod h1:CYM3WlTUcagR2ZoHdz54di/cbBqt82tuxuXgAjxw+mg=
 github.com/go-openapi/swag/jsonutils/fixtures_test v0.28.0 h1:qV+VVUAx5Oro8WjVWpZeql7YReTKhT4smR4zhcOQZr0=
@@ -69,8 +69,8 @@ github.com/go-openapi/swag/yamlutils v0.28.0 h1:TV3JXH6DS46KUroDtMLAYHGkdWf5VDq3
 github.com/go-openapi/swag/yamlutils v0.28.0/go.mod h1:x0q/yndZHEgk9Rx3DyDqzFUmHy55KTvIZldvF2dTJXs=
 github.com/go-openapi/testify/enable/yaml/v2 v2.6.0 h1:gGHwAJ0R/5jU8BEGDbfRNR3hL68dAVi84WuOApp29B0=
 github.com/go-openapi/testify/enable/yaml/v2 v2.6.0/go.mod h1:tY+St1SGq4NFl0QIqdTY4aEdbChAHxhyB77XQi9iJCo=
-github.com/go-openapi/testify/v2 v2.6.0 h1:5PKH2HE7YJ/LuRPQGvSxBRlFXNQhSetBLlGAgUEu3ug=
-github.com/go-openapi/testify/v2 v2.6.0/go.mod h1:SgsVHtfooshd0tublTtJ50FPKhujf47YRqauXXOUxfw=
+github.com/go-openapi/testify/v2 v2.6.1 h1:6CNJhTjMzgaeaH8WhshcsZNPIvRemiOcFpU7seO/y7Q=
+github.com/go-openapi/testify/v2 v2.6.1/go.mod h1:SgsVHtfooshd0tublTtJ50FPKhujf47YRqauXXOUxfw=
 github.com/go-task/slim-sprig/v3 v3.0.0 h1:sUs3vkvUymDpBKi3qH1YSqBQk9+9D/8M2mN1vB6EwHI=
 github.com/go-task/slim-sprig/v3 v3.0.0/go.mod h1:W848ghGpv3Qj3dhTPRyJypKRiqCdHZiAzKg9hl15HA8=
 github.com/go-viper/mapstructure/v2 v2.5.0 h1:vM5IJoUAy3d7zRSVtIwQgBj7BiWtMPfmPEgAXnvj1Ro=
