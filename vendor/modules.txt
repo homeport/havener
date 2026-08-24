@@ -73,7 +73,7 @@ github.com/go-openapi/swag/mangling
 # github.com/go-openapi/swag/netutils v0.28.0
 ## explicit; go 1.25.0
 github.com/go-openapi/swag/netutils
-# github.com/go-openapi/swag/pools v0.28.0
+# github.com/go-openapi/swag/pools v0.29.1
 ## explicit; go 1.25.0
 github.com/go-openapi/swag/pools
 # github.com/go-openapi/swag/stringutils v0.28.0
