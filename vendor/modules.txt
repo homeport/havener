@@ -67,7 +67,7 @@ github.com/go-openapi/swag/jsonutils/adapters/stdlib/json
 # github.com/go-openapi/swag/loading v0.28.0
 ## explicit; go 1.25.0
 github.com/go-openapi/swag/loading
-# github.com/go-openapi/swag/mangling v0.28.0
+# github.com/go-openapi/swag/mangling v0.29.1
 ## explicit; go 1.25.0
 github.com/go-openapi/swag/mangling
 # github.com/go-openapi/swag/netutils v0.28.0
