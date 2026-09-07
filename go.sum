@@ -59,8 +59,8 @@ github.com/go-openapi/swag/mangling v0.29.1 h1:lHALtvYCdxVnRl4GrHmFPwfBTZYIObqdG
 github.com/go-openapi/swag/mangling v0.29.1/go.mod h1:SAop9pB7PUjQ/CGCNf/JmCKTRK+GDO+RqE9UHqC/N6s=
 github.com/go-openapi/swag/netutils v0.29.1 h1:IjIvdEP5duKcghFqJEPSUraRnkKYHoM65kTluTu+Jb4=
 github.com/go-openapi/swag/netutils v0.29.1/go.mod h1:DUde7x4Bx00k5jYl2AdRpNAO0m7atUvD2x6X+bWkbno=
-github.com/go-openapi/swag/pools v0.29.1 h1:NRogYxdEW9SjRM4mkAOji9iefO4MRXq3p/ZJcoQbUKg=
-github.com/go-openapi/swag/pools v0.29.1/go.mod h1:leDcaghjkRAhCuCRv9NfJU5f0mjoU3cT/XZObhMk3pc=
+github.com/go-openapi/swag/pools v0.29.2 h1:PlGoDRF8WtSyXkedZZkpW3f9wDhFf3u8KtaBcmgmh8c=
+github.com/go-openapi/swag/pools v0.29.2/go.mod h1:V3lhxVT4qDYRqc2MRSSbLsTYIYV/2HlHafhyEkmzLIc=
 github.com/go-openapi/swag/stringutils v0.29.1 h1:1ykunK7iJQk1uOO7+oUH1ukbsK85fFCOiCFMOVSY+F0=
 github.com/go-openapi/swag/stringutils v0.29.1/go.mod h1:7fSqZ+z8Qc0tOfAAK0jVa5qFGrnIlRi6n7NeGGrr1vc=
 github.com/go-openapi/swag/typeutils v0.29.1 h1:Nzv9nhnlLCRBPQqfOX+7lB6Guju370or8StT+lIOf6M=
@@ -69,8 +69,8 @@ github.com/go-openapi/swag/yamlutils v0.29.1 h1:69w3tsBajm7MR/fejLy7HD/3J68Ys1Se
 github.com/go-openapi/swag/yamlutils v0.29.1/go.mod h1:rgsp3vT/QdWzKwn43CigDwjOGIenPyTZMKnxEM8jZOA=
 github.com/go-openapi/testify/enable/yaml/v2 v2.6.1 h1:Jm+/ze2rMtbD98yen92AhATGLGREDYXG56Xr4gMjEtE=
 github.com/go-openapi/testify/enable/yaml/v2 v2.6.1/go.mod h1:YDPnwCRDu38/oJBVMBVXOUDiJ9cIeBHWvfImHaXqnv4=
-github.com/go-openapi/testify/v2 v2.6.1 h1:6CNJhTjMzgaeaH8WhshcsZNPIvRemiOcFpU7seO/y7Q=
-github.com/go-openapi/testify/v2 v2.6.1/go.mod h1:SgsVHtfooshd0tublTtJ50FPKhujf47YRqauXXOUxfw=
+github.com/go-openapi/testify/v2 v2.7.0 h1:bycOreEj6wfBvijg3YFogZ/sFjTCDmQnwSodSzHa3X8=
+github.com/go-openapi/testify/v2 v2.7.0/go.mod h1:SgsVHtfooshd0tublTtJ50FPKhujf47YRqauXXOUxfw=
 github.com/go-task/slim-sprig/v3 v3.0.0 h1:sUs3vkvUymDpBKi3qH1YSqBQk9+9D/8M2mN1vB6EwHI=
 github.com/go-task/slim-sprig/v3 v3.0.0/go.mod h1:W848ghGpv3Qj3dhTPRyJypKRiqCdHZiAzKg9hl15HA8=
 github.com/go-viper/mapstructure/v2 v2.5.0 h1:vM5IJoUAy3d7zRSVtIwQgBj7BiWtMPfmPEgAXnvj1Ro=
