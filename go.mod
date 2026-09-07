@@ -1,6 +1,6 @@
 module github.com/homeport/havener
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/gonvenience/bunt v1.4.3
@@ -52,7 +52,7 @@ require (
 	github.com/go-openapi/swag/netutils v0.29.1 // indirect
 	github.com/go-openapi/swag/pools v0.29.1 // indirect
 	github.com/go-openapi/swag/stringutils v0.29.1 // indirect
-	github.com/go-openapi/swag/typeutils v0.29.1 // indirect
+	github.com/go-openapi/swag/typeutils v0.29.2 // indirect
 	github.com/go-openapi/swag/yamlutils v0.29.1 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
