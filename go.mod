@@ -51,7 +51,7 @@ require (
 	github.com/go-openapi/swag/mangling v0.29.1 // indirect
 	github.com/go-openapi/swag/netutils v0.29.2 // indirect
 	github.com/go-openapi/swag/pools v0.29.2 // indirect
-	github.com/go-openapi/swag/stringutils v0.29.1 // indirect
+	github.com/go-openapi/swag/stringutils v0.29.2 // indirect
 	github.com/go-openapi/swag/typeutils v0.29.2 // indirect
 	github.com/go-openapi/swag/yamlutils v0.29.2 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
