@@ -18,7 +18,7 @@ require (
 	go.yaml.in/yaml/v3 v3.0.5
 	golang.org/x/sync v0.24.0
 	golang.org/x/sys v0.49.0
-	golang.org/x/term v0.46.0
+	golang.org/x/term v0.47.0
 	k8s.io/api v0.30.10
 	k8s.io/apimachinery v0.30.10
 	k8s.io/cli-runtime v0.30.10
