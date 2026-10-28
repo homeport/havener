@@ -205,7 +205,7 @@ func (p *OutputProcessor) neatYAMLofNode(prefix string, skipIndentOnFirstLine bo
 		}
 
 		if len(node.FootComment) > 0 {
-			fmt.Fprint(p.out, p.colorize(colorComment, node.FootComment), "\n")
+			p.writeComment(prefix, node.FootComment, false)
 		}
 
 	case yamlv3.SequenceNode:
@@ -233,7 +233,8 @@ func (p *OutputProcessor) neatYAMLofNode(prefix string, skipIndentOnFirstLine bo
 
 			key := node.Content[i]
 			if len(key.HeadComment) > 0 {
-				fmt.Fprint(p.out, p.colorize(colorComment, key.HeadComment), "\n")
+				p.writeComment(prefix, key.HeadComment, true)
+				_, _ = fmt.Fprint(p.out, prefix)
 			}
 			fmt.Fprint(p.out,
 				bunt.Style(p.colorizef(colorKey, "%s:", key.Value), keyStyles...),
@@ -272,7 +273,7 @@ func (p *OutputProcessor) neatYAMLofNode(prefix string, skipIndentOnFirstLine bo
 			}
 
 			if len(key.FootComment) > 0 {
-				fmt.Fprint(p.out, p.colorize(colorComment, key.FootComment), "\n")
+				p.writeComment(prefix, key.FootComment, false)
 			}
 		}
 
@@ -329,7 +330,8 @@ func (p *OutputProcessor) neatYAMLofNode(prefix string, skipIndentOnFirstLine bo
 		fmt.Fprint(p.out, "\n")
 
 		if len(node.FootComment) > 0 {
-			fmt.Fprint(p.out, p.colorize(colorComment, node.FootComment), "\n")
+			// prefix is one level deeper than the owning dash or key
+			p.writeComment(strings.TrimSuffix(prefix, p.prefixAdd()), node.FootComment, false)
 		}
 
 	case yamlv3.AliasNode:
@@ -393,4 +395,17 @@ func needsQuotes(node *yamlv3.Node) bool {
 
 	// check if string contains special characters
 	return strings.ContainsAny(node.Value, " *&:,")
+}
+
+// writeComment writes a possibly multi-line comment with every line indented
+// by prefix. If firstLinePositioned is set, the cursor already is at the
+// position of the first line, so it does not get the prefix.
+func (p *OutputProcessor) writeComment(prefix string, comment string, firstLinePositioned bool) {
+	for i, line := range strings.Split(comment, "\n") {
+		if i > 0 || !firstLinePositioned {
+			_, _ = fmt.Fprint(p.out, prefix)
+		}
+
+		_, _ = fmt.Fprint(p.out, p.colorize(colorComment, line), "\n")
+	}
 }

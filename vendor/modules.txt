@@ -102,8 +102,8 @@ github.com/golang/protobuf/proto
 # github.com/gonvenience/bunt v1.4.3
 ## explicit; go 1.24.0
 github.com/gonvenience/bunt
-# github.com/gonvenience/neat v1.3.20
-## explicit; go 1.25.0
+# github.com/gonvenience/neat v1.4.0
+## explicit; go 1.26.0
 github.com/gonvenience/neat
 # github.com/gonvenience/term v1.0.5
 ## explicit; go 1.24.0
