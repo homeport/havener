@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	// https://github.com/kubernetes/client-go/issues/345
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
@@ -110,10 +109,16 @@ func apiCRDResourceExist(arl []*meta.APIResourceList, crdName string) (bool, sch
 		// different short names.
 		for _, r := range ar.APIResources {
 			if crdName == r.SingularName || containsItem(r.ShortNames, crdName) {
-				groupVersion := strings.Split(ar.GroupVersion, "/")
+				// ParseGroupVersion copes with both grouped resources
+				// ("apps/v1") and the core API group, which has no group
+				// part and therefore no slash in its GroupVersion ("v1").
+				groupVersion, err := schema.ParseGroupVersion(ar.GroupVersion)
+				if err != nil {
+					continue
+				}
 				return true, schema.GroupVersionResource{
-					Group:    groupVersion[0],
-					Version:  groupVersion[1],
+					Group:    groupVersion.Group,
+					Version:  groupVersion.Version,
 					Resource: r.Name,
 				}
 			}
